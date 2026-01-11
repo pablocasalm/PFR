@@ -1,0 +1,39 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono&display=swap");
+
+@import "./styles/theme.css";
+@import "./styles/scrollbar.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-white/10;
+  }
+
+  body {
+    @apply bg-midnight text-slate-100 antialiased;
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+}
+
+@layer components {
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan/70 focus-visible:ring-offset-2 focus-visible:ring-offset-midnight;
+  }
+}
+
+@layer utilities {
+  .title-glow {
+    text-shadow: 0 0 24px rgba(40, 240, 224, 0.35);
+  }
+}

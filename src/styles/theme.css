@@ -1,0 +1,28 @@
+@layer utilities {
+  .bg-film-room {
+    background-image: radial-gradient(circle at 15% 20%, rgba(40, 240, 224, 0.15), transparent 40%),
+      radial-gradient(circle at 80% 10%, rgba(190, 252, 75, 0.1), transparent 35%),
+      radial-gradient(circle at 50% 80%, rgba(58, 92, 255, 0.12), transparent 45%);
+  }
+
+  .card-sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.08), transparent 60%);
+    opacity: 0;
+    transition: opacity 300ms ease;
+    pointer-events: none;
+  }
+
+  .card-sheen:hover::after {
+    opacity: 1;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
