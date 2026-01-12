@@ -9,14 +9,14 @@ const AppLayout = () => {
   const navigate = useNavigate()
 
   const navLinks = [
-    { label: "Clips", to: "/", end: true },
-    { label: "Explorar", to: "/explorar" },
-    { label: "Colecciones", to: "/colecciones" },
-    { label: "Guardados", to: "/guardados" },
+    { label: "Clips", to: "/app", end: true },
+    { label: "Explorar", to: "/app/explorar" },
+    { label: "Colecciones", to: "/app/colecciones" },
+    { label: "Guardados", to: "/app/guardados" },
   ]
 
   const footerLinks = [
-    { label: "Perfil", to: "/perfil" },
+    { label: "Perfil", to: "/app/perfil" },
     {
       label: "Cerrar sesión",
       onClick: () => {
@@ -39,7 +39,7 @@ const AppLayout = () => {
             >
               ☰
             </button>
-            <Link to="/" className="text-lg font-semibold tracking-tight text-white">
+            <Link to="/app" className="text-lg font-semibold tracking-tight text-white">
               Padel Film Room
             </Link>
           </div>

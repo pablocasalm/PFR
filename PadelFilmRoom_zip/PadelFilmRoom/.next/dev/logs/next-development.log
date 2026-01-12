@@ -1,0 +1,1000 @@
+[00:00:01.421] Server  LOG     ✓ Ready in 1229ms
+[00:00:05.027] Server  ERROR   ⨯ ./components/Cards.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const cards = [
+  6 |   {
+
+
+
+Import traces:
+  Client Component Browser:
+    ./components/Cards.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Cards.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./components/FAQ.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const faqs = [
+  6 |   {
+
+
+
+Import traces:
+  Client Component Browser:
+    ./components/FAQ.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/FAQ.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./components/Hero.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import { useRef } from 'react';
+> 4 | import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { EmailCapture } from '@/components/EmailCapture';
+  6 | import { MediaPlaceholder } from '@/components/MediaPlaceholder';
+  7 |
+
+
+
+Import traces:
+  Client Component Browser:
+    ./components/Hero.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Hero.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./components/ImageGridPlaceholders.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const items = [
+  6 |   { title: 'Diagrama', accent: 'from-emerald-400/30 to-transparent' },
+
+
+
+Import traces:
+  Client Component Browser:
+    ./components/ImageGridPlaceholders.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ImageGridPlaceholders.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./components/MediaPlaceholder.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import { Play } from 'lucide-react';
+> 4 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { cn } from '@/lib/utils';
+  6 |
+  7 | type MediaPlaceholderProps = {
+
+
+
+Import traces:
+  Client Component Browser:
+    ./components/MediaPlaceholder.tsx [Client Component Browser]
+    ./components/Hero.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/MediaPlaceholder.tsx [Client Component SSR]
+    ./components/Hero.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./components/ScrollProgress.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useScroll, useSpring } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | export function ScrollProgress() {
+  6 |   const { scrollYProgress } = useScroll();
+
+
+
+Import traces:
+  Client Component Browser:
+    ./components/ScrollProgress.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ScrollProgress.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./components/Section.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import type { ReactNode } from 'react';
+> 4 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { cn } from '@/lib/utils';
+  6 |
+  7 | type SectionProps = {
+
+
+
+Import traces:
+  Client Component Browser:
+    ./components/Section.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Section.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:00:05.313] Browser ERROR   uncaughtError: Error: ./components/Cards.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const cards = [
+  6 |   {
+
+
+
+Import traces:
+  Client Component Browser:
+    ./components/Cards.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Cards.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:00:05.469] Browser ERROR   ./components/Cards.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const cards = [
+  6 |   {
+
+Import traces:
+  Client Component Browser:
+    ./components/Cards.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Cards.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.469] Browser ERROR   ./components/FAQ.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const faqs = [
+  6 |   {
+
+Import traces:
+  Client Component Browser:
+    ./components/FAQ.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/FAQ.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.469] Browser ERROR   ./components/Hero.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import { useRef } from 'react';
+> 4 | import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { EmailCapture } from '@/components/EmailCapture';
+  6 | import { MediaPlaceholder } from '@/components/MediaPlaceholder';
+  7 |
+
+Import traces:
+  Client Component Browser:
+    ./components/Hero.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Hero.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.469] Browser ERROR   ./components/ImageGridPlaceholders.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const items = [
+  6 |   { title: 'Diagrama', accent: 'from-emerald-400/30 to-transparent' },
+
+Import traces:
+  Client Component Browser:
+    ./components/ImageGridPlaceholders.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ImageGridPlaceholders.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.469] Browser ERROR   ./components/MediaPlaceholder.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import { Play } from 'lucide-react';
+> 4 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { cn } from '@/lib/utils';
+  6 |
+  7 | type MediaPlaceholderProps = {
+
+Import traces:
+  Client Component Browser:
+    ./components/MediaPlaceholder.tsx [Client Component Browser]
+    ./components/Hero.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/MediaPlaceholder.tsx [Client Component SSR]
+    ./components/Hero.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.470] Browser ERROR   ./components/ScrollProgress.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useScroll, useSpring } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | export function ScrollProgress() {
+  6 |   const { scrollYProgress } = useScroll();
+
+Import traces:
+  Client Component Browser:
+    ./components/ScrollProgress.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ScrollProgress.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.470] Browser ERROR   ./components/Section.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import type { ReactNode } from 'react';
+> 4 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { cn } from '@/lib/utils';
+  6 |
+  7 | type SectionProps = {
+
+Import traces:
+  Client Component Browser:
+    ./components/Section.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Section.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.802] Browser ERROR   ./components/Cards.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const cards = [
+  6 |   {
+
+Import traces:
+  Client Component Browser:
+    ./components/Cards.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Cards.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.802] Browser ERROR   ./components/FAQ.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const faqs = [
+  6 |   {
+
+Import traces:
+  Client Component Browser:
+    ./components/FAQ.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/FAQ.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.802] Browser ERROR   ./components/Hero.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import { useRef } from 'react';
+> 4 | import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { EmailCapture } from '@/components/EmailCapture';
+  6 | import { MediaPlaceholder } from '@/components/MediaPlaceholder';
+  7 |
+
+Import traces:
+  Client Component Browser:
+    ./components/Hero.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Hero.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.802] Browser ERROR   ./components/ImageGridPlaceholders.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const items = [
+  6 |   { title: 'Diagrama', accent: 'from-emerald-400/30 to-transparent' },
+
+Import traces:
+  Client Component Browser:
+    ./components/ImageGridPlaceholders.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ImageGridPlaceholders.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.802] Browser ERROR   ./components/MediaPlaceholder.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import { Play } from 'lucide-react';
+> 4 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { cn } from '@/lib/utils';
+  6 |
+  7 | type MediaPlaceholderProps = {
+
+Import traces:
+  Client Component Browser:
+    ./components/MediaPlaceholder.tsx [Client Component Browser]
+    ./components/Hero.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/MediaPlaceholder.tsx [Client Component SSR]
+    ./components/Hero.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.802] Browser ERROR   ./components/ScrollProgress.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useScroll, useSpring } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | export function ScrollProgress() {
+  6 |   const { scrollYProgress } = useScroll();
+
+Import traces:
+  Client Component Browser:
+    ./components/ScrollProgress.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ScrollProgress.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:05.802] Browser ERROR   ./components/Section.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import type { ReactNode } from 'react';
+> 4 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { cn } from '@/lib/utils';
+  6 |
+  7 | type SectionProps = {
+
+Import traces:
+  Client Component Browser:
+    ./components/Section.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Section.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/Cards.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const cards = [
+  6 |   {
+
+Import traces:
+  Client Component Browser:
+    ./components/Cards.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Cards.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/FAQ.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const faqs = [
+  6 |   {
+
+Import traces:
+  Client Component Browser:
+    ./components/FAQ.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/FAQ.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/Hero.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import { useRef } from 'react';
+> 4 | import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { EmailCapture } from '@/components/EmailCapture';
+  6 | import { MediaPlaceholder } from '@/components/MediaPlaceholder';
+  7 |
+
+Import traces:
+  Client Component Browser:
+    ./components/Hero.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Hero.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/ImageGridPlaceholders.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const items = [
+  6 |   { title: 'Diagrama', accent: 'from-emerald-400/30 to-transparent' },
+
+Import traces:
+  Client Component Browser:
+    ./components/ImageGridPlaceholders.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ImageGridPlaceholders.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/MediaPlaceholder.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import { Play } from 'lucide-react';
+> 4 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { cn } from '@/lib/utils';
+  6 |
+  7 | type MediaPlaceholderProps = {
+
+Import traces:
+  Client Component Browser:
+    ./components/MediaPlaceholder.tsx [Client Component Browser]
+    ./components/Hero.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/MediaPlaceholder.tsx [Client Component SSR]
+    ./components/Hero.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/ScrollProgress.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useScroll, useSpring } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | export function ScrollProgress() {
+  6 |   const { scrollYProgress } = useScroll();
+
+Import traces:
+  Client Component Browser:
+    ./components/ScrollProgress.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ScrollProgress.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/Section.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import type { ReactNode } from 'react';
+> 4 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { cn } from '@/lib/utils';
+  6 |
+  7 | type SectionProps = {
+
+Import traces:
+  Client Component Browser:
+    ./components/Section.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Section.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/Cards.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const cards = [
+  6 |   {
+
+Import traces:
+  Client Component Browser:
+    ./components/Cards.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Cards.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/FAQ.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const faqs = [
+  6 |   {
+
+Import traces:
+  Client Component Browser:
+    ./components/FAQ.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/FAQ.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/Hero.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import { useRef } from 'react';
+> 4 | import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { EmailCapture } from '@/components/EmailCapture';
+  6 | import { MediaPlaceholder } from '@/components/MediaPlaceholder';
+  7 |
+
+Import traces:
+  Client Component Browser:
+    ./components/Hero.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Hero.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/ImageGridPlaceholders.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const items = [
+  6 |   { title: 'Diagrama', accent: 'from-emerald-400/30 to-transparent' },
+
+Import traces:
+  Client Component Browser:
+    ./components/ImageGridPlaceholders.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ImageGridPlaceholders.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/MediaPlaceholder.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import { Play } from 'lucide-react';
+> 4 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { cn } from '@/lib/utils';
+  6 |
+  7 | type MediaPlaceholderProps = {
+
+Import traces:
+  Client Component Browser:
+    ./components/MediaPlaceholder.tsx [Client Component Browser]
+    ./components/Hero.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/MediaPlaceholder.tsx [Client Component SSR]
+    ./components/Hero.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/ScrollProgress.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useScroll, useSpring } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | export function ScrollProgress() {
+  6 |   const { scrollYProgress } = useScroll();
+
+Import traces:
+  Client Component Browser:
+    ./components/ScrollProgress.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ScrollProgress.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/Section.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import type { ReactNode } from 'react';
+> 4 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { cn } from '@/lib/utils';
+  6 |
+  7 | type SectionProps = {
+
+Import traces:
+  Client Component Browser:
+    ./components/Section.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Section.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/Cards.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const cards = [
+  6 |   {
+
+Import traces:
+  Client Component Browser:
+    ./components/Cards.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Cards.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/FAQ.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const faqs = [
+  6 |   {
+
+Import traces:
+  Client Component Browser:
+    ./components/FAQ.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/FAQ.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/Hero.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import { useRef } from 'react';
+> 4 | import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { EmailCapture } from '@/components/EmailCapture';
+  6 | import { MediaPlaceholder } from '@/components/MediaPlaceholder';
+  7 |
+
+Import traces:
+  Client Component Browser:
+    ./components/Hero.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Hero.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/ImageGridPlaceholders.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | const items = [
+  6 |   { title: 'Diagrama', accent: 'from-emerald-400/30 to-transparent' },
+
+Import traces:
+  Client Component Browser:
+    ./components/ImageGridPlaceholders.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ImageGridPlaceholders.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/MediaPlaceholder.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import { Play } from 'lucide-react';
+> 4 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { cn } from '@/lib/utils';
+  6 |
+  7 | type MediaPlaceholderProps = {
+
+Import traces:
+  Client Component Browser:
+    ./components/MediaPlaceholder.tsx [Client Component Browser]
+    ./components/Hero.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/MediaPlaceholder.tsx [Client Component SSR]
+    ./components/Hero.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/ScrollProgress.tsx:3:1
+Module not found: Can't resolve 'framer-motion'
+  1 | 'use client';
+  2 |
+> 3 | import { motion, useScroll, useSpring } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 |
+  5 | export function ScrollProgress() {
+  6 |   const { scrollYProgress } = useScroll();
+
+Import traces:
+  Client Component Browser:
+    ./components/ScrollProgress.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ScrollProgress.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.170] Browser ERROR   ./components/Section.tsx:4:1
+Module not found: Can't resolve 'framer-motion'
+  2 |
+  3 | import type { ReactNode } from 'react';
+> 4 | import { motion, useReducedMotion } from 'framer-motion';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { cn } from '@/lib/utils';
+  6 |
+  7 | type SectionProps = {
+
+Import traces:
+  Client Component Browser:
+    ./components/Section.tsx [Client Component Browser]
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/Section.tsx [Client Component SSR]
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:00:57.512] Server  LOG     ✓ Compiled in 705ms
+[00:01:19.196] Browser WARN    Please ensure that the container has a non-static position, like 'relative', 'fixed', or 'absolute' to ensure scroll offset is calculated correctly.
+[00:02:55.398] Browser WARN    Please ensure that the container has a non-static position, like 'relative', 'fixed', or 'absolute' to ensure scroll offset is calculated correctly.

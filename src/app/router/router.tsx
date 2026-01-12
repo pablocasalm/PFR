@@ -11,22 +11,28 @@ import Login from "../../pages/Login"
 import Register from "../../pages/Register"
 import RequireAuth from "./RequireAuth"
 import Explorar from "../../pages/Explorar"
+import Landing from "../../pages/Landing"
 
 const router = createBrowserRouter([
   {
+    path: "/",
+    element: <Landing />,
+  },
+  {
+    path: "/app",
     element: (
       <RequireAuth>
         <AppLayout />
       </RequireAuth>
     ),
     children: [
-      { path: "/", element: <HomeShorts /> },
-      { path: "/explorar", element: <Explorar /> },
-      { path: "/clip/:id", element: <Clip /> },
-      { path: "/analisis/:id", element: <Analysis /> },
-      { path: "/colecciones", element: <Colecciones /> },
-      { path: "/guardados", element: <Guardados /> },
-      { path: "/perfil", element: <Perfil /> },
+      { index: true, element: <HomeShorts /> },
+      { path: "explorar", element: <Explorar /> },
+      { path: "clip/:id", element: <Clip /> },
+      { path: "analisis/:id", element: <Analysis /> },
+      { path: "colecciones", element: <Colecciones /> },
+      { path: "guardados", element: <Guardados /> },
+      { path: "perfil", element: <Perfil /> },
     ],
   },
   {

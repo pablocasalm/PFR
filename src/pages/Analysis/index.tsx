@@ -27,7 +27,7 @@ const Analysis = () => {
       <main className="mx-auto flex min-h-[60vh] w-full max-w-4xl flex-col items-center justify-center gap-4 px-4 text-center">
         <h1 className="text-2xl font-semibold text-white">Análisis no encontrado</h1>
         <p className="text-white/60">Vuelve al feed para descubrir nuevas jugadas.</p>
-        <Link to="/" className={buttonClasses("primary")}>
+        <Link to="/app" className={buttonClasses("primary")}>
           Volver al feed
         </Link>
       </main>

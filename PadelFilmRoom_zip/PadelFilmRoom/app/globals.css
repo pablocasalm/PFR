@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --background: 220 16% 6%;
+  --foreground: 0 0% 96%;
+  --card: 220 14% 10%;
+  --card-foreground: 0 0% 96%;
+  --popover: 220 14% 10%;
+  --popover-foreground: 0 0% 96%;
+  --primary: 34 90% 58%;
+  --primary-foreground: 220 18% 10%;
+  --secondary: 220 12% 16%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 220 12% 14%;
+  --muted-foreground: 0 0% 70%;
+  --accent: 160 54% 45%;
+  --accent-foreground: 0 0% 96%;
+  --destructive: 0 72% 52%;
+  --destructive-foreground: 0 0% 96%;
+  --border: 220 12% 18%;
+  --input: 220 12% 18%;
+  --ring: 34 90% 58%;
+  --chart-1: 28 85% 60%;
+  --chart-2: 168 60% 42%;
+  --chart-3: 200 70% 50%;
+  --chart-4: 44 90% 64%;
+  --chart-5: 15 80% 58%;
+  --radius: 0.75rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+  }
+  .font-body {
+    font-family: var(--font-body);
+  }
+  .font-display {
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .hero-surface {
+    background-image:
+      radial-gradient(900px 480px at 10% 15%, rgba(16, 185, 129, 0.16), transparent 60%),
+      radial-gradient(720px 420px at 85% 0%, rgba(245, 158, 11, 0.18), transparent 55%),
+      radial-gradient(600px 360px at 80% 70%, rgba(56, 189, 248, 0.12), transparent 55%),
+      linear-gradient(180deg, rgba(10, 13, 15, 0.85), rgba(10, 13, 15, 1));
+  }
+
+  .noise-layer {
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        rgba(255, 255, 255, 0.035),
+        rgba(255, 255, 255, 0.035) 1px,
+        transparent 1px,
+        transparent 3px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.02),
+        rgba(255, 255, 255, 0.02) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+    mix-blend-mode: soft-light;
+  }
+
+  .headline-sweep {
+    background-image: linear-gradient(120deg, #fbbf24, #34d399, #38bdf8, #fbbf24);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: headline-sweep 7s ease infinite;
+  }
+
+  .section-divider {
+    @apply border-t border-white/10;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@keyframes headline-sweep {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .headline-sweep {
+    animation: none;
+  }
+}

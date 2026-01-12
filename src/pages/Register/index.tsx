@@ -13,7 +13,7 @@ const Register = () => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     login(email || "usuario@padelfilmroom.com")
-    navigate("/")
+    navigate("/app")
   }
 
   return (

@@ -14,7 +14,7 @@ const Login = () => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     login(email || "usuario@padelfilmroom.com")
-    const redirectTo = (location.state as { from?: Location })?.from?.pathname || "/"
+    const redirectTo = (location.state as { from?: Location })?.from?.pathname || "/app"
     navigate(redirectTo)
   }
 
