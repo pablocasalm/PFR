@@ -4,14 +4,11 @@ import VideoPlayer from "../../components/player/VideoPlayer"
 import { buttonClasses } from "../../components/ui/Button"
 import { getClipById } from "../../lib/api/clips"
 import BookmarkButton from "../../components/ui/BookmarkButton"
-import PremiumLockedCover from "../../components/video/PremiumLockedCover"
-import { useEntitlement } from "../../app/providers/EntitlementProvider"
 import ReactionBar from "../../components/video/ReactionBar"
 
 const Analysis = () => {
   const { id } = useParams()
   const clip = id ? getClipById(id) : undefined
-  const { entitlement } = useEntitlement()
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
   const [playbackRate, setPlaybackRate] = useState(() => {
@@ -34,7 +31,6 @@ const Analysis = () => {
     )
   }
 
-  const isLocked = clip.isPremium && entitlement === "FREE"
   const fallbackMatch = {
     tournament: { name: "Premier Padel – México Major" },
     round: "Cuartos de final",
@@ -65,9 +61,6 @@ const Analysis = () => {
   }, [chapters, currentTime])
 
   useEffect(() => {
-    if (isLocked) {
-      return
-    }
     const video = videoRef.current
     if (!video) {
       return
@@ -77,7 +70,7 @@ const Analysis = () => {
     return () => {
       video.removeEventListener("timeupdate", handleTimeUpdate)
     }
-  }, [isLocked])
+  }, [])
 
   useEffect(() => {
     const video = videoRef.current
@@ -118,9 +111,6 @@ const Analysis = () => {
   }
 
   const handleChapterClick = (startSeconds: number) => {
-    if (isLocked) {
-      return
-    }
     const video = videoRef.current
     if (!video) {
       return
@@ -144,78 +134,69 @@ const Analysis = () => {
             </Link>
           </div>
         </div>
-        {isLocked ? (
-          <PremiumLockedCover
-            thumbnailUrl={clip.thumbnailUrl}
-            title={clip.title}
-            message="Hazte Premium para ver el análisis completo"
-            className="aspect-video"
+        <div className="playerShell relative aspect-video max-h-[70vh] overflow-hidden rounded-3xl border border-white/10 bg-black/40">
+          <VideoPlayer
+            ref={videoRef}
+            src={clip.fullVideoUrl}
+            poster={clip.thumbnailUrl}
+            title={`Análisis ${clip.title}`}
+            subtitlesEsUrl={clip.subtitlesEsUrl}
+            subtitlesEnUrl={clip.subtitlesEnUrl}
+            className="h-full w-full"
+            playerClassName="h-full w-full rounded-none border-0 bg-transparent shadow-none"
+            videoClassName="h-full w-full object-contain bg-black"
+            showSubtitles={false}
+            manageSubtitles={false}
           />
-        ) : (
-          <div className="playerShell relative aspect-video max-h-[70vh] overflow-hidden rounded-3xl border border-white/10 bg-black/40">
-            <VideoPlayer
-              ref={videoRef}
-              src={clip.fullVideoUrl}
-              poster={clip.thumbnailUrl}
-              title={`Análisis ${clip.title}`}
-              subtitlesEsUrl={clip.subtitlesEsUrl}
-              subtitlesEnUrl={clip.subtitlesEnUrl}
-              className="h-full w-full"
-              playerClassName="h-full w-full rounded-none border-0 bg-transparent shadow-none"
-              videoClassName="h-full w-full object-contain bg-black"
-              showSubtitles={false}
-              manageSubtitles={false}
-            />
-            <div className="playerOverlayTopRight absolute right-3 top-3 z-50 flex items-center gap-2">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsCcOpen((prev) => !prev)}
-                  className="focus-ring inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/70 text-xs font-semibold text-white"
-                  aria-label="Subtítulos"
-                >
-                  CC
-                </button>
-                {isCcOpen && (
-                  <div className="absolute right-0 mt-2 w-40 rounded-2xl border border-white/10 bg-midnight/95 p-2 text-[11px] text-white shadow-xl">
-                    {[
-                      { label: "Apagados", value: "off" },
-                      { label: "Español", value: "es" },
-                      { label: "Inglés", value: "en" },
-                    ].map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => {
-                          setSubtitle(option.value as "off" | "es" | "en")
-                          setIsCcOpen(false)
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition ${
-                          subtitle === option.value
-                            ? "bg-white text-midnight"
-                            : "hover:bg-white/10"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+          <div className="playerOverlayTopRight absolute right-3 top-3 z-50 flex items-center gap-2">
+            <div className="relative">
               <button
                 type="button"
-                onClick={() => {
-                  const order = [1, 1.25, 1.5, 2]
-                  const next = order[(order.indexOf(playbackRate) + 1) % order.length]
-                  setPlaybackRate(next)
-                }}
-                className="focus-ring rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white"
+                onClick={() => setIsCcOpen((prev) => !prev)}
+                className="focus-ring inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/70 text-xs font-semibold text-white"
+                aria-label="Subtítulos"
               >
-                {playbackRate}x
+                CC
               </button>
+              {isCcOpen && (
+                <div className="absolute right-0 mt-2 w-40 rounded-2xl border border-white/10 bg-midnight/95 p-2 text-[11px] text-white shadow-xl">
+                  {[
+                    { label: "Apagados", value: "off" },
+                    { label: "Español", value: "es" },
+                    { label: "Inglés", value: "en" },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setSubtitle(option.value as "off" | "es" | "en")
+                        setIsCcOpen(false)
+                      }}
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition ${
+                        subtitle === option.value
+                          ? "bg-white text-midnight"
+                          : "hover:bg-white/10"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                const order = [1, 1.25, 1.5, 2]
+                const next = order[(order.indexOf(playbackRate) + 1) % order.length]
+                setPlaybackRate(next)
+              }}
+              className="focus-ring rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white"
+            >
+              {playbackRate}x
+            </button>
           </div>
-        )}
+        </div>
         <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
           <ReactionBar initialCounts={clip.reactionCounts} />
         </div>
@@ -256,7 +237,6 @@ const Analysis = () => {
                   key={chapter.id}
                   type="button"
                   onClick={() => handleChapterClick(chapter.startSeconds)}
-                  title={isLocked ? "Disponible en Premium" : undefined}
                   className={`flex w-full items-start justify-between gap-4 rounded-2xl px-3 py-2 text-left transition ${
                     activeChapterId === chapter.id
                       ? "bg-white/10 text-white"

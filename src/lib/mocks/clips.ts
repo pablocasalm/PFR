@@ -1,7 +1,10 @@
 import type { Clip } from "../../types/clip"
 
 const previewVideo = "https://samplelib.com/lib/preview/mp4/sample-5s.mp4"
-const previewVideoAlt = "https://samplelib.com/lib/preview/mp4/sample-10s.mp4"
+const previewVideoAlt =
+  "/clips_test/Sanchez.Josemaria-vs-Castello.Rufo_Clip%201.mov"
+const previewVideoVertical =
+  "https://videos.pexels.com/video-files/857195/857195-hd_1080_1920_30fps.mp4"
 const fullVideo = "https://samplelib.com/lib/preview/mp4/sample-20s.mp4"
 const subtitlesEs = "https://bitdash-a.akamaihd.net/content/sintel/subtitles/subtitles_es.vtt"
 const subtitlesEn = "https://bitdash-a.akamaihd.net/content/sintel/subtitles/subtitles_en.vtt"
@@ -15,7 +18,7 @@ export const clips: Clip[] = [
     isPremium: false,
     thumbnailUrl:
       "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=1200&q=80",
-    clipVideoUrl: previewVideo,
+    clipVideoUrl: previewVideoAlt,
     fullVideoUrl: fullVideo,
     subtitlesEsUrl: subtitlesEs,
     subtitlesEnUrl: subtitlesEn,
@@ -42,10 +45,10 @@ export const clips: Clip[] = [
     title: "Salida de pared con timing agresivo en el drive",
     ideaKey: "Paso temprano, brazo relajado",
     durationSeconds: 42,
-    isPremium: true,
+    isPremium: false,
     thumbnailUrl:
       "https://images.unsplash.com/photo-1521412644187-c49fa049e84d?auto=format&fit=crop&w=1200&q=80",
-    clipVideoUrl: previewVideoAlt,
+    clipVideoUrl: previewVideoVertical,
     fullVideoUrl: fullVideo,
     subtitlesEsUrl: subtitlesEs,
     subtitlesEnUrl: subtitlesEn,
@@ -72,7 +75,7 @@ export const clips: Clip[] = [
     title: "Víbora con efecto lateral para ganar el punto",
     ideaKey: "Contacto alto y muñeca firme",
     durationSeconds: 55,
-    isPremium: true,
+    isPremium: false,
     thumbnailUrl:
       "https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf?auto=format&fit=crop&w=1200&q=80",
     clipVideoUrl: previewVideoAlt,
@@ -117,7 +120,7 @@ export const clips: Clip[] = [
     title: "Defensa con pared lateral en situación límite",
     ideaKey: "Bola baja, salida rápida",
     durationSeconds: 47,
-    isPremium: true,
+    isPremium: false,
     thumbnailUrl:
       "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=80",
     clipVideoUrl: previewVideoAlt,

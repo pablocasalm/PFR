@@ -19,6 +19,7 @@ type VideoPlayerProps = {
   showSubtitles?: boolean
   manageSubtitles?: boolean
   preload?: "none" | "metadata" | "auto"
+  onLoadedMetadata?: () => void
 }
 
 const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
@@ -40,6 +41,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       showSubtitles = true,
       manageSubtitles = true,
       preload = "metadata",
+      onLoadedMetadata,
     },
     ref,
   ) => {
@@ -119,7 +121,12 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           autoPlay={autoPlay}
           preload={preload}
           aria-label={title}
-          onLoadedMetadata={manageSubtitles ? applySubtitle : undefined}
+          onLoadedMetadata={() => {
+            if (manageSubtitles) {
+              applySubtitle()
+            }
+            onLoadedMetadata?.()
+          }}
         >
           {subtitlesEsUrl && (
             <track kind="subtitles" srcLang="es" label="Español" src={subtitlesEsUrl} />

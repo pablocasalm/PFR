@@ -7,6 +7,7 @@ type VideoFeedProps = {
   showFullHint?: boolean
   prioritizeFull?: boolean
   secondaryVariant?: "secondary" | "ghost"
+  layout?: "vertical" | "grid"
 }
 
 const VideoFeed = ({
@@ -15,18 +16,26 @@ const VideoFeed = ({
   showFullHint = false,
   prioritizeFull = false,
   secondaryVariant = "secondary",
-}: VideoFeedProps) => (
-  <div className={`grid gap-6 md:grid-cols-2 xl:grid-cols-3 ${className}`}>
-    {clips.map((clip) => (
-      <VideoCard
-        key={clip.id}
-        clip={clip}
-        showFullHint={showFullHint}
-        prioritizeFull={prioritizeFull}
-        secondaryVariant={secondaryVariant}
-      />
-    ))}
-  </div>
-)
+  layout = "vertical",
+}: VideoFeedProps) => {
+  const gridClassName = 
+    layout === "vertical" 
+      ? "grid gap-8 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-1 max-w-2xl"
+      : "grid gap-8 md:grid-cols-2 xl:grid-cols-3"
+
+  return (
+    <div className={`${gridClassName} ${className}`}>
+      {clips.map((clip) => (
+        <VideoCard
+          key={clip.id}
+          clip={clip}
+          showFullHint={showFullHint}
+          prioritizeFull={prioritizeFull}
+          secondaryVariant={secondaryVariant}
+        />
+      ))}
+    </div>
+  )
+}
 
 export default VideoFeed

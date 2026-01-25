@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { Clip } from "../../types/clip"
 import ShortsItem from "./ShortsItem"
-import { useEntitlement } from "../../app/providers/EntitlementProvider"
 
 type ShortsFeedProps = {
   clips: Clip[]
@@ -28,7 +27,6 @@ const ShortsFeed = ({ clips }: ShortsFeedProps) => {
     }
     return stored === "true"
   })
-  const { entitlement } = useEntitlement()
   const activeIndexRef = useRef(activeIndex)
 
   useEffect(() => {
@@ -137,17 +135,17 @@ const ShortsFeed = ({ clips }: ShortsFeedProps) => {
   }, [])
 
   const NAV_HEIGHT = 64
+  const viewportHeight = `calc(100vh - ${NAV_HEIGHT}px)`
 
   return (
     <div className="relative">
       <div
         ref={containerRef}
         className="snap-y snap-mandatory overflow-y-auto"
-        style={{ height: `calc(100vh - ${NAV_HEIGHT}px)` }}
+        style={{ height: viewportHeight }}
       >
         {clips.map((clip, index) => {
-          const isLocked = clip.isPremium && entitlement === "FREE"
-          const shouldRenderVideo = activeIndex === index && !isLocked
+          const shouldRenderVideo = activeIndex === index
           return (
             <div
               key={clip.id}
@@ -155,6 +153,8 @@ const ShortsFeed = ({ clips }: ShortsFeedProps) => {
               ref={(element) => {
                 itemRefs.current[index] = element
               }}
+              className="snap-center flex items-center justify-center overflow-hidden"
+              style={{ height: viewportHeight }}
             >
               <ShortsItem
                 clip={clip}
@@ -169,14 +169,51 @@ const ShortsFeed = ({ clips }: ShortsFeedProps) => {
                   }
                 }}
                 shouldRenderVideo={shouldRenderVideo}
-                isLocked={isLocked}
-                onPrev={index > 0 ? () => scrollToIndex(index - 1) : undefined}
-                onNext={index < clips.length - 1 ? () => scrollToIndex(index + 1) : undefined}
               />
             </div>
           )
         })}
       </div>
+      <aside className="hidden md:flex">
+        <div className="fixed right-6 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center gap-4 md:right-10">
+          <button
+            type="button"
+            onClick={() => scrollToIndex(Math.max(activeIndex - 1, 0))}
+            disabled={activeIndex === 0}
+            className="focus-ring pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/30 text-lg text-white/80 transition hover:bg-black/50 active:scale-95 disabled:opacity-30 disabled:hover:bg-black/30"
+            aria-label="Anterior"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+              <path
+                d="M6 14l6-6 6 6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToIndex(Math.min(activeIndex + 1, clips.length - 1))}
+            disabled={activeIndex === clips.length - 1}
+            className="focus-ring pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/30 text-lg text-white/80 transition hover:bg-black/50 active:scale-95 disabled:opacity-30 disabled:hover:bg-black/30"
+            aria-label="Siguiente"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+              <path
+                d="M6 10l6 6 6-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </aside>
     </div>
   )
 }
