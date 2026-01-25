@@ -1,2 +1,4 @@
 node_modules/
 public/clips_test/
+public/**/*.mov
+public/**/*.mp4
