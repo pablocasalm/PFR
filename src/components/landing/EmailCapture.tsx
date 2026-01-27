@@ -1,6 +1,7 @@
 import type { FormEvent } from "react"
 import { useState } from "react"
 import { cn } from "../../lib/utils"
+import { sendLandingEmail } from "../../../services/landingService"
 
 type EmailCaptureProps = {
   id?: string
@@ -22,9 +23,11 @@ const EmailCapture = ({
   const [email, setEmail] = useState("")
   const [error, setError] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (isSubmitting) return
     const trimmed = email.trim().toLowerCase()
     const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)
 
@@ -35,18 +38,31 @@ const EmailCapture = ({
     }
 
     setError("")
-    setSubmitted(true)
+    setSubmitted(false)
+    setIsSubmitting(true)
 
     try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") as string[]
-      const updated = Array.from(new Set([...stored, trimmed]))
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-    } catch {
-      // Silent fail for browsers without localStorage access.
-    }
+      await sendLandingEmail(trimmed)
 
-    setEmail("")
-    setTimeout(() => setSubmitted(false), 4000)
+      setSubmitted(true)
+      try {
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") as string[]
+        const updated = Array.from(new Set([...stored, trimmed]))
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      } catch {
+        // Silent fail for browsers without localStorage access.
+      }
+
+      setEmail("")
+      setTimeout(() => setSubmitted(false), 4000)
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "No se pudo enviar el email. Intentalo de nuevo."
+      setError(message)
+      setSubmitted(false)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -87,9 +103,11 @@ const EmailCapture = ({
       </div>
       <button
         type="submit"
-        className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-xs font-semibold uppercase tracking-[0.2em] text-black transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 active:translate-y-0"
+        disabled={isSubmitting}
+        className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-xs font-semibold uppercase tracking-[0.2em] text-black transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70"
+        aria-busy={isSubmitting}
       >
-        {buttonLabel}
+        {isSubmitting ? "Enviando..." : buttonLabel}
       </button>
     </form>
   )
