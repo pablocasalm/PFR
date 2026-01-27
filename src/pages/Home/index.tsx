@@ -1,12 +1,13 @@
 import VideoFeed from "../../components/video/VideoFeed"
 import { getClips } from "../../lib/api/clips"
+import PageShell from "../../components/layout/PageShell"
 
 const Home = () => {
   const clips = getClips()
 
   return (
-    <main className="px-4 pb-16 pt-10 md:px-8">
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <main className="pb-16 pt-16">
+      <PageShell className="flex flex-col gap-6">
         <div className="space-y-3">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-neon-cyan/80">
             Padel Film Room
@@ -20,7 +21,7 @@ const Home = () => {
           </p>
         </div>
         <VideoFeed clips={clips} />
-      </section>
+      </PageShell>
     </main>
   )
 }

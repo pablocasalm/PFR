@@ -1,6 +1,7 @@
 import Button from "../../components/ui/Button"
 import { useAuth } from "../../app/providers/AuthProvider"
 import { useNavigate } from "react-router-dom"
+import PageShell from "../../components/layout/PageShell"
 
 const Perfil = () => {
   const { email, logout } = useAuth()
@@ -12,8 +13,8 @@ const Perfil = () => {
   }
 
   return (
-    <main className="px-4 pb-16 pt-10 md:px-8">
-      <section className="mx-auto w-full max-w-4xl space-y-6">
+    <main className="pb-16 pt-16">
+      <PageShell className="space-y-6">
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold text-white">Perfil</h1>
           <p className="text-base text-white/70">Gestiona tu acceso y tus sesiones activas.</p>
@@ -27,7 +28,7 @@ const Perfil = () => {
         <Button onClick={handleLogout} variant="secondary">
           Cerrar sesión
         </Button>
-      </section>
+      </PageShell>
     </main>
   )
 }

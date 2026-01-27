@@ -1,13 +1,14 @@
 import { getCollections } from "../../lib/api/collections"
 import { getClipsByIds } from "../../lib/api/clips"
 import CollectionRow from "../../components/collections/CollectionRow"
+import PageShell from "../../components/layout/PageShell"
 
 const Colecciones = () => {
   const collections = getCollections()
 
   return (
-    <main className="px-4 pb-16 pt-10 md:px-8">
-      <section className="mx-auto w-full max-w-6xl space-y-8">
+    <main className="pb-16 pt-16">
+      <PageShell className="space-y-8">
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold text-white">Colecciones</h1>
           <p className="text-base text-white/70">Colecciones editoriales de análisis táctico.</p>
@@ -25,7 +26,7 @@ const Colecciones = () => {
             No hay colecciones disponibles por ahora.
           </div>
         )}
-      </section>
+      </PageShell>
     </main>
   )
 }

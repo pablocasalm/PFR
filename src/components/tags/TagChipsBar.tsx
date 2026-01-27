@@ -6,9 +6,16 @@ type TagChipsBarProps = {
   selected: string[]
   onToggle: (slug: string) => void
   onReset: () => void
+  showArrows?: boolean
 }
 
-const TagChipsBar = ({ tags, selected, onToggle, onReset }: TagChipsBarProps) => {
+const TagChipsBar = ({
+  tags,
+  selected,
+  onToggle,
+  onReset,
+  showArrows = false,
+}: TagChipsBarProps) => {
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [showLeftFade, setShowLeftFade] = useState(false)
   const [showRightFade, setShowRightFade] = useState(false)
@@ -67,16 +74,36 @@ const TagChipsBar = ({ tags, selected, onToggle, onReset }: TagChipsBarProps) =>
   }
 
   return (
-    <div className="relative overflow-hidden">
+    <div className={`relative overflow-hidden ${showArrows ? "group" : ""}`}>
       {showLeftFade && (
         <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-midnight to-transparent" />
       )}
       {showRightFade && (
         <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-midnight to-transparent" />
       )}
+      {showArrows && showLeftFade && (
+        <button
+          type="button"
+          onClick={() => scrollByAmount(-240)}
+          className="focus-ring absolute left-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/70 opacity-0 transition hover:text-white group-hover:opacity-100 md:flex"
+          aria-label="Desplazar tags a la izquierda"
+        >
+          ‹
+        </button>
+      )}
+      {showArrows && showRightFade && (
+        <button
+          type="button"
+          onClick={() => scrollByAmount(240)}
+          className="focus-ring absolute right-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/70 opacity-0 transition hover:text-white group-hover:opacity-100 md:flex"
+          aria-label="Desplazar tags a la derecha"
+        >
+          ›
+        </button>
+      )}
       <div
         ref={scrollRef}
-        onWheel={handleWheel}
+        onWheel={showArrows ? undefined : handleWheel}
         className="flex gap-2 overflow-x-auto overflow-y-hidden px-2 pb-2 pt-1 scrollbar-hide"
         style={{ scrollBehavior: "smooth", WebkitOverflowScrolling: "touch" }}
       >

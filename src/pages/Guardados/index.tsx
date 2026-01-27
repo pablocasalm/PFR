@@ -1,14 +1,15 @@
 import VideoFeed from "../../components/video/VideoFeed"
 import { useBookmarks } from "../../app/providers/BookmarkProvider"
 import { getClipsByIds } from "../../lib/api/clips"
+import PageShell from "../../components/layout/PageShell"
 
 const Guardados = () => {
   const { bookmarkIds } = useBookmarks()
   const clips = getClipsByIds(bookmarkIds)
 
   return (
-    <main className="px-4 pb-16 pt-10 md:px-8">
-      <section className="mx-auto w-full max-w-6xl space-y-6">
+    <main className="pb-16 pt-16">
+      <PageShell className="space-y-6">
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold text-white">Guardados</h1>
           <p className="text-base text-white/70">Guarda clips para verlos más tarde.</p>
@@ -20,7 +21,7 @@ const Guardados = () => {
             Aún no has guardado ningún clip.
           </div>
         )}
-      </section>
+      </PageShell>
     </main>
   )
 }

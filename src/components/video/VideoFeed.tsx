@@ -4,19 +4,15 @@ import VideoCard from "./VideoCard"
 type VideoFeedProps = {
   clips: Clip[]
   className?: string
-  showFullHint?: boolean
-  prioritizeFull?: boolean
-  secondaryVariant?: "secondary" | "ghost"
   layout?: "vertical" | "grid"
+  cardTarget?: "clip" | "analysis"
 }
 
 const VideoFeed = ({
   clips,
   className = "",
-  showFullHint = false,
-  prioritizeFull = false,
-  secondaryVariant = "secondary",
   layout = "vertical",
+  cardTarget = "clip",
 }: VideoFeedProps) => {
   const gridClassName = 
     layout === "vertical" 
@@ -29,9 +25,7 @@ const VideoFeed = ({
         <VideoCard
           key={clip.id}
           clip={clip}
-          showFullHint={showFullHint}
-          prioritizeFull={prioritizeFull}
-          secondaryVariant={secondaryVariant}
+          target={cardTarget}
         />
       ))}
     </div>

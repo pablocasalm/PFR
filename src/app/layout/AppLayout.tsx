@@ -9,8 +9,8 @@ const AppLayout = () => {
   const navigate = useNavigate()
 
   const navLinks = [
-    { label: "Clips", to: "/app", end: true },
-    { label: "Explorar", to: "/app/explorar" },
+    { label: "Inicio", to: "/app", end: true },
+    { label: "Clips", to: "/clips" },
     { label: "Colecciones", to: "/app/colecciones" },
     { label: "Guardados", to: "/app/guardados" },
   ]
@@ -59,14 +59,38 @@ const AppLayout = () => {
               </NavLink>
             ))}
           </nav>
-          <button
-            type="button"
-            onClick={() => setIsDrawerOpen(true)}
-            className="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xs font-semibold uppercase text-white"
-            aria-label="Abrir perfil"
-          >
-            PF
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/80 transition hover:text-white"
+              aria-label="Buscar"
+              onClick={() => {
+                window.dispatchEvent(new Event("pfr:open-search"))
+              }}
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <line x1="20" y1="20" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsDrawerOpen(true)}
+              className="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xs font-semibold uppercase text-white"
+              aria-label="Abrir perfil"
+            >
+              PF
+            </button>
+          </div>
         </div>
       </header>
       <Drawer

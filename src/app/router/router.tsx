@@ -26,7 +26,7 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <HomeShorts /> },
+      { index: true, element: <Explorar /> },
       { path: "explorar", element: <Explorar /> },
       { path: "clip/:id", element: <Clip /> },
       { path: "analisis/:id", element: <Analysis /> },
@@ -34,6 +34,33 @@ const router = createBrowserRouter([
       { path: "guardados", element: <Guardados /> },
       { path: "perfil", element: <Perfil /> },
     ],
+  },
+  {
+    path: "/clips",
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
+    children: [{ index: true, element: <HomeShorts /> }],
+  },
+  {
+    path: "/clip/:id",
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
+    children: [{ index: true, element: <Clip /> }],
+  },
+  {
+    path: "/analisis/:id",
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
+    children: [{ index: true, element: <Analysis /> }],
   },
   {
     element: <AuthLayout />,

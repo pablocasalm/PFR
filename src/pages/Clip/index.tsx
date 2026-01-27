@@ -6,6 +6,7 @@ import { buttonClasses } from "../../components/ui/Button"
 import { getClipById } from "../../lib/api/clips"
 import BookmarkButton from "../../components/ui/BookmarkButton"
 import SubtitlePills from "../../components/player/SubtitlePills"
+import PageShell from "../../components/layout/PageShell"
 
 const Clip = () => {
   const { id } = useParams()
@@ -14,19 +15,21 @@ const Clip = () => {
 
   if (!clip) {
     return (
-      <main className="mx-auto flex min-h-[60vh] w-full max-w-4xl flex-col items-center justify-center gap-4 px-4 text-center">
-        <h1 className="text-2xl font-semibold text-white">Clip no encontrado</h1>
-        <p className="text-white/60">Vuelve al feed para descubrir nuevas jugadas.</p>
-        <Link to="/app" className={buttonClasses("primary")}>
-          Volver al feed
-        </Link>
+      <main className="pb-16 pt-16">
+        <PageShell className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
+          <h1 className="text-2xl font-semibold text-white">Clip no encontrado</h1>
+          <p className="text-white/60">Vuelve al feed para descubrir nuevas jugadas.</p>
+          <Link to="/app" className={buttonClasses("primary")}>
+            Volver al feed
+          </Link>
+        </PageShell>
       </main>
     )
   }
 
   return (
-    <main className="px-4 pb-16 pt-10 md:px-8">
-      <section className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <main className="pb-16 pt-16">
+      <PageShell className="flex flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.2em] text-neon-cyan/70">Clip</p>
@@ -66,7 +69,7 @@ const Clip = () => {
           <p className="text-xs uppercase tracking-[0.2em] text-white/50">Idea clave</p>
           <p className="mt-2 text-lg font-semibold text-white">{clip.ideaKey}</p>
         </div>
-      </section>
+      </PageShell>
     </main>
   )
 }
