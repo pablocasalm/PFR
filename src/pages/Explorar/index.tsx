@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import Input from "../../components/ui/Input"
-import VideoFeed from "../../components/video/VideoFeed"
 import VideoRow from "../../components/video/VideoRow"
-import { getClips } from "../../lib/api/clips"
+import { getClips, getClipsByIds } from "../../lib/api/clips"
 import { tags as mockTags } from "../../lib/mocks/tags"
 import TagChipsBar from "../../components/tags/TagChipsBar"
 import Badge from "../../components/ui/Badge"
 import { buttonClasses } from "../../components/ui/Button"
 import PageShell from "../../components/layout/PageShell"
+import { explorarSections } from "../../data/explorarSections"
+import { featuredCarouselItems } from "../../data/featuredCarousel"
+import { getCollections } from "../../lib/api/collections"
+import CollectionsRow from "../../components/collections/CollectionsRow"
 
 const formatDuration = (totalSeconds: number) => {
   const minutes = Math.floor(totalSeconds / 60)
@@ -23,28 +26,48 @@ const Explorar = () => {
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   const modalInputRef = useRef<HTMLInputElement | null>(null)
   const clips = getClips()
-  const featuredClip = clips[0]
-  const miniaturas = [
-    "/Mniaturas/GalanChingo.TapiaCoello.png",
-    "/Mniaturas/LebronAusburger.TapiaCoello.png",
-    "/Mniaturas/Miniatura_Galan.Chingotto-vs-Tello.Alonso.PNG",
-    "/Mniaturas/Miniatura_Sanchez.Josemaria-vs-Castello.Rufo.png",
-    "/Mniaturas/SanchezJosemaria.GonzalezFernandez.png",
-    "/Mniaturas/SanchezJosemaria.OrtegaIcardo.png",
-    "/Mniaturas/TriayBrea.OrtegaIcardo.png",
-    "/Mniaturas/TriayBrea.SanchezJosemaria.png",
-    "/Mniaturas/UsteroAraujo.OrtgeaIcardo.png",
-    "/Mniaturas/YanguasNieto.GalanChingo.png",
-    "/Mniaturas/YanguasNieto.TapiaCoello.png",
-  ]
-  const highlightedClips = clips.slice(0, 7).map((clip) => ({
-    ...clip,
-    thumbnailUrl: "/Colores/imagen.png",
-  }))
-  const analysisClips = clips.slice(7, 14).map((clip, index) => ({
-    ...clip,
-    thumbnailUrl: miniaturas[index % miniaturas.length],
-  }))
+  const carouselClips = useMemo(() => {
+    const selected = getClipsByIds(featuredCarouselItems.map((item) => item.id))
+    const selectedWithThumbs = selected.map((clip) => {
+      const match = featuredCarouselItems.find((item) => item.id === clip.id)
+      return match?.thumbnailUrl ? { ...clip, thumbnailUrl: match.thumbnailUrl } : clip
+    })
+    const base = selectedWithThumbs.length > 0 ? selectedWithThumbs : clips
+    return base.slice(0, 5)
+  }, [clips])
+  const [carouselIndex, setCarouselIndex] = useState(0)
+  const collections = getCollections()
+  const collectionsBySlug = new Map(collections.map((collection) => [collection.slug, collection]))
+  const sections = explorarSections.map((section) => {
+    if (section.cardTarget === "collection") {
+      const sectionCollections =
+        section.collectionSlugs?.map((slug) => collectionsBySlug.get(slug)).filter(Boolean) ?? []
+      return { ...section, collections: sectionCollections }
+    }
+    const baseClips = getClipsByIds(section.clipIds ?? [])
+    const clipsWithThumbnails = baseClips.map((clip, index) => ({
+      ...clip,
+      thumbnailUrl:
+        section.thumbnailUrlOverride ??
+        section.thumbnailUrlsByIndex?.[index] ??
+        clip.thumbnailUrl,
+    }))
+    return { ...section, clips: clipsWithThumbnails }
+  })
+
+  useEffect(() => {
+    setCarouselIndex(0)
+  }, [carouselClips.length])
+
+  useEffect(() => {
+    if (carouselClips.length <= 1) {
+      return undefined
+    }
+    const timeout = window.setTimeout(() => {
+      setCarouselIndex((prev) => (prev + 1) % carouselClips.length)
+    }, 5000)
+    return () => window.clearTimeout(timeout)
+  }, [carouselClips.length, carouselIndex])
 
   useEffect(() => {
     const handleOpenSearch = () => setIsSearchOpen(true)
@@ -114,70 +137,98 @@ const Explorar = () => {
   return (
     <main className="pb-16 pt-16">
       <PageShell className="space-y-10">
-        {featuredClip && (
+        {carouselClips.length > 0 && (
           <section className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-black/30 shadow-2xl aspect-[19/9] max-h-[600px]">
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{
-                backgroundImage:
-                  "url('/Mniaturas/Miniatura_Galan.Chingotto-vs-Tello.Alonso.PNG')",
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <div className="relative flex flex-col gap-6 p-6 md:p-10">
-              <div className="flex items-center gap-3">
-                <Badge variant="solid" className="bg-neon-lime text-midnight">
-                  Destacado
-                </Badge>
-                <Badge variant="outline" className="border-white/30 text-white/80">
-                  {formatDuration(featuredClip.durationSeconds)}
-                </Badge>
-              </div>
-              <div className="max-w-2xl space-y-3">
-                <h2 className="text-3xl font-semibold uppercase text-white md:text-4xl">
-                  {featuredClip.title}
-                </h2>
-                <p className="text-sm uppercase tracking-[0.25em] text-white/70">
-                  {featuredClip.ideaKey}
-                </p>
-                {featuredClip.match && (
-                  <p className="text-sm text-white/60">
-                    {featuredClip.match.tournament.name} · {featuredClip.match.round}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Link to={`/analisis/${featuredClip.id}`} className={buttonClasses("primary")}>
-                  Partido completo
-                </Link>
-                <Link to={`/clip/${featuredClip.id}`} className={buttonClasses("secondary")}>
-                  Reproducir clip
-                </Link>
+            <div className="absolute inset-0 overflow-hidden">
+              <div
+                className="flex h-full w-full transition-transform ease-linear"
+                style={{
+                  transform: `translateX(-${carouselIndex * 100}%)`,
+                  transitionDuration: "1400ms",
+                }}
+              >
+                {carouselClips.map((clip) => (
+                  <div key={clip.id} className="relative h-full w-full flex-none">
+                    <div
+                      className="absolute inset-0 bg-cover bg-center"
+                      style={{ backgroundImage: `url('${clip.thumbnailUrl}')` }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="relative flex h-full flex-col gap-6 p-6 md:p-10">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="solid" className="bg-neon-lime text-midnight">
+                          Destacado
+                        </Badge>
+                        <Badge variant="outline" className="border-white/30 text-white/80">
+                          {formatDuration(clip.durationSeconds)}
+                        </Badge>
+                      </div>
+                      <div className="max-w-2xl space-y-3">
+                        <h2 className="text-3xl font-semibold uppercase text-white md:text-4xl">
+                          {clip.title}
+                        </h2>
+                        <p className="text-sm uppercase tracking-[0.25em] text-white/70">
+                          {clip.ideaKey}
+                        </p>
+                        {clip.match && (
+                          <p className="text-sm text-white/60">
+                            {clip.match.tournament.name} · {clip.match.round}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Link to={`/video/${clip.id}`} className={buttonClasses("primary")}>
+                          Partido completo
+                        </Link>
+                        <Link to={`/clip/${clip.id}`} className={buttonClasses("secondary")}>
+                          Reproducir clip
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
+            {carouselClips.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2">
+                {carouselClips.map((clip, index) => (
+                  <button
+                    key={clip.id}
+                    type="button"
+                    onClick={() => setCarouselIndex(index)}
+                    className={`h-2 w-2 rounded-full transition ${
+                      index === carouselIndex ? "bg-neon-lime" : "bg-white/30 hover:bg-white/60"
+                    }`}
+                    aria-label={`Ir al destacado ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
           </section>
         )}
-
-        <section className="group space-y-5">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">Clips destacados</h3>
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neon-lime">
-              Ver todos
-            </span>
-          </div>
-          <VideoRow clips={highlightedClips} cardTarget="clip" />
-        </section>
-
-        <section className="group space-y-5 pt-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">Analisis recientes</h3>
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neon-lime">
-              Ver todos
-            </span>
-          </div>
-          <VideoRow clips={analysisClips} cardTarget="analysis" />
-        </section>
+        {sections.map((section) => (
+          <section key={section.id} className={`group space-y-5 ${section.className ?? ""}`}>
+            <div className="flex items-center justify-between">
+              {section.cardTarget === "collection" ? (
+                <Link
+                  to="/app/colecciones"
+                  className="text-lg font-semibold text-white hover:underline"
+                  aria-label="Ir a colecciones"
+                >
+                  {section.title}
+                </Link>
+              ) : (
+                <h3 className="text-lg font-semibold text-white">{section.title}</h3>
+              )}
+            </div>
+            {section.cardTarget === "collection" ? (
+              <CollectionsRow collections={section.collections ?? []} />
+            ) : (
+              <VideoRow clips={section.clips ?? []} cardTarget={section.cardTarget} />
+            )}
+          </section>
+        ))}
 
         {filteredClips.length === 0 && (
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-white/60">

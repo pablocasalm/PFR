@@ -5,7 +5,7 @@ type VideoFeedProps = {
   clips: Clip[]
   className?: string
   layout?: "vertical" | "grid"
-  cardTarget?: "clip" | "analysis"
+  cardTarget?: "clip" | "video"
 }
 
 const VideoFeed = ({

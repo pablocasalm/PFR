@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react"
-import type { Clip } from "../../types/clip"
-import VideoCard from "./VideoCard"
+import type { Collection } from "../../types/collection"
+import CollectionPreviewCard from "./CollectionPreviewCard"
 
-type VideoRowProps = {
-  clips: Clip[]
-  cardTarget?: "clip" | "video"
+type CollectionsRowProps = {
+  collections: Collection[]
   className?: string
 }
 
-const VideoRow = ({ clips, cardTarget = "clip", className = "" }: VideoRowProps) => {
+const CollectionsRow = ({ collections, className = "" }: CollectionsRowProps) => {
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [showLeft, setShowLeft] = useState(false)
   const [showRight, setShowRight] = useState(false)
@@ -25,7 +24,7 @@ const VideoRow = ({ clips, cardTarget = "clip", className = "" }: VideoRowProps)
 
   useEffect(() => {
     updateEdges()
-  }, [clips])
+  }, [collections])
 
   useEffect(() => {
     const el = scrollRef.current
@@ -66,7 +65,7 @@ const VideoRow = ({ clips, cardTarget = "clip", className = "" }: VideoRowProps)
           type="button"
           onClick={() => scrollByAmount("left")}
           className="focus-ring absolute left-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/70 opacity-0 transition hover:text-white group-hover:opacity-100 md:flex"
-          aria-label="Desplazar a la izquierda"
+          aria-label="Desplazar colecciones a la izquierda"
         >
           ‹
         </button>
@@ -76,22 +75,22 @@ const VideoRow = ({ clips, cardTarget = "clip", className = "" }: VideoRowProps)
           type="button"
           onClick={() => scrollByAmount("right")}
           className="focus-ring absolute right-2 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/70 opacity-0 transition hover:text-white group-hover:opacity-100 md:flex"
-          aria-label="Desplazar a la derecha"
+          aria-label="Desplazar colecciones a la derecha"
         >
           ›
         </button>
       )}
       <div
         ref={scrollRef}
-        className="flex w-full max-w-full flex-nowrap gap-3 overflow-x-auto overflow-y-hidden pb-2 scrollbar-hide"
+        className="flex w-full max-w-full flex-nowrap gap-4 overflow-x-auto overflow-y-hidden pb-2 scrollbar-hide"
         style={{ scrollBehavior: "smooth", WebkitOverflowScrolling: "touch" }}
       >
-        {clips.map((clip, index) => (
+        {collections.map((collection) => (
           <div
-            key={`${clip.id}-${index}`}
-            className="flex-none w-[190px] sm:w-[210px] md:w-[230px] lg:w-[250px] xl:w-[270px]"
+            key={collection.slug}
+            className="flex-none w-[230px] sm:w-[250px] md:w-[270px] lg:w-[290px] xl:w-[310px]"
           >
-            <VideoCard clip={clip} target={cardTarget} />
+            <CollectionPreviewCard collection={collection} />
           </div>
         ))}
       </div>
@@ -99,4 +98,4 @@ const VideoRow = ({ clips, cardTarget = "clip", className = "" }: VideoRowProps)
   )
 }
 
-export default VideoRow
+export default CollectionsRow

@@ -29,6 +29,7 @@ const router = createBrowserRouter([
       { index: true, element: <Explorar /> },
       { path: "explorar", element: <Explorar /> },
       { path: "clip/:id", element: <Clip /> },
+      { path: "video/:id", element: <Analysis /> },
       { path: "analisis/:id", element: <Analysis /> },
       { path: "colecciones", element: <Colecciones /> },
       { path: "guardados", element: <Guardados /> },
@@ -52,6 +53,15 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [{ index: true, element: <Clip /> }],
+  },
+  {
+    path: "/video/:id",
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
+    children: [{ index: true, element: <Analysis /> }],
   },
   {
     path: "/analisis/:id",

@@ -11,7 +11,6 @@ const AppLayout = () => {
   const navLinks = [
     { label: "Inicio", to: "/app", end: true },
     { label: "Clips", to: "/clips" },
-    { label: "Colecciones", to: "/app/colecciones" },
     { label: "Guardados", to: "/app/guardados" },
   ]
 

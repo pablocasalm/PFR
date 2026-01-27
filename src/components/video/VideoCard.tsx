@@ -4,7 +4,7 @@ import Badge from "../ui/Badge"
 
 type VideoCardProps = {
   clip: Clip
-  target?: "clip" | "analysis"
+  target?: "clip" | "video"
 }
 
 const formatDuration = (totalSeconds: number) => {
@@ -17,7 +17,7 @@ const VideoCard = ({
   clip,
   target = "clip",
 }: VideoCardProps) => {
-  const targetPath = target === "analysis" ? `/analisis/${clip.id}` : `/clip/${clip.id}`
+  const targetPath = target === "video" ? `/video/${clip.id}` : `/clip/${clip.id}`
 
   return (
     <Link
