@@ -1,0 +1,12 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1080" height="1920" fill="#0c1220"/>
+  <rect x="24" y="24" width="1032" height="1872" rx="48" stroke="#28f0e0" stroke-width="6"/>
+  <rect x="80" y="120" width="920" height="1680" rx="36" stroke="#befc4b" stroke-width="3" stroke-dasharray="14 18" opacity="0.45"/>
+  <g opacity="0.35">
+    <circle cx="220" cy="300" r="120" fill="#28f0e0"/>
+    <circle cx="880" cy="460" r="180" fill="#befc4b"/>
+    <circle cx="260" cy="1520" r="200" fill="#38bdf8"/>
+  </g>
+  <text x="540" y="940" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="44" fill="#E2E8F0" letter-spacing="10">1080 × 1920</text>
+  <text x="540" y="1020" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="22" fill="#94A3B8" letter-spacing="6">VERTICAL PREVIEW</text>
+</svg>

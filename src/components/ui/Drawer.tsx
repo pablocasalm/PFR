@@ -9,11 +9,12 @@ type DrawerLink = {
 type DrawerProps = {
   isOpen: boolean
   onClose: () => void
+  title?: string
   links: DrawerLink[]
   footerLinks: DrawerLink[]
 }
 
-const Drawer = ({ isOpen, onClose, links, footerLinks }: DrawerProps) => (
+const Drawer = ({ isOpen, onClose, title = "Navegación", links, footerLinks }: DrawerProps) => (
   <div
     className={`fixed inset-0 z-40 ${isOpen ? "pointer-events-auto" : "pointer-events-none"}`}
     aria-hidden={!isOpen}
@@ -30,7 +31,7 @@ const Drawer = ({ isOpen, onClose, links, footerLinks }: DrawerProps) => (
       }`}
     >
       <div className="flex items-center justify-between">
-        <p className="text-sm uppercase tracking-[0.3em] text-neon-cyan/70">Navegación</p>
+        <p className="text-sm uppercase tracking-[0.3em] text-neon-cyan/70">{title}</p>
         <button type="button" onClick={onClose} className="focus-ring text-white/60 hover:text-white">
           ✕
         </button>

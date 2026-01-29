@@ -12,6 +12,10 @@ import Register from "../../pages/Register"
 import RequireAuth from "./RequireAuth"
 import Explorar from "../../pages/Explorar"
 import Landing from "../../pages/Landing"
+import Publicar from "../../pages/Publicar"
+import MisVideos from "../../pages/MisVideos"
+import VideoStats from "../../pages/VideoStats"
+import VideoEdit from "../../pages/VideoEdit"
 
 const router = createBrowserRouter([
   {
@@ -33,6 +37,8 @@ const router = createBrowserRouter([
       { path: "analisis/:id", element: <Analysis /> },
       { path: "colecciones", element: <Colecciones /> },
       { path: "guardados", element: <Guardados /> },
+      { path: "publicar", element: <Publicar /> },
+      { path: "mis-videos", element: <MisVideos /> },
       { path: "perfil", element: <Perfil /> },
     ],
   },
@@ -55,6 +61,24 @@ const router = createBrowserRouter([
     children: [{ index: true, element: <Clip /> }],
   },
   {
+    path: "/clip/:id/stats",
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
+    children: [{ index: true, element: <VideoStats /> }],
+  },
+  {
+    path: "/clip/:id/editar",
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
+    children: [{ index: true, element: <VideoEdit /> }],
+  },
+  {
     path: "/video/:id",
     element: (
       <RequireAuth>
@@ -62,6 +86,24 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [{ index: true, element: <Analysis /> }],
+  },
+  {
+    path: "/video/:id/stats",
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
+    children: [{ index: true, element: <VideoStats /> }],
+  },
+  {
+    path: "/video/:id/editar",
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
+    children: [{ index: true, element: <VideoEdit /> }],
   },
   {
     path: "/analisis/:id",
