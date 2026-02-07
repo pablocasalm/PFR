@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+﻿import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import Input from "../../components/ui/Input"
 import VideoRow from "../../components/video/VideoRow"
@@ -232,7 +232,7 @@ const Explorar = () => {
 
         {filteredClips.length === 0 && (
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-white/60">
-            No hay resultados para tu busqueda.
+            No hay resultados para tu búsqueda.
           </div>
         )}
       </PageShell>
@@ -267,7 +267,7 @@ const Explorar = () => {
             {recentSearches.length > 0 && (
               <div className="mt-6 space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
-                  Busquedas recientes
+                  Búsquedas recientes
                 </p>
                 <div className="flex flex-wrap gap-3">
                   {recentSearches.map((item) => (
@@ -303,3 +303,4 @@ const Explorar = () => {
 }
 
 export default Explorar
+

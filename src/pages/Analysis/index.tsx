@@ -24,7 +24,7 @@ const Analysis = () => {
     return (
       <main className="pb-16 pt-16">
         <PageShell className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-          <h1 className="text-2xl font-semibold text-white">AnÃ¡lisis no encontrado</h1>
+          <h1 className="text-2xl font-semibold text-white">Análisis no encontrado</h1>
           <p className="text-white/60">Vuelve al feed para descubrir nuevas jugadas.</p>
           <Link to="/app" className={buttonClasses("primary")}>
             Volver al feed
@@ -35,7 +35,7 @@ const Analysis = () => {
   }
 
   const fallbackMatch = {
-    tournament: { name: "Premier Padel â€“ MÃ©xico Major" },
+    tournament: { name: "Premier Padel – México Major" },
     round: "Cuartos de final",
     players: {
       teamA: { player1: "Jugador A", player2: "Jugador B" },
@@ -44,12 +44,12 @@ const Analysis = () => {
   }
 
   const fallbackChapters = [
-    { id: "m1", startSeconds: 42, title: "Primera transiciÃ³n: quiÃ©n manda la red" },
+    { id: "m1", startSeconds: 42, title: "Primera transición: quién manda la red" },
     { id: "m2", startSeconds: 135, title: "Bandeja al cuerpo para fijar" },
     { id: "m3", startSeconds: 250, title: "Salida de pared en el drive" },
   ]
 
-  const chapters = clip.chapters?.length ? clip.chapters : fallbackChapters
+  const chapters = clip.chapters.length ? clip.chapters : fallbackChapters
   const match = clip.match ?? fallbackMatch
 
   const activeChapterId = useMemo(() => {
@@ -127,7 +127,7 @@ const Analysis = () => {
       <PageShell className="flex flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-neon-cyan/70">AnÃ¡lisis</p>
+            <p className="text-sm uppercase tracking-[0.2em] text-neon-cyan/70">Análisis</p>
             <h1 className="text-3xl font-semibold text-white">{clip.title}</h1>
           </div>
           <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ const Analysis = () => {
             ref={videoRef}
             src={clip.fullVideoUrl}
             poster={clip.thumbnailUrl}
-            title={`AnÃ¡lisis ${clip.title}`}
+            title={`Análisis ${clip.title}`}
             subtitlesEsUrl={clip.subtitlesEsUrl}
             subtitlesEnUrl={clip.subtitlesEnUrl}
             className="h-full w-full"
@@ -157,7 +157,7 @@ const Analysis = () => {
                 type="button"
                 onClick={() => setIsCcOpen((prev) => !prev)}
                 className="focus-ring inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/70 text-xs font-semibold text-white"
-                aria-label="SubtÃ­tulos"
+                aria-label="Subtítulos"
               >
                 CC
               </button>
@@ -165,8 +165,8 @@ const Analysis = () => {
                 <div className="absolute right-0 mt-2 w-40 rounded-2xl border border-white/10 bg-midnight/95 p-2 text-[11px] text-white shadow-xl">
                   {[
                     { label: "Apagados", value: "off" },
-                    { label: "EspaÃ±ol", value: "es" },
-                    { label: "InglÃ©s", value: "en" },
+                    { label: "Español", value: "es" },
+                    { label: "Inglés", value: "en" },
                   ].map((option) => (
                     <button
                       key={option.value}
@@ -210,7 +210,7 @@ const Analysis = () => {
               <p>
                 <span className="text-white/50">Torneo:</span> {match.tournament.name}
                 {match.tournament.season ? ` ${match.tournament.season}` : ""}
-                {match.tournament.location ? ` Â· ${match.tournament.location}` : ""}
+                {match.tournament.location  ` · ${match.tournament.location}` : ""}
               </p>
               <p>
                 <span className="text-white/50">Ronda:</span> {match.round}
@@ -259,9 +259,9 @@ const Analysis = () => {
           </div>
         </div>
         <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white/70">
-          <p className="text-sm uppercase tracking-[0.2em] text-white/50">Resumen tÃ¡ctico</p>
+          <p className="text-sm uppercase tracking-[0.2em] text-white/50">Resumen táctico</p>
           <p className="mt-2 text-base">
-            Reproduce el anÃ¡lisis completo para ver la secuencia, las decisiones clave y la lectura
+            Reproduce el análisis completo para ver la secuencia, las decisiones clave y la lectura
             de cada golpe dentro del punto.
           </p>
         </div>
