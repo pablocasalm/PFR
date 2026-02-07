@@ -16,7 +16,7 @@ const AppLayout = () => {
   ]
 
   const footerLinks = [
-    { label: "Perfil", to: "/app/perfil" },
+    { label: "Perfil", to: "/app/editar-perfil" },
     {
       label: "Cerrar sesión",
       onClick: () => {
@@ -26,10 +26,15 @@ const AppLayout = () => {
     },
   ]
 
-  const profileLinks = [{ label: "Mis videos", to: "/app/mis-videos" }]
+  const profileLinks = [
+    { label: "Mis videos", to: "/app/mis-videos" },
+    { label: "Analíticas", to: "/app/analiticas" },
+    { label: "Editar perfil", to: "/app/editar-perfil" },
+    { label: "Cambiar contraseña", to: "/app/cambiar-contrasena" },
+  ]
 
   const profileFooterLinks = [
-    { label: "Perfil", to: "/app/perfil" },
+    { label: "Perfil", to: "/app/editar-perfil" },
     {
       label: "Cerrar sesión",
       onClick: () => {

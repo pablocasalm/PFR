@@ -96,6 +96,12 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .hammer-swing {
+    animation: hammer-swing 1.2s ease-in-out infinite;
+    transform-origin: 70% 20%;
+    transform-box: fill-box;
+  }
 }
 
 @keyframes headline-sweep {
@@ -107,6 +113,18 @@
   }
   100% {
     background-position: 0% 50%;
+  }
+}
+
+@keyframes hammer-swing {
+  0% {
+    transform: rotate(-18deg);
+  }
+  50% {
+    transform: rotate(18deg);
+  }
+  100% {
+    transform: rotate(-18deg);
   }
 }
 

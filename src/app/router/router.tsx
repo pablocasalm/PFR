@@ -6,7 +6,6 @@ import Clip from "../../pages/Clip"
 import Analysis from "../../pages/Analysis"
 import Colecciones from "../../pages/Colecciones"
 import Guardados from "../../pages/Guardados"
-import Perfil from "../../pages/Perfil"
 import Login from "../../pages/Login"
 import Register from "../../pages/Register"
 import RequireAuth from "./RequireAuth"
@@ -16,6 +15,12 @@ import Publicar from "../../pages/Publicar"
 import MisVideos from "../../pages/MisVideos"
 import VideoStats from "../../pages/VideoStats"
 import VideoEdit from "../../pages/VideoEdit"
+import CambiarContrasena from "../../pages/CambiarContrasena"
+import VerificarEmail from "../../pages/VerificarEmail"
+import EditarPerfil from "../../pages/EditarPerfil"
+import Analiticas from "../../pages/Analiticas"
+import Mantenimiento from "../../pages/Mantenimiento"
+import ErrorPage from "../../pages/ErrorPage"
 
 const router = createBrowserRouter([
   {
@@ -39,7 +44,11 @@ const router = createBrowserRouter([
       { path: "guardados", element: <Guardados /> },
       { path: "publicar", element: <Publicar /> },
       { path: "mis-videos", element: <MisVideos /> },
-      { path: "perfil", element: <Perfil /> },
+      { path: "analiticas", element: <Analiticas /> },
+      { path: "perfil", element: <EditarPerfil /> },
+      { path: "editar-perfil", element: <EditarPerfil /> },
+      { path: "cambiar-contrasena", element: <CambiarContrasena /> },
+      { path: "verificar-email", element: <VerificarEmail /> },
     ],
   },
   {
@@ -121,6 +130,9 @@ const router = createBrowserRouter([
       { path: "/register", element: <Register /> },
     ],
   },
+  { path: "/mantenimiento", element: <Mantenimiento /> },
+  { path: "/error", element: <ErrorPage /> },
+  { path: "*", element: <ErrorPage /> },
 ])
 
 export default router

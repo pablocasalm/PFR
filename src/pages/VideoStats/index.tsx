@@ -111,6 +111,7 @@ const VideoStats = () => {
               <div className="mt-3 space-y-3 text-sm text-white/70">
                 <p>{clip?.title ?? "Contenido sin titulo"}</p>
                 <p>Duracion: 1m 48s</p>
+                <p>Estado: Programado para 14 feb 2026</p>
                 <p>Ultima actualizacion: hace 3 dias</p>
               </div>
             </div>
