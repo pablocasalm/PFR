@@ -3,7 +3,7 @@ import { useEffect, useState, type RefObject } from "react"
 type SubtitleOption = "off" | "es" | "en"
 
 type SubtitlePillsProps = {
-  videoRef: RefObject<HTMLVideoElement>
+  videoRef: RefObject<HTMLVideoElement | null>
   subtitlesEsUrl?: string
   subtitlesEnUrl?: string
   className?: string

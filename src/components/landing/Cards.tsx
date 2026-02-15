@@ -1,58 +1,63 @@
-import { motion, useReducedMotion } from "framer-motion"
+import { motion } from "framer-motion"
+import { cn } from "../../lib/utils"
+import { fadeUp, staggerContainer, usePrefersReducedMotion } from "./motion"
 
-const cards = [
+const items = [
   {
     title: "Puntos reales",
-    text: "Situaciones de partido con contexto: marcador, posiciones y objetivo.",
+    description: "Marcador, posiciones y objetivo. Lectura previa al golpe. Decisión sobre ejecución.",
   },
   {
-    title: "Decisiones tacticas",
-    text: "Que opcion era mejor y que senales lo indicaban.",
+    title: "Señales tácticas",
+    description: "Ritmo, altura y distancia. Presión sobre el rival. Ventanas de ataque.",
   },
   {
-    title: "Lectura del juego",
-    text: "Antes, durante y despues del punto. Patrones repetibles.",
+    title: "Elección correcta",
+    description: "Qué opción reduce riesgo. Qué opción abre el punto. Qué opción mantiene iniciativa.",
   },
   {
-    title: "Accionable",
-    text: "Ideas claras para aplicar en tu proximo partido.",
+    title: "Patrones repetibles",
+    description: "Secuencias que se repiten. Reconocer señales. Aplicar en tu juego.",
+  },
+  {
+    title: "Ajustes finos",
+    description: "Errores de lectura. Cuándo arriesgar. Cuándo asegurar.",
+  },
+  {
+    title: "Ideas accionables",
+    description: "1-2 cambios por partido. Claros y aplicables. Sin humo.",
   },
 ]
 
 const Cards = () => {
-  const reduceMotion = useReducedMotion()
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.12,
-      },
-    },
-  }
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 },
-  }
+  const reduceMotion = usePrefersReducedMotion()
 
   return (
     <motion.div
-      variants={reduceMotion ? undefined : container}
-      initial={reduceMotion ? false : "hidden"}
-      whileInView={reduceMotion ? undefined : "show"}
-      viewport={{ once: true, margin: "-60px" }}
-      className="grid gap-6 md:grid-cols-2"
+      variants={staggerContainer(reduceMotion, 0.08)}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, amount: 0.25 }}
+      className="space-y-6"
     >
-      {cards.map((card) => (
+      {items.map((item, index) => (
         <motion.div
-          key={card.title}
-          variants={reduceMotion ? undefined : item}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="group flex h-full flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.25)] transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/10"
+          key={item.title}
+          variants={fadeUp(reduceMotion)}
+          className={cn(
+            "group transition",
+            !reduceMotion && "hover:-translate-y-0.5 hover:text-white"
+          )}
         >
-          <div className="h-1 w-10 rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-sky-400 opacity-70 transition group-hover:opacity-100" />
-          <h3 className="text-xl font-semibold text-white">{card.title}</h3>
-          <p className="text-sm leading-relaxed text-white/65">{card.text}</p>
+          <div className="flex items-start gap-4">
+            <span className="mt-1 text-xs font-mono uppercase tracking-[0.2em] text-white/40">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <div>
+              <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-white/70">{item.description}</p>
+            </div>
+          </div>
         </motion.div>
       ))}
     </motion.div>

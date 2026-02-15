@@ -1,4 +1,8 @@
 node_modules/
+dist/
 public/clips_test/
 public/**/*.mov
 public/**/*.mp4
+dist/clips_test/
+dist/**/*.mov
+dist/**/*.mp4

@@ -38,7 +38,6 @@ export type Clip = {
   title: string
   ideaKey: string
   durationSeconds: number
-  isPremium: boolean
   thumbnailUrl: string
   clipVideoUrl: string
   fullVideoUrl: string

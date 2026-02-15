@@ -355,7 +355,7 @@ const ShortsItem = ({
                     </>
                   )}
                   <Link
-                    to={`/video/${clip.id}`}
+                    to={`/clip/${clip.id}`}
                     className="focus-ring rounded-full bg-white/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-midnight shadow-sm hover:bg-white"
                   >
                     Ver completo

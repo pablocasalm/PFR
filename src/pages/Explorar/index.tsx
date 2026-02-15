@@ -1,4 +1,4 @@
-ï»¿import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import Input from "../../components/ui/Input"
 import VideoRow from "../../components/video/VideoRow"
@@ -12,12 +12,32 @@ import { explorarSections } from "../../data/explorarSections"
 import { featuredCarouselItems } from "../../data/featuredCarousel"
 import { getCollections } from "../../lib/api/collections"
 import CollectionsRow from "../../components/collections/CollectionsRow"
+import type { Clip } from "../../types/clip"
+import type { Collection } from "../../types/collection"
 
 const formatDuration = (totalSeconds: number) => {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   return `${minutes}:${seconds.toString().padStart(2, "0")}`
 }
+
+type SectionWithCollections = {
+  id: string
+  title: string
+  cardTarget: "collection"
+  className?: string
+  collections: Collection[]
+}
+
+type SectionWithClips = {
+  id: string
+  title: string
+  cardTarget: "clip" | "video"
+  className?: string
+  clips: Clip[]
+}
+
+type SectionViewModel = SectionWithCollections | SectionWithClips
 
 const Explorar = () => {
   const [query, setQuery] = useState("")
@@ -38,11 +58,19 @@ const Explorar = () => {
   const [carouselIndex, setCarouselIndex] = useState(0)
   const collections = getCollections()
   const collectionsBySlug = new Map(collections.map((collection) => [collection.slug, collection]))
-  const sections = explorarSections.map((section) => {
+  const sections: SectionViewModel[] = explorarSections.map((section) => {
     if (section.cardTarget === "collection") {
       const sectionCollections =
-        section.collectionSlugs?.map((slug) => collectionsBySlug.get(slug)).filter(Boolean) ?? []
-      return { ...section, collections: sectionCollections }
+        section.collectionSlugs
+          ?.map((slug) => collectionsBySlug.get(slug))
+          .filter((collection): collection is Collection => Boolean(collection)) ?? []
+      return {
+        id: section.id,
+        title: section.title,
+        cardTarget: "collection",
+        className: section.className,
+        collections: sectionCollections,
+      }
     }
     const baseClips = getClipsByIds(section.clipIds ?? [])
     const clipsWithThumbnails = baseClips.map((clip, index) => ({
@@ -52,7 +80,13 @@ const Explorar = () => {
         section.thumbnailUrlsByIndex?.[index] ??
         clip.thumbnailUrl,
     }))
-    return { ...section, clips: clipsWithThumbnails }
+    return {
+      id: section.id,
+      title: section.title,
+      cardTarget: section.cardTarget,
+      className: section.className,
+      clips: clipsWithThumbnails,
+    }
   })
 
   useEffect(() => {
@@ -173,12 +207,12 @@ const Explorar = () => {
                         </p>
                         {clip.match && (
                           <p className="text-sm text-white/60">
-                            {clip.match.tournament.name} Â· {clip.match.round}
+                            {clip.match.tournament.name} · {clip.match.round}
                           </p>
                         )}
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
-                        <Link to={`/video/${clip.id}`} className={buttonClasses("primary")}>
+                        <Link to={`/clip/${clip.id}`} className={buttonClasses("primary")}>
                           Partido completo
                         </Link>
                         <Link to={`/clip/${clip.id}`} className={buttonClasses("secondary")}>
@@ -223,16 +257,16 @@ const Explorar = () => {
               )}
             </div>
             {section.cardTarget === "collection" ? (
-              <CollectionsRow collections={section.collections ?? []} />
+              <CollectionsRow collections={section.collections} />
             ) : (
-              <VideoRow clips={section.clips ?? []} cardTarget={section.cardTarget} />
+              <VideoRow clips={section.clips} cardTarget={section.cardTarget} />
             )}
           </section>
         ))}
 
         {filteredClips.length === 0 && (
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-white/60">
-            No hay resultados para tu bÃºsqueda.
+            No hay resultados para tu búsqueda.
           </div>
         )}
       </PageShell>
@@ -261,13 +295,13 @@ const Explorar = () => {
                 onClick={() => setIsSearchOpen(false)}
                 aria-label="Cerrar buscador"
               >
-                Ã—
+                ×
               </button>
             </div>
             {recentSearches.length > 0 && (
               <div className="mt-6 space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
-                  BÃºsquedas recientes
+                  Búsquedas recientes
                 </p>
                 <div className="flex flex-wrap gap-3">
                   {recentSearches.map((item) => (

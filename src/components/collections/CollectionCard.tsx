@@ -43,7 +43,7 @@ const CollectionCard = ({ clip }: CollectionCardProps) => {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            to={`/video/${clip.id}`}
+            to={`/clip/${clip.id}`}
             className={`${buttonClasses("primary")} text-[11px] px-3 py-1.5`}
           >
             Ver completo

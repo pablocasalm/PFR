@@ -61,7 +61,7 @@ const Clip = () => {
             subtitlesEnUrl={clip.subtitlesEnUrl}
           />
           <ReactionBar initialCounts={clip.reactionCounts} />
-          <Link to={`/video/${clip.id}`} className={buttonClasses("ghost")}>
+          <Link to={`/clip/${clip.id}`} className={buttonClasses("ghost")}>
             Ver completo
           </Link>
         </div>

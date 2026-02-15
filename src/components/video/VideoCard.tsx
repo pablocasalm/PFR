@@ -17,9 +17,9 @@ const VideoCard = ({
   clip,
   target = "clip",
 }: VideoCardProps) => {
-  const targetPath = target === "video" ? `/video/${clip.id}` : `/clip/${clip.id}`
-  const editPath = target === "video" ? `/video/${clip.id}/editar` : `/clip/${clip.id}/editar`
-  const statsPath = target === "video" ? `/video/${clip.id}/stats` : `/clip/${clip.id}/stats`
+  const targetPath = `/clip/${clip.id}`
+  const editPath = `/clip/${clip.id}/editar`
+  const statsPath = `/clip/${clip.id}/stats`
   const isClipCard = target === "clip"
   const clipPreview = "/Mniaturas/vertical-placeholder.svg"
   const navigate = useNavigate()

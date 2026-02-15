@@ -12,6 +12,12 @@
     color-scheme: dark;
     --background: 220 16% 6%;
     --foreground: 0 0% 96%;
+    /* Landing tokens */
+    --surface: #0b0f12;
+    --surface-2: #0f1418;
+    --border-subtle: rgba(255, 255, 255, 0.1);
+    --text-muted: rgba(255, 255, 255, 0.6);
+    --glow-cyan: 0 0 40px rgba(40, 240, 224, 0.15);
     --font-body: "Space Grotesk", sans-serif;
     --font-display: "Fraunces", serif;
   }
@@ -86,7 +92,7 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    animation: headline-sweep 7s ease infinite;
+    animation: headline-sweep 4s ease 1;
   }
 
   .section-divider {
