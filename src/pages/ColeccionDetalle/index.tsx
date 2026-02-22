@@ -6,8 +6,8 @@ import { buttonClasses } from "../../components/ui/Button"
 import PageShell from "../../components/layout/PageShell"
 
 const ColeccionDetalle = () => {
-  const { slug } = useParams()
-  const collection = slug ? getCollectionBySlug(slug) : undefined
+  const { collectionId } = useParams()
+  const collection = collectionId ? getCollectionBySlug(collectionId) : undefined
   const clips = collection ? getClipsByIds(collection.clipIds) : []
 
   if (!collection) {
@@ -16,7 +16,7 @@ const ColeccionDetalle = () => {
         <PageShell className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
           <h1 className="text-2xl font-semibold text-white">Coleccion no encontrada</h1>
           <p className="text-white/60">Vuelve a colecciones para explorar otras selecciones.</p>
-          <Link to="/colecciones" className={buttonClasses("primary")}>
+          <Link to="/app/collections" className={buttonClasses("primary")}>
             Volver a colecciones
           </Link>
         </PageShell>
@@ -33,7 +33,7 @@ const ColeccionDetalle = () => {
             <h1 className="text-3xl font-semibold text-white">{collection.title}</h1>
             <p className="text-base text-white/70">{collection.description}</p>
           </div>
-          <Link to="/colecciones" className={buttonClasses("ghost")}>
+          <Link to="/app/collections" className={buttonClasses("ghost")}>
             Volver a colecciones
           </Link>
         </div>

@@ -10,13 +10,13 @@ const AppLayout = () => {
   const navigate = useNavigate()
 
   const navLinks = [
-    { label: "Inicio", to: "/app", end: true },
-    { label: "Clips", to: "/clips" },
-    { label: "Guardados", to: "/app/guardados" },
+    { label: "Explorar", to: "/app/explore", end: true },
+    { label: "Clips", to: "/app/clips" },
+    { label: "Guardados", to: "/app/saved" },
   ]
 
   const footerLinks = [
-    { label: "Perfil", to: "/app/editar-perfil" },
+    { label: "Perfil", to: "/app/account" },
     {
       label: "Cerrar sesión",
       onClick: () => {
@@ -27,14 +27,14 @@ const AppLayout = () => {
   ]
 
   const profileLinks = [
-    { label: "Mis videos", to: "/app/mis-videos" },
-    { label: "Analíticas", to: "/app/analiticas" },
-    { label: "Editar perfil", to: "/app/editar-perfil" },
-    { label: "Cambiar contraseña", to: "/app/cambiar-contrasena" },
+    { label: "Mis contenidos", to: "/app/my" },
+    { label: "Analíticas", to: "/app/analytics" },
+    { label: "Editar perfil", to: "/app/account/profile" },
+    { label: "Cambiar contraseña", to: "/app/account/security" },
   ]
 
   const profileFooterLinks = [
-    { label: "Perfil", to: "/app/editar-perfil" },
+    { label: "Perfil", to: "/app/account" },
     {
       label: "Cerrar sesión",
       onClick: () => {
@@ -104,7 +104,7 @@ const AppLayout = () => {
               </svg>
             </button>
             <Link
-              to="/app/publicar"
+              to="/app/publish"
               className="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/80 transition hover:text-white"
               aria-label="Publicar video o clip"
             >

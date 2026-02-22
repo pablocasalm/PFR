@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import type { Clip } from "../../types/clip"
 import Badge from "../ui/Badge"
 import { buttonClasses } from "../ui/Button"
@@ -16,6 +16,8 @@ const formatDuration = (totalSeconds: number) => {
 }
 
 const CollectionCard = ({ clip }: CollectionCardProps) => {
+  const location = useLocation()
+  const from = `${location.pathname}${location.search}`
   return (
     <article className="card-sheen group relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-midnight-soft/60 shadow-lg transition-transform duration-300 hover:-translate-y-1">
       <div className="relative h-[165px] overflow-hidden">
@@ -43,13 +45,15 @@ const CollectionCard = ({ clip }: CollectionCardProps) => {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            to={`/clip/${clip.id}`}
+            to={`/app/watch/video/${clip.id}`}
+            state={{ from }}
             className={`${buttonClasses("primary")} text-[11px] px-3 py-1.5`}
           >
             Ver completo
           </Link>
           <Link
-            to={`/clip/${clip.id}`}
+            to={`/app/clips?clipId=${clip.id}`}
+            state={{ from }}
             className={`${buttonClasses("ghost")} text-[11px] px-3 py-1.5`}
           >
             Reproducir clip

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import type { Clip } from "../../types/clip"
 import Badge from "../ui/Badge"
 
@@ -17,12 +17,17 @@ const VideoCard = ({
   clip,
   target = "clip",
 }: VideoCardProps) => {
-  const targetPath = `/clip/${clip.id}`
-  const editPath = `/clip/${clip.id}/editar`
-  const statsPath = `/clip/${clip.id}/stats`
+  const targetPath =
+    target === "video" ? `/app/watch/video/${clip.id}` : `/app/clips?clipId=${clip.id}`
+  const editPath =
+    target === "video" ? `/app/edit/video/${clip.id}` : `/app/edit/clip/${clip.id}`
+  const statsPath =
+    target === "video" ? `/app/stats/video/${clip.id}` : `/app/stats/clip/${clip.id}`
   const isClipCard = target === "clip"
   const clipPreview = "/Mniaturas/vertical-placeholder.svg"
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = `${location.pathname}${location.search}`
 
   const handleActionClick =
     (path: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -34,6 +39,7 @@ const VideoCard = ({
   return (
     <Link
       to={targetPath}
+      state={{ from }}
       className={`card-sheen group relative overflow-hidden rounded-3xl border border-white/10 bg-midnight-soft/60 shadow-xl transition-transform duration-300 hover:-translate-y-1 ${
         isClipCard ? "" : "flex h-full flex-col"
       }`}

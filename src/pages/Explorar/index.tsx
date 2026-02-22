@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import Input from "../../components/ui/Input"
 import VideoRow from "../../components/video/VideoRow"
 import { getClips, getClipsByIds } from "../../lib/api/clips"
@@ -45,6 +45,8 @@ const Explorar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   const modalInputRef = useRef<HTMLInputElement | null>(null)
+  const location = useLocation()
+  const from = `${location.pathname}${location.search}`
   const clips = getClips()
   const carouselClips = useMemo(() => {
     const selected = getClipsByIds(featuredCarouselItems.map((item) => item.id))
@@ -207,15 +209,23 @@ const Explorar = () => {
                         </p>
                         {clip.match && (
                           <p className="text-sm text-white/60">
-                            {clip.match.tournament.name} · {clip.match.round}
+                            {clip.match.tournament.name} ï¿½ {clip.match.round}
                           </p>
                         )}
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
-                        <Link to={`/clip/${clip.id}`} className={buttonClasses("primary")}>
+                        <Link
+                          to={`/app/watch/video/${clip.id}`}
+                          state={{ from }}
+                          className={buttonClasses("primary")}
+                        >
                           Partido completo
                         </Link>
-                        <Link to={`/clip/${clip.id}`} className={buttonClasses("secondary")}>
+                        <Link
+                          to={`/app/clips?clipId=${clip.id}`}
+                          state={{ from }}
+                          className={buttonClasses("secondary")}
+                        >
                           Reproducir clip
                         </Link>
                       </div>
@@ -246,7 +256,7 @@ const Explorar = () => {
             <div className="flex items-center justify-between">
               {section.cardTarget === "collection" ? (
                 <Link
-                  to="/app/colecciones"
+                  to="/app/collections"
                   className="text-lg font-semibold text-white hover:underline"
                   aria-label="Ir a colecciones"
                 >
@@ -266,7 +276,7 @@ const Explorar = () => {
 
         {filteredClips.length === 0 && (
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-white/60">
-            No hay resultados para tu búsqueda.
+            No hay resultados para tu bï¿½squeda.
           </div>
         )}
       </PageShell>
@@ -295,13 +305,13 @@ const Explorar = () => {
                 onClick={() => setIsSearchOpen(false)}
                 aria-label="Cerrar buscador"
               >
-                ×
+                ï¿½
               </button>
             </div>
             {recentSearches.length > 0 && (
               <div className="mt-6 space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
-                  Búsquedas recientes
+                  Bï¿½squedas recientes
                 </p>
                 <div className="flex flex-wrap gap-3">
                   {recentSearches.map((item) => (
@@ -337,4 +347,3 @@ const Explorar = () => {
 }
 
 export default Explorar
-

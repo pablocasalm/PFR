@@ -5,6 +5,13 @@ export type ReactionCounts = {
   boom: number
 }
 
+export type Account = {
+  id: string
+  name: string
+  avatarUrl?: string
+  handle?: string
+}
+
 export type Chapter = {
   id: string
   startSeconds: number
@@ -41,6 +48,7 @@ export type Clip = {
   thumbnailUrl: string
   clipVideoUrl: string
   fullVideoUrl: string
+  author: Account
   subtitlesEsUrl?: string
   subtitlesEnUrl?: string
   tags?: string[]

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { Clip } from "../../types/clip"
 import BookmarkButton from "../ui/BookmarkButton"
@@ -22,6 +22,8 @@ const ShortsItem = ({
   videoRef,
   shouldRenderVideo,
 }: ShortsItemProps) => {
+  const location = useLocation()
+  const from = `${location.pathname}${location.search}`
   const localVideoRef = useRef<HTMLVideoElement | null>(null)
   const [isCcOpen, setIsCcOpen] = useState(false)
   const [subtitle, setSubtitle] = useState<"off" | "es" | "en">("off")
@@ -355,7 +357,8 @@ const ShortsItem = ({
                     </>
                   )}
                   <Link
-                    to={`/clip/${clip.id}`}
+                    to={`/app/watch/video/${clip.id}`}
+                    state={{ from }}
                     className="focus-ring rounded-full bg-white/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-midnight shadow-sm hover:bg-white"
                   >
                     Ver completo

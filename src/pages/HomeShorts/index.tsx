@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import ShortsFeed from "../../components/shorts/ShortsFeed"
 import { getClips } from "../../lib/api/clips"
 
 const HomeShorts = () => {
   const [isLoading, setIsLoading] = useState(true)
+  const [searchParams] = useSearchParams()
+  const initialClipId = searchParams.get("clipId") ?? undefined
   const clips = getClips()
 
   useEffect(() => {
@@ -33,7 +36,7 @@ const HomeShorts = () => {
 
   return (
     <main className="relative">
-      <ShortsFeed clips={clips} />
+      <ShortsFeed clips={clips} initialClipId={initialClipId ?? undefined} />
     </main>
   )
 }

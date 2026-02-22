@@ -8,7 +8,7 @@ type CollectionPreviewCardProps = {
 const CollectionPreviewCard = ({ collection }: CollectionPreviewCardProps) => {
   return (
     <Link
-      to="/app/colecciones"
+      to={`/app/collections/${collection.slug}`}
       className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-midnight-soft/60 p-4 shadow-xl transition-transform duration-300 hover:-translate-y-1"
     >
       <div className="relative">

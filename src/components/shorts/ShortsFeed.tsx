@@ -4,15 +4,22 @@ import ShortsItem from "./ShortsItem"
 
 type ShortsFeedProps = {
   clips: Clip[]
+  initialClipId?: string
 }
 
-const ShortsFeed = ({ clips }: ShortsFeedProps) => {
+const ShortsFeed = ({ clips, initialClipId }: ShortsFeedProps) => {
   const INDEX_STORAGE_KEY = "pfr_home_index_v1"
   const MUTE_STORAGE_KEY = "pfr_muted_v1"
   const containerRef = useRef<HTMLDivElement | null>(null)
   const itemRefs = useRef<(HTMLDivElement | null)[]>([])
   const videoRefs = useRef(new Map<string, HTMLVideoElement>())
   const [activeIndex, setActiveIndex] = useState(() => {
+    if (initialClipId) {
+      const index = clips.findIndex((clip) => clip.id === initialClipId)
+      if (index >= 0) {
+        return index
+      }
+    }
     const stored = localStorage.getItem(INDEX_STORAGE_KEY)
     const parsed = stored ? Number(stored) : 0
     if (Number.isFinite(parsed) && parsed >= 0 && parsed < clips.length) {
@@ -34,6 +41,16 @@ const ShortsFeed = ({ clips }: ShortsFeedProps) => {
       setActiveIndex(0)
     }
   }, [clips])
+
+  useEffect(() => {
+    if (!initialClipId) {
+      return
+    }
+    const index = clips.findIndex((clip) => clip.id === initialClipId)
+    if (index >= 0 && index !== activeIndexRef.current) {
+      setActiveIndex(index)
+    }
+  }, [clips, initialClipId])
 
   useEffect(() => {
     activeIndexRef.current = activeIndex

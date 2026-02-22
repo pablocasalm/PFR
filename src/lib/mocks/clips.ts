@@ -1,4 +1,4 @@
-import type { Clip } from "../../types/clip"
+import type { Account, Clip } from "../../types/clip"
 
 const previewVideo = "https://samplelib.com/lib/preview/mp4/sample-5s.mp4"
 const previewVideoAlt =
@@ -9,7 +9,31 @@ const fullVideo = "https://samplelib.com/lib/preview/mp4/sample-20s.mp4"
 const subtitlesEs = "https://bitdash-a.akamaihd.net/content/sintel/subtitles/subtitles_es.vtt"
 const subtitlesEn = "https://bitdash-a.akamaihd.net/content/sintel/subtitles/subtitles_en.vtt"
 
-export const clips: Clip[] = [
+const authors: Account[] = [
+  {
+    id: "a1",
+    name: "PadelLab",
+    handle: "@padellab",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=200&q=80",
+  },
+  {
+    id: "a2",
+    name: "Coach Marta",
+    handle: "@coach.marta",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80",
+  },
+  {
+    id: "a3",
+    name: "Tactic Room",
+    handle: "@tacticroom",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+  },
+]
+
+const rawClips: Omit<Clip, "author">[] = [
   {
     id: "c1",
     title: "Bandeja cruzada para romper el bloqueo del rival",
@@ -385,3 +409,8 @@ export const clips: Clip[] = [
     reactionCounts: { fire: 46, hundred: 21, like: 85, boom: 15 },
   },
 ]
+
+export const clips: Clip[] = rawClips.map((clip, index) => ({
+  ...clip,
+  author: authors[index % authors.length],
+}))

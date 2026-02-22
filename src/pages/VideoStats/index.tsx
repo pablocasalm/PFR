@@ -5,9 +5,16 @@ import Badge from "../../components/ui/Badge"
 import Button from "../../components/ui/Button"
 import { getClipById } from "../../lib/api/clips"
 
-const VideoStats = () => {
-  const { id } = useParams()
-  const clip = useMemo(() => (id ? getClipById(id) : undefined), [id])
+type VideoStatsProps = {
+  contentType?: "clip" | "video"
+}
+
+const VideoStats = ({ contentType }: VideoStatsProps) => {
+  const { id, clipId, videoId } = useParams()
+  const resolvedId = clipId ?? videoId ?? id
+  const resolvedContentType =
+    contentType ?? (videoId ? "video" : "clip")
+  const clip = useMemo(() => (resolvedId ? getClipById(resolvedId) : undefined), [resolvedId])
 
   return (
     <main className="pb-16 pt-16">
@@ -18,7 +25,9 @@ const VideoStats = () => {
               <Badge variant="solid" className="bg-neon-cyan text-midnight">
                 Stats
               </Badge>
-              <Badge>{clip ? "Contenido" : "Sin datos"}</Badge>
+              <Badge>
+                {clip ? (resolvedContentType === "video" ? "Video" : "Clip") : "Sin datos"}
+              </Badge>
             </div>
             <h1 className="text-2xl font-semibold text-white md:text-3xl">
               Rendimiento del contenido

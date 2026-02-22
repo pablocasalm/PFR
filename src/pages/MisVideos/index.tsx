@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import PageShell from "../../components/layout/PageShell"
 import VideoFeed from "../../components/video/VideoFeed"
 import { getClips } from "../../lib/api/clips"
@@ -19,15 +20,24 @@ const MisVideos = () => {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button className="focus-ring rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+            <Link
+              to="/app/publish/clip"
+              className="focus-ring rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70"
+            >
               Nuevo clip
-            </button>
-            <button className="focus-ring rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+            </Link>
+            <Link
+              to="/app/publish/video"
+              className="focus-ring rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70"
+            >
               Nuevo video
-            </button>
-            <button className="focus-ring rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-neon-cyan">
+            </Link>
+            <Link
+              to="/app/publish"
+              className="focus-ring rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-neon-cyan"
+            >
               Ir a publicar
-            </button>
+            </Link>
           </div>
         </header>
 
