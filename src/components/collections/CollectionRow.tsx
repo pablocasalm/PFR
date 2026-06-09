@@ -68,15 +68,15 @@ const CollectionRow = ({ title, description, clips }: CollectionRowProps) => {
     <section className="group space-y-4">
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-2xl font-semibold text-white">{title}</h2>
-          <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">
+          <h2 className="text-xl font-semibold text-white lg:text-2xl">{title}</h2>
+          <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
             ▦ Colección
           </span>
-          <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50">
+          <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
             {clips.length} clips
           </span>
         </div>
-        {description && <p className="text-sm text-white/60">{description}</p>}
+        {description && <p className="text-sm text-zinc-400">{description}</p>}
       </div>
       <div className="relative w-full max-w-full overflow-hidden">
         {showLeft && (

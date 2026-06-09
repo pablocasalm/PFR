@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import type { Clip } from "../../types/clip"
+import HorizontalScrollRow from "../ui/HorizontalScrollRow"
 import VideoCard from "./VideoCard"
 
 type VideoRowProps = {
@@ -54,7 +55,7 @@ const VideoRow = ({ clips, cardTarget = "clip", className = "" }: VideoRowProps)
   }
 
   return (
-    <div className={`relative w-full max-w-full overflow-hidden ${className}`}>
+    <div className={`relative mt-8 w-full max-w-full overflow-hidden ${className}`}>
       {showLeft && (
         <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-midnight to-transparent" />
       )}
@@ -81,20 +82,15 @@ const VideoRow = ({ clips, cardTarget = "clip", className = "" }: VideoRowProps)
           ›
         </button>
       )}
-      <div
+      <HorizontalScrollRow
         ref={scrollRef}
-        className="flex w-full max-w-full flex-nowrap gap-3 overflow-x-auto overflow-y-hidden pb-2 scrollbar-hide"
-        style={{ scrollBehavior: "smooth", WebkitOverflowScrolling: "touch" }}
+        className="w-full max-w-full flex-nowrap overflow-y-hidden px-4"
+        itemClassName="w-[220px]"
       >
         {clips.map((clip, index) => (
-          <div
-            key={`${clip.id}-${index}`}
-            className="flex-none w-[190px] sm:w-[210px] md:w-[230px] lg:w-[250px] xl:w-[270px]"
-          >
-            <VideoCard clip={clip} target={cardTarget} />
-          </div>
+          <VideoCard key={`${clip.id}-${index}`} clip={clip} target={cardTarget} />
         ))}
-      </div>
+      </HorizontalScrollRow>
     </div>
   )
 }

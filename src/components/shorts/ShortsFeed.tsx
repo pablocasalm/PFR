@@ -151,11 +151,11 @@ const ShortsFeed = ({ clips, initialClipId }: ShortsFeedProps) => {
     return () => cancelAnimationFrame(id)
   }, [])
 
-  const NAV_HEIGHT = 64
+  const NAV_HEIGHT = 81
   const viewportHeight = `calc(100vh - ${NAV_HEIGHT}px)`
 
   return (
-    <div className="relative">
+    <div className="relative min-h-[calc(100vh-81px)] w-full">
       <div
         ref={containerRef}
         className="snap-y snap-mandatory overflow-y-auto"

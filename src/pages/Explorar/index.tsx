@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import Input from "../../components/ui/Input"
+import AppContainer from "../../components/ui/AppContainer"
+import Section from "../../components/ui/Section"
 import VideoRow from "../../components/video/VideoRow"
 import { getClips, getClipsByIds } from "../../lib/api/clips"
 import { tags as mockTags } from "../../lib/mocks/tags"
 import TagChipsBar from "../../components/tags/TagChipsBar"
 import Badge from "../../components/ui/Badge"
 import { buttonClasses } from "../../components/ui/Button"
-import PageShell from "../../components/layout/PageShell"
 import { explorarSections } from "../../data/explorarSections"
 import { featuredCarouselItems } from "../../data/featuredCarousel"
 import { getCollections } from "../../lib/api/collections"
@@ -172,9 +173,9 @@ const Explorar = () => {
 
   return (
     <main className="pb-16 pt-16">
-      <PageShell className="space-y-10">
+      <AppContainer>
         {carouselClips.length > 0 && (
-          <section className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-black/30 shadow-2xl aspect-[19/9] max-h-[600px]">
+          <section className="relative mx-auto mt-10 min-h-[360px] w-full max-w-6xl aspect-[19/9] max-h-[600px] overflow-hidden rounded-2xl border border-white/10 bg-black/30 shadow-2xl">
             <div className="absolute inset-0 overflow-hidden">
               <div
                 className="flex h-full w-full transition-transform ease-linear"
@@ -189,9 +190,9 @@ const Explorar = () => {
                       className="absolute inset-0 bg-cover bg-center"
                       style={{ backgroundImage: `url('${clip.thumbnailUrl}')` }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <div className="relative flex h-full flex-col gap-6 p-6 md:p-10">
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/20" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                    <div className="relative flex h-full flex-col gap-6 px-6 py-16 md:px-10 md:py-16 lg:py-20">
                       <div className="flex items-center gap-3">
                         <Badge variant="solid" className="bg-neon-lime text-midnight">
                           Destacado
@@ -200,20 +201,20 @@ const Explorar = () => {
                           {formatDuration(clip.durationSeconds)}
                         </Badge>
                       </div>
-                      <div className="max-w-2xl space-y-3">
-                        <h2 className="text-3xl font-semibold uppercase text-white md:text-4xl">
+                      <div className="max-w-xl space-y-3">
+                        <h2 className="text-4xl font-semibold uppercase text-white lg:text-5xl">
                           {clip.title}
                         </h2>
-                        <p className="text-sm uppercase tracking-[0.25em] text-white/70">
+                        <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">
                           {clip.ideaKey}
                         </p>
                         {clip.match && (
-                          <p className="text-sm text-white/60">
+                          <p className="text-xs text-zinc-500">
                             {clip.match.tournament.name} � {clip.match.round}
                           </p>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-6">
                         <Link
                           to={`/app/watch/video/${clip.id}`}
                           state={{ from }}
@@ -252,18 +253,18 @@ const Explorar = () => {
           </section>
         )}
         {sections.map((section) => (
-          <section key={section.id} className={`group space-y-5 ${section.className ?? ""}`}>
+          <Section key={section.id} className={`group space-y-5 ${section.className ?? ""}`}>
             <div className="flex items-center justify-between">
               {section.cardTarget === "collection" ? (
                 <Link
                   to="/app/collections"
-                  className="text-lg font-semibold text-white hover:underline"
+                  className="text-xl font-semibold text-white hover:underline lg:text-2xl"
                   aria-label="Ir a colecciones"
                 >
                   {section.title}
                 </Link>
               ) : (
-                <h3 className="text-lg font-semibold text-white">{section.title}</h3>
+                <h3 className="text-xl font-semibold text-white lg:text-2xl">{section.title}</h3>
               )}
             </div>
             {section.cardTarget === "collection" ? (
@@ -271,15 +272,15 @@ const Explorar = () => {
             ) : (
               <VideoRow clips={section.clips} cardTarget={section.cardTarget} />
             )}
-          </section>
+          </Section>
         ))}
 
         {filteredClips.length === 0 && (
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-white/60">
+          <div className="mt-16 rounded-3xl border border-white/10 bg-white/5 p-8 text-white/60 lg:mt-20">
             No hay resultados para tu b�squeda.
           </div>
         )}
-      </PageShell>
+      </AppContainer>
       {isSearchOpen && (
         <div className="fixed inset-0 z-40">
           <button

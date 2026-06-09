@@ -1,6 +1,8 @@
 node_modules/
 dist/
 Backend/
+.DS_Store
+**/.DS_Store
 public/clips_test/
 public/**/*.mov
 public/**/*.mp4

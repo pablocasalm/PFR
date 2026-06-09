@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"name": "Frontend (PFR)",
+			"path": "."
+		},
+		{
+			"name": "Backend (PFR_Backend)",
+			"path": "Backend/PFR_Backend"
+		}
+	],
+	"settings": {
+		"git.autoRepositoryDetection": true,
+		"git.detectSubmodules": false,
+		"git.openRepositoryInParentFolders": "always",
+		"files.exclude": {
+			"**/.DS_Store": true
+		}
+	}
+}

@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { AuthProvider } from "./AuthProvider"
 import { BookmarkProvider } from "./BookmarkProvider"
 import { EntitlementProvider } from "./EntitlementProvider"
+import { PlayerProvider } from "./PlayerProvider"
 
 type AppProvidersProps = {
   children: ReactNode
@@ -10,7 +11,9 @@ type AppProvidersProps = {
 const AppProviders = ({ children }: AppProvidersProps) => (
   <AuthProvider>
     <EntitlementProvider>
-      <BookmarkProvider>{children}</BookmarkProvider>
+      <BookmarkProvider>
+        <PlayerProvider>{children}</PlayerProvider>
+      </BookmarkProvider>
     </EntitlementProvider>
   </AuthProvider>
 )

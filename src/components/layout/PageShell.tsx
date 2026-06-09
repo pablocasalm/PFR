@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import AppContainer from "../ui/AppContainer"
 
 type PageShellProps = {
   children: ReactNode
@@ -6,11 +7,7 @@ type PageShellProps = {
 }
 
 const PageShell = ({ children, className = "" }: PageShellProps) => (
-  <section
-    className={`mx-auto w-full max-w-[1800px] px-3 md:px-5 lg:px-7 ${className}`}
-  >
-    {children}
-  </section>
+  <AppContainer className={className}>{children}</AppContainer>
 )
 
 export default PageShell

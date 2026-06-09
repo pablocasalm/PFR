@@ -13,6 +13,13 @@ const Login = lazy(() => import("../../pages/Login"))
 const Register = lazy(() => import("../../pages/Register"))
 const Explorar = lazy(() => import("../../pages/Explorar"))
 const Landing = lazy(() => import("../../pages/Landing"))
+const AppNew = lazy(() => import("../../pages/AppNew"))
+const AppNewInicio = lazy(() => import("../../pages/AppNew/pages/Inicio"))
+const AppNewExplorar = lazy(() => import("../../pages/AppNew/pages/Explorar"))
+const AppNewMiLista = lazy(() => import("../../pages/AppNew/pages/MiLista"))
+const AppNewMiJuego = lazy(() => import("../../pages/AppNew/pages/MiJuego"))
+const AppNewWatch = lazy(() => import("../../pages/AppNew/pages/Watch"))
+const AppNewSearch = lazy(() => import("../../pages/AppNew/pages/Search"))
 const LandingProvisional = lazy(() => import("../../pages/landing_provisional"))
 const Publicar = lazy(() => import("../../pages/Publicar"))
 const MisVideos = lazy(() => import("../../pages/MisVideos"))
@@ -54,6 +61,19 @@ const router = createBrowserRouter([
   {
     path: "/newlanding",
     element: withSuspense(<LandingProvisional />),
+  },
+  {
+    path: "/appnew",
+    element: withSuspense(<AppNew />),
+    children: [
+      { index: true, element: <Navigate to="/appnew/inicio" replace /> },
+      { path: "inicio", element: withSuspense(<AppNewInicio />) },
+      { path: "explorar", element: withSuspense(<AppNewExplorar />) },
+      { path: "mi-lista", element: withSuspense(<AppNewMiLista />) },
+      { path: "mi-juego", element: withSuspense(<AppNewMiJuego />) },
+      { path: "watch", element: withSuspense(<AppNewWatch />) },
+      { path: "search", element: withSuspense(<AppNewSearch />) },
+    ],
   },
   {
     element: withSuspense(<AuthLayout />),

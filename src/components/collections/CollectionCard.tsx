@@ -3,6 +3,7 @@ import type { Clip } from "../../types/clip"
 import Badge from "../ui/Badge"
 import { buttonClasses } from "../ui/Button"
 import BookmarkButton from "../ui/BookmarkButton"
+import Card from "../ui/Card"
 import ReactionBar from "../video/ReactionBar"
 
 type CollectionCardProps = {
@@ -19,7 +20,7 @@ const CollectionCard = ({ clip }: CollectionCardProps) => {
   const location = useLocation()
   const from = `${location.pathname}${location.search}`
   return (
-    <article className="card-sheen group relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-midnight-soft/60 shadow-lg transition-transform duration-300 hover:-translate-y-1">
+    <Card className="card-sheen group relative flex h-full flex-col overflow-hidden rounded-3xl bg-midnight-soft/60 shadow-lg transition-transform duration-300 hover:-translate-y-1">
       <div className="relative h-[165px] overflow-hidden">
         <>
           <img
@@ -40,8 +41,8 @@ const CollectionCard = ({ clip }: CollectionCardProps) => {
       </div>
       <div className="flex flex-1 flex-col gap-2.5 p-3">
         <div className="space-y-1">
-          <h3 className="line-clamp-2 text-sm font-semibold text-white">{clip.title}</h3>
-          <p className="text-[11px] text-white/60">{clip.ideaKey}</p>
+          <h3 className="line-clamp-2 text-base font-medium text-white">{clip.title}</h3>
+          <p className="text-sm text-zinc-400">{clip.ideaKey}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
@@ -61,7 +62,7 @@ const CollectionCard = ({ clip }: CollectionCardProps) => {
         </div>
         <ReactionBar initialCounts={clip.reactionCounts} />
       </div>
-    </article>
+    </Card>
   )
 }
 

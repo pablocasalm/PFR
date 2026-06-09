@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom"
 import { useState } from "react"
 import Drawer from "../../components/ui/Drawer"
 import { useAuth } from "../providers/AuthProvider"
+import GlobalPlayer from "../../components/player/GlobalPlayer"
 
 const AppLayout = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -45,9 +46,9 @@ const AppLayout = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-film-room">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-midnight/80 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[1800px] items-center justify-between px-4 py-4 md:px-8 lg:px-12">
+    <div className="flex min-h-screen flex-col bg-film-room">
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-black/40 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-[1800px] items-center justify-between px-4 py-5 md:px-8 lg:px-12">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -143,7 +144,10 @@ const AppLayout = () => {
         links={drawerMode === "nav" ? navLinks : profileLinks}
         footerLinks={drawerMode === "nav" ? footerLinks : profileFooterLinks}
       />
-      <Outlet />
+      <div className="flex flex-1 flex-col">
+        <Outlet />
+      </div>
+      <GlobalPlayer />
     </div>
   )
 }
