@@ -1,7 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 @import "./styles/theme.css";
-@import "./styles/scrollbar.css";
 
 @tailwind base;
 @tailwind components;
@@ -12,14 +11,6 @@
     color-scheme: dark;
     --background: 220 16% 6%;
     --foreground: 0 0% 96%;
-    /* Landing tokens */
-    --surface: #0b0f12;
-    --surface-2: #0f1418;
-    --border-subtle: rgba(255, 255, 255, 0.1);
-    --text-muted: rgba(255, 255, 255, 0.6);
-    --glow-cyan: 0 0 40px rgba(40, 240, 224, 0.15);
-    --font-body: "Space Grotesk", sans-serif;
-    --font-display: "Fraunces", serif;
   }
 
   * {
@@ -35,110 +26,7 @@
     @apply min-h-screen;
   }
 
-  .font-body {
-    font-family: var(--font-body);
-  }
-
-  .font-display {
-    font-family: var(--font-display);
-  }
-
   html {
     scroll-behavior: smooth;
-  }
-}
-
-@layer components {
-  .focus-ring {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan/70 focus-visible:ring-offset-2 focus-visible:ring-offset-midnight;
-  }
-}
-
-@layer utilities {
-  .title-glow {
-    text-shadow: 0 0 24px rgba(40, 240, 224, 0.35);
-  }
-
-  .hero-surface {
-    background-image:
-      radial-gradient(900px 480px at 10% 15%, rgba(16, 185, 129, 0.16), transparent 60%),
-      radial-gradient(720px 420px at 85% 0%, rgba(245, 158, 11, 0.18), transparent 55%),
-      radial-gradient(600px 360px at 80% 70%, rgba(56, 189, 248, 0.12), transparent 55%),
-      linear-gradient(180deg, rgba(10, 13, 15, 0.85), rgba(10, 13, 15, 1));
-  }
-
-  .noise-layer {
-    background-image:
-      repeating-linear-gradient(
-        0deg,
-        rgba(255, 255, 255, 0.035),
-        rgba(255, 255, 255, 0.035) 1px,
-        transparent 1px,
-        transparent 3px
-      ),
-      repeating-linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0.02),
-        rgba(255, 255, 255, 0.02) 1px,
-        transparent 1px,
-        transparent 4px
-      );
-    mix-blend-mode: soft-light;
-  }
-
-  .headline-sweep {
-    background-image: linear-gradient(120deg, #fbbf24, #34d399, #38bdf8, #fbbf24);
-    background-size: 200% 200%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: headline-sweep 4s ease 1;
-  }
-
-  .section-divider {
-    @apply border-t border-white/10;
-  }
-
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  .hammer-swing {
-    animation: hammer-swing 1.2s ease-in-out infinite;
-    transform-origin: 70% 20%;
-    transform-box: fill-box;
-  }
-}
-
-@keyframes headline-sweep {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes hammer-swing {
-  0% {
-    transform: rotate(-18deg);
-  }
-  50% {
-    transform: rotate(18deg);
-  }
-  100% {
-    transform: rotate(-18deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  .headline-sweep {
-    animation: none;
   }
 }

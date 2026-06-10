@@ -5,7 +5,6 @@ module.exports = {
     extend: {
       fontFamily: {
         display: ["'Space Grotesk'", "sans-serif"],
-        mono: ["'Space Mono'", "monospace"],
       },
       colors: {
         midnight: "#05070c",
