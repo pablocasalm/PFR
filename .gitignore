@@ -9,3 +9,7 @@ public/**/*.mp4
 dist/clips_test/
 dist/**/*.mov
 dist/**/*.mp4
+
+# Overrides locales de entorno
+.env
+.env.local

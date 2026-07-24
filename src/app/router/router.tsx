@@ -8,6 +8,12 @@ const MiLista = lazy(() => import("../../pages/App/pages/MiLista"))
 const MiJuego = lazy(() => import("../../pages/App/pages/MiJuego"))
 const Watch = lazy(() => import("../../pages/App/pages/Watch"))
 const Search = lazy(() => import("../../pages/App/pages/Search"))
+const LoginPage = lazy(() => import("../../lib/auth/LoginPage"))
+const PlayerTestPage = lazy(() => import("../../lib/player/PlayerTestPage"))
+const Publicar = lazy(() => import("../../pages/App/pages/Publicar"))
+
+const RequireAuth = lazy(() => import("../../lib/auth/RequireAuth"))
+const RequirePublisher = lazy(() => import("../../lib/auth/RequirePublisher"))
 
 const loadingFallback = <div className="p-6 text-sm text-neutral-500">Cargando...</div>
 
@@ -17,9 +23,17 @@ const withSuspense = (element: React.ReactElement) => (
 
 const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/app/inicio" replace /> },
+  { path: "/login", element: withSuspense(<LoginPage />) },
+  // ⚠️ Solo dev: prueba del reproductor sin backend.
+  ...(import.meta.env.DEV ? [{ path: "/dev/player", element: withSuspense(<PlayerTestPage />) }] : []),
   {
+    // Toda la zona /app está detrás de sesión: sin token, RequireAuth manda a /login.
     path: "/app",
-    element: withSuspense(<AppLayout />),
+    element: withSuspense(
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>,
+    ),
     children: [
       { index: true, element: <Navigate to="/app/inicio" replace /> },
       { path: "inicio", element: withSuspense(<Inicio />) },
@@ -28,6 +42,7 @@ const router = createBrowserRouter([
       { path: "mi-juego", element: withSuspense(<MiJuego />) },
       { path: "watch", element: withSuspense(<Watch />) },
       { path: "search", element: withSuspense(<Search />) },
+      { path: "publicar", element: withSuspense(<RequirePublisher><Publicar /></RequirePublisher>) },
     ],
   },
   { path: "*", element: <Navigate to="/app/inicio" replace /> },

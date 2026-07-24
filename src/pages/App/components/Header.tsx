@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { NavLink, useNavigate } from "react-router-dom"
-import { Search, Play, ChevronDown } from "lucide-react"
+import { Search, Play, ChevronDown, LogOut, UploadCloud } from "lucide-react"
+import { useAuth, canPublish, type AuthUser } from "../../../lib/auth/store"
 
 /**
  * Header compartido del nuevo dashboard (/app).
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
 const Header = () => {
   const navigate = useNavigate()
   const [query, setQuery] = useState("")
+  const { user } = useAuth()
 
   const submitSearch = () => {
     const q = query.trim()
@@ -59,6 +61,19 @@ const Header = () => {
             )}
           </NavLink>
         ))}
+        {canPublish(user) && (
+          <NavLink
+            to="/app/publicar"
+            className={({ isActive }) =>
+              `flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                isActive ? "text-neon-cyan" : "text-white/60 hover:text-white"
+              }`
+            }
+          >
+            <UploadCloud className="h-4 w-4" />
+            Publicar
+          </NavLink>
+        )}
       </nav>
 
       {/* Buscador */}
@@ -73,15 +88,61 @@ const Header = () => {
         />
       </div>
 
-      {/* Avatar */}
-      <button className="flex items-center gap-1.5">
+      {/* Sesión */}
+      <SessionControl />
+    </div>
+  </header>
+  )
+}
+
+/** Iniciales a partir del nombre o, si no hay, del email. */
+const initials = (user: AuthUser) => {
+  const base = user.displayName?.trim() || user.email
+  const parts = base.split(/[\s@.]+/).filter(Boolean)
+  if (parts.length === 0) return "?"
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[1][0]).toUpperCase()
+}
+
+/** Avatar con menú de logout. Dentro de /app siempre hay sesión (lo garantiza RequireAuth). */
+const SessionControl = () => {
+  const { user, logout } = useAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  if (!user) return null
+
+  return (
+    <div className="relative">
+      <button onClick={() => setMenuOpen((v) => !v)} className="flex items-center gap-1.5">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-neon-cyan text-sm font-bold text-midnight">
-          MP
+          {initials(user)}
         </span>
         <ChevronDown className="h-4 w-4 text-white/60" />
       </button>
+
+      {menuOpen && (
+        <>
+          {/* Capa para cerrar al hacer clic fuera */}
+          <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+          <div className="absolute right-0 top-12 z-40 w-56 rounded-xl border border-white/10 bg-midnight p-2 shadow-2xl">
+            <div className="border-b border-white/10 px-3 py-2">
+              <p className="truncate text-sm font-semibold text-white">{user.displayName || "Mi cuenta"}</p>
+              <p className="truncate text-xs text-white/50">{user.email}</p>
+            </div>
+            <button
+              onClick={() => {
+                setMenuOpen(false)
+                logout()
+              }}
+              className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
+            >
+              <LogOut className="h-4 w-4" />
+              Cerrar sesión
+            </button>
+          </div>
+        </>
+      )}
     </div>
-  </header>
   )
 }
 

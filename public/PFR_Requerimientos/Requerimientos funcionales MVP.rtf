@@ -1,0 +1,2724 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2870
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww28600\viewh18060\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 # PADEL FILM ROOM\
+# REQUERIMIENTOS FUNCIONALES MVP (BORRADOR V1)\
+\
+## 1. Objetivo del documento\
+\
+Este documento describe el comportamiento funcional esperado para la primera versi\'f3n de Padel Film Room.\
+\
+Su objetivo es servir como referencia com\'fan entre producto, contenido y desarrollo para facilitar la construcci\'f3n del MVP.\
+\
+No pretende definir aspectos visuales o de dise\'f1o, sino explicar:\
+\
+- Estructura de navegaci\'f3n.\
+- Comportamiento de las pantallas.\
+- Funcionalidades principales.\
+- Entidades de informaci\'f3n.\
+- Flujos b\'e1sicos de usuario.\
+\
+---\
+\
+# 2. Principios de producto\
+\
+El MVP debe seguir los siguientes principios:\
+\
+### Consumo antes que estudio\
+\
+PFR debe sentirse m\'e1s parecido a Netflix o YouTube que a una academia tradicional.\
+\
+### Menos clics, m\'e1s contenido\
+\
+La navegaci\'f3n debe minimizar pasos innecesarios y facilitar el descubrimiento de clips.\
+\
+### Aprendizaje visual\
+\
+Todo el aprendizaje se basa en situaciones reales de partido explicadas mediante v\'eddeo.\
+\
+### Simplicidad\
+\
+No se incorporar\'e1n funcionalidades complejas hasta validar h\'e1bito y recurrencia.\
+\
+### Contenido primero\
+\
+El contenido es el centro del producto.\
+\
+Todas las funcionalidades deben facilitar descubrir, consumir, guardar o volver a consumir contenido.\
+\
+---\
+\
+# 3. Arquitectura de navegaci\'f3n MVP\
+\
+La navegaci\'f3n principal estar\'e1 compuesta por cuatro secciones:\
+\
+## Inicio\
+\
+P\'e1gina personalizada orientada al descubrimiento y continuidad de consumo.\
+\
+Pregunta que responde:\
+\
+"\'bfQu\'e9 deber\'eda ver ahora?"\
+\
+---\
+\
+## Explorar\
+\
+Biblioteca t\'e1ctica de contenido.\
+\
+Permite navegar clips mediante bloques y conceptos.\
+\
+Pregunta que responde:\
+\
+"\'bfQu\'e9 quiero aprender?"\
+\
+---\
+\
+## Mi Lista\
+\
+Contenido guardado por el usuario.\
+\
+Pregunta que responde:\
+\
+"\'bfQu\'e9 quiero revisar m\'e1s tarde?"\
+\
+---\
+\
+## Mi Juego\
+\
+Actividad, historial y aprendizaje personal.\
+\
+Pregunta que responde:\
+\
+"\'bfQu\'e9 estoy aprendiendo?"\
+\
+---\
+\
+## Pantallas previstas MVP\
+\
+Adem\'e1s de las cuatro secciones principales de navegaci\'f3n, el MVP requerir\'e1 una serie de pantallas secundarias necesarias para consumir contenido y navegar por la plataforma.\
+\
+### Pantallas principales\
+\
+- Inicio\
+- Explorar\
+- Mi Lista\
+- Mi Juego\
+\
+### Pantallas secundarias\
+\
+#### P\'e1gina de Clip\
+\
+Pantalla donde el usuario consume un clip individual.\
+\
+Permitir\'e1:\
+\
+- Reproducir el clip.\
+- Ver conceptos asociados.\
+- Ver bloque asociado.\
+- Guardar en Mi Lista.\
+- Acceder a clips relacionados.\
+- Continuar explorando el mismo concepto.\
+- Seleccionar idioma de audio.\
+- Activar o desactivar sonido.\
+- Dar me gusta.\
+- Comentar.\
+- Compartir.\
+\
+#### P\'e1gina de An\'e1lisis Completo\
+\
+Pantalla donde el usuario consume un an\'e1lisis completo.\
+\
+Permitir\'e1:\
+\
+- Reproducir el an\'e1lisis.\
+- Navegar por los momentos seleccionados del an\'e1lisis mediante cap\'edtulos.\
+- Guardar en Mi Lista.\
+- Consultar conceptos asociados.\
+- Seleccionar idioma de audio.\
+- Activar o desactivar sonido.\
+- Dar me gusta.\
+- Comentar.\
+- Compartir.\
+\
+#### Pantalla de Resultados\
+\
+Pantalla de listado vertical reutilizable para mostrar conjuntos amplios de contenido.\
+\
+Esta pantalla se utilizar\'e1 cuando el usuario acceda desde:\
+\
+- Ver Todo en una secci\'f3n.\
+- Ver Todo dentro de un bloque de Explorar.\
+- Resultados de b\'fasqueda.\
+- Filtros globales.\
+- Conceptos populares.\
+\
+La pantalla de Resultados permitir\'e1 mostrar contenido en formato listado o grid vertical, evitando carruseles horizontales cuando el usuario quiere ver todos los elementos disponibles.\
+\
+Se utilizar\'e1 inicialmente para:\
+\
+- Nuevo esta semana.\
+- M\'e1s vistos.\
+- Bloques t\'e1cticos completos.\
+- Conceptos filtrados.\
+- Resultados de b\'fasqueda.\
+- An\'e1lisis completos.\
+\
+ \
+\
+Nota: El detalle funcional de cada una de estas pantallas se definir\'e1 en cap\'edtulos posteriores del documento.\
+\
+# 4. Tipos de contenido\
+\
+El MVP trabajar\'e1 inicialmente con dos tipos principales de contenido.\
+\
+## Clip\
+\
+Unidad principal de aprendizaje.\
+\
+Caracter\'edsticas:\
+\
+- Duraci\'f3n aproximada entre 1 y 5 minutos.\
+- Explica uno o m\'e1s conceptos t\'e1cticos.\
+- Asociado a uno o varios conceptos.\
+- Asociado a uno o varios bloques t\'e1cticos.\
+\
+Ejemplos:\
+\
+- Cu\'e1ndo subir a la red.\
+- Profundidad antes del globo.\
+- Evitar quedarse a media pista.\
+\
+---\
+\
+## An\'e1lisis completo\
+\
+Contenido largo.\
+\
+Caracter\'edsticas:\
+\
+- An\'e1lisis largo formado por una selecci\'f3n de momentos relevantes de un partido profesional.\
+- Duraci\'f3n aproximada de unos 20 minutos, aunque podr\'e1 variar.\
+- Se organiza internamente mediante cap\'edtulos.\
+- Algunos cap\'edtulos podr\'e1n corresponderse con clips independientes publicados tambi\'e9n como contenidos individuales.\
+- Otros cap\'edtulos, como la introducci\'f3n, podr\'e1n existir \'fanicamente dentro del an\'e1lisis completo y no necesariamente como clips independientes.\
+- Puede asociarse a varios conceptos y bloques.\
+\
+---\
+\
+# 5. Taxonom\'eda MVP\
+\
+Todo el contenido se organiza mediante bloques y conceptos.\
+\
+## Bloques\
+\
+1. Juego desde el fondo\
+2. Transici\'f3n defensa-ataque\
+3. Juego en la red\
+4. Uso del globo\
+5. Gesti\'f3n del ritmo\
+6. Situaciones de presi\'f3n\
+7. Lectura del rival\
+8. Uso t\'e1ctico de golpes\
+9. Juego en pareja\
+\
+---\
+\
+## Conceptos\
+\
+Cada bloque contiene conceptos asociados.\
+\
+Ejemplo:\
+\
+Transici\'f3n defensa-ataque\
+\
+- Subir\
+- Recuperar\
+- Media pista\
+- Posici\'f3n\
+- Equilibrio\
+\
+---\
+\
+# 6. Comportamiento general\
+\
+## Favoritos\
+\
+Los usuarios pueden guardar:\
+\
+- Clips\
+- An\'e1lisis\
+\
+Todo el contenido guardado aparecer\'e1 en Mi Lista.\
+\
+---\
+\
+## Historial\
+\
+El sistema almacenar\'e1:\
+\
+- Clips vistos.\
+- An\'e1lisis vistos.\
+- \'daltimo punto de reproducci\'f3n.\
+- Estado de completado del contenido.\
+\
+---\
+\
+## Continuar viendo\
+\
+Los usuarios podr\'e1n retomar contenido donde lo dejaron.\
+\
+---\
+\
+## Definici\'f3n de contenido visto\
+\
+### Contenido iniciado\
+\
+Un contenido se considerar\'e1 iniciado cuando exista reproducci\'f3n efectiva superior a 10 segundos.\
+\
+### Contenido completado\
+\
+Un contenido se considerar\'e1 completado cuando el usuario haya reproducido al menos el 90% de su duraci\'f3n total.\
+\
+### Uso dentro de la plataforma\
+\
+Estas definiciones se utilizar\'e1n para:\
+\
+- Contin\'faa viendo.\
+- M\'e1s vistos.\
+- Mi Juego.\
+- Historial.\
+- M\'e9tricas internas.\
+\
+---\
+\
+## Interacciones sociales\
+\
+Los usuarios podr\'e1n interactuar con el contenido mediante:\
+\
+- Me gusta.\
+- Comentarios.\
+- Compartir.\
+\
+Estas funcionalidades estar\'e1n disponibles tanto en clips como en an\'e1lisis completos.\
+\
+### Comentarios MVP\
+\
+Durante el MVP, los comentarios ser\'e1n planos.\
+\
+No existir\'e1n:\
+\
+- Respuestas a comentarios.\
+- Menciones.\
+- Likes sobre comentarios.\
+- Hilos de conversaci\'f3n.\
+\
+### Me gusta MVP\
+\
+Los usuarios podr\'e1n marcar contenido con Me gusta.\
+\
+Durante el MVP no ser\'e1 necesario mostrar contadores p\'fablicos de Me gusta.\
+\
+---\
+\
+## Idiomas y audio\
+\
+Todo el contenido podr\'e1 estar disponible en varios idiomas.\
+\
+El reproductor deber\'e1 permitir:\
+\
+- Seleccionar idioma de audio.\
+- Activar o desactivar el sonido.\
+- Ajustar volumen.\
+- Activar pantalla completa.\
+\
+---\
+\
+## Visualizaci\'f3n responsive del v\'eddeo\
+\
+La plataforma ser\'e1 una web-app responsive.\
+\
+El reproductor deber\'e1 adaptarse al dispositivo desde el que se consume el contenido.\
+\
+### Desktop / ordenador\
+\
+En ordenador, el contenido de v\'eddeo se visualizar\'e1 principalmente en formato horizontal 16:9.\
+\
+El reproductor deber\'e1 aprovechar el ancho disponible de la pantalla y permitir consumo c\'f3modo en formato escritorio.\
+\
+### M\'f3vil y tablet en vertical\
+\
+En m\'f3vil o tablet en orientaci\'f3n vertical, el v\'eddeo mantendr\'e1 su formato horizontal original y se mostrar\'e1 en la parte superior dentro de una experiencia vertical.\
+\
+El objetivo es permitir consumo vertical sin deformar el v\'eddeo ni recortarlo.\
+\
+### Pantalla completa\
+\
+El usuario podr\'e1 activar pantalla completa desde el reproductor.\
+\
+En dispositivos m\'f3viles o tablet, al girar el dispositivo a horizontal, el v\'eddeo podr\'e1 visualizarse a pantalla completa aprovechando el formato 16:9.\
+\
+El sistema no deber\'e1 recortar ni deformar el contenido original del v\'eddeo.\
+\
+---\
+\
+## B\'fasqueda\
+\
+La b\'fasqueda global deber\'e1 permitir localizar:\
+\
+- Clips.\
+- Conceptos.\
+- Jugadores.\
+- An\'e1lisis.\
+- Bloques.\
+- Torneo\
+\
+Para que la b\'fasqueda funcione correctamente, tanto los clips como los an\'e1lisis completos deber\'e1n tener metadatos asociados como jugadores, torneo, nivel, bloque y conceptos.\
+\
+---\
+\
+# 7. Pantalla Inicio\
+\
+## Objetivo\
+\
+La pantalla Inicio es la p\'e1gina principal de consumo de contenido de Padel Film Room.\
+\
+Su funci\'f3n es ayudar al usuario a descubrir contenido relevante, retomar contenido que estaba viendo y acceder r\'e1pidamente a nuevo contenido publicado.\
+\
+La pantalla Inicio debe sentirse similar a una plataforma de streaming como Netflix.\
+\
+No pretende mostrar toda la estructura de conocimiento de PFR. Esa funci\'f3n corresponde a la pantalla Explorar.\
+\
+Pregunta que responde:\
+\
+> \'bfQu\'e9 deber\'eda ver ahora?\
+\
+---\
+\
+## Componentes\
+\
+La pantalla Inicio estar\'e1 compuesta por los siguientes bloques:\
+\
+1. Hero destacado.\
+2. Contin\'faa viendo.\
+3. Nuevo esta semana.\
+4. Conceptos populares.\
+5. M\'e1s vistos esta semana.\
+\
+---\
+\
+## Funcionalidades transversales\
+\
+Cualquier contenido mostrado en la pantalla Inicio deber\'e1 poder:\
+\
+- Abrirse para su reproducci\'f3n.\
+- Guardarse en Mi Lista.\
+- Mostrar conceptos asociados.\
+- Mostrar informaci\'f3n b\'e1sica del contenido.\
+\
+Las funcionalidades de comentarios, me gusta y compartir se gestionar\'e1n dentro de la pantalla de reproducci\'f3n del contenido.\
+\
+---\
+\
+## 7.1 Hero destacado\
+\
+### Objetivo\
+\
+Destacar el contenido m\'e1s relevante de la plataforma.\
+\
+Puede utilizarse para:\
+\
+- Clips destacados.\
+- An\'e1lisis destacados.\
+- Contenido nuevo.\
+- Contenido estrat\'e9gico que se quiera promocionar.\
+\
+### Informaci\'f3n mostrada\
+\
+- Imagen principal.\
+- T\'edtulo.\
+- Descripci\'f3n corta.\
+- Conceptos asociados.\
+- Bot\'f3n "Ver contenido".\
+- Bot\'f3n "Guardar en Mi Lista".\
+\
+### Acciones posibles\
+\
+#### Ver contenido\
+\
+Abre la p\'e1gina del clip o an\'e1lisis correspondiente.\
+\
+#### Guardar en Mi Lista\
+\
+A\'f1ade el contenido a favoritos.\
+\
+---\
+\
+## 7.2 Contin\'faa viendo\
+\
+### Objetivo\
+\
+Permitir al usuario retomar contenido que no ha terminado.\
+\
+### Informaci\'f3n mostrada\
+\
+Para cada elemento:\
+\
+- Miniatura.\
+- T\'edtulo.\
+- Progreso de visualizaci\'f3n.\
+- Duraci\'f3n total.\
+\
+### Acciones posibles\
+\
+#### Continuar reproducci\'f3n\
+\
+El contenido se abre en el \'faltimo punto visualizado.\
+\
+### Reglas de comportamiento\
+\
+Solo se mostrar\'e1n contenidos iniciados y no completados.\
+\
+Si el usuario no tiene contenido pendiente, esta secci\'f3n no se mostrar\'e1.\
+\
+---\
+\
+## 7.3 Nuevo esta semana\
+\
+### Objetivo\
+\
+Mostrar el contenido publicado recientemente.\
+\
+### Informaci\'f3n mostrada\
+\
+La secci\'f3n combinar\'e1:\
+\
+- Clips.\
+- An\'e1lisis completos.\
+\
+Ordenados por fecha de publicaci\'f3n descendente.\
+\
+### Acciones posibles\
+\
+#### Abrir contenido\
+\
+Abre el clip o an\'e1lisis seleccionado.\
+\
+#### Ver todo\
+\
+Abre la Pantalla de Resultados con el filtro "Nuevo esta semana" aplicado.\
+\
+### Reglas de comportamiento\
+\
+\
+No se diferenciar\'e1 visualmente entre clips y an\'e1lisis m\'e1s all\'e1 de una etiqueta identificativa.\
+\
+---\
+\
+## 7.4 Conceptos populares\
+\
+### Objetivo\
+\
+Facilitar el descubrimiento de conceptos relevantes y fomentar la exploraci\'f3n de la biblioteca t\'e1ctica.\
+\
+### Informaci\'f3n mostrada\
+\
+Se mostrar\'e1n conceptos destacados en formato de chips.\
+\
+Ejemplos:\
+\
+- #Globo\
+- #Media pista\
+- #Presi\'f3n\
+- #Paciencia\
+- #Subir\
+\
+### Acciones posibles\
+\
+#### Abrir concepto\
+\
+Al pulsar sobre un concepto, el usuario ser\'e1 redirigido a la pantalla Resultados con dicho concepto ya filtrado.\
+\
+### Reglas de comportamiento\
+\
+Los conceptos mostrados podr\'e1n basarse en:\
+\
+- Popularidad.\
+- Tendencias recientes.\
+- Decisiones editoriales.\
+\
+Durante el MVP, la selecci\'f3n de conceptos populares podr\'e1 gestionarse manualmente.\
+\
+No ser\'e1 necesario mostrar m\'e9tricas p\'fablicas al usuario durante el MVP.\
+\
+---\
+\
+## 7.5 M\'e1s vistos esta semana\
+\
+### Objetivo\
+\
+Mostrar el contenido con mayor consumo reciente dentro de la plataforma.\
+\
+### Informaci\'f3n mostrada\
+\
+La secci\'f3n podr\'e1 incluir:\
+\
+- Clips.\
+- An\'e1lisis completos.\
+\
+Ordenados seg\'fan n\'famero de visualizaciones durante los \'faltimos 7 d\'edas.\
+\
+### Acciones posibles\
+\
+#### Abrir contenido\
+\
+Abre el clip o an\'e1lisis seleccionado.\
+\
+#### Ver todo\
+\
+Abre la Pantalla de Resultados con el filtro "M\'e1s vistos esta semana" aplicado.\
+\
+### Reglas de comportamiento\
+\
+La clasificaci\'f3n se basar\'e1 \'fanicamente en visualizaciones registradas dentro de Padel Film Room.\
+\
+Durante fases tempranas del producto, podr\'e1 utilizarse una selecci\'f3n manual mientras no exista volumen suficiente de usuarios.\
+\
+---\
+\
+## 7.6 Reglas generales de la pantalla Inicio\
+\
+### Prioridad visual\
+\
+La pantalla Inicio mostrar\'e1 sus bloques en el siguiente orden:\
+\
+1. Hero destacado.\
+2. Contin\'faa viendo.\
+3. Nuevo esta semana.\
+4. Conceptos populares.\
+5. M\'e1s vistos esta semana.\
+\
+### Personalizaci\'f3n\
+\
+En fases iniciales del MVP, la personalizaci\'f3n ser\'e1 limitada.\
+\
+Conforme aumente el volumen de usuarios y datos disponibles, la Home podr\'e1 evolucionar hacia recomendaciones m\'e1s personalizadas.\
+\
+### Comportamiento ante falta de contenido\
+\
+Si el volumen de contenido disponible es reducido, la plataforma priorizar\'e1 mostrar contenido existente antes que dejar espacios vac\'edos.\
+\
+### Objetivo de la pantalla\
+\
+La Home debe maximizar:\
+\
+- Descubrimiento.\
+- Consumo.\
+- Retorno del usuario.\
+- Acceso r\'e1pido a nuevo contenido.\
+\
+\
+No debe utilizarse como una representaci\'f3n completa de la estructura de conocimiento de PFR, funci\'f3n que corresponde a la pantalla Explorar.\
+\
+---\
+\
+# 8. Pantalla Explorar\
+\
+## Objetivo\
+\
+La pantalla Explorar constituye la biblioteca t\'e1ctica principal de Padel Film Room.\
+\
+Su funci\'f3n es permitir al usuario navegar intencionadamente por el conocimiento disponible dentro de la plataforma.\
+\
+A diferencia de la pantalla Inicio, Explorar no est\'e1 orientada al descubrimiento de contenido reciente, sino a facilitar el aprendizaje estructurado mediante bloques, conceptos y filtros.\
+\
+Pregunta que responde:\
+\
+> \'bfQu\'e9 quiero aprender?\
+\
+---\
+\
+## Componentes\
+\
+La pantalla Explorar estar\'e1 compuesta por:\
+\
+1. Buscador.\
+2. Filtros globales.\
+3. Bloques t\'e1cticos.\
+4. Conceptos asociados a cada bloque.\
+5. Carruseles de clips.\
+6. Acceso a an\'e1lisis completos.\
+\
+---\
+\
+## Estructura general\
+\
+Cada bloque t\'e1ctico se mostrar\'e1 como una fila independiente.\
+\
+Ejemplo:\
+\
+- Juego desde el fondo.\
+- Transici\'f3n defensa-ataque.\
+- Juego en la red.\
+- Uso del globo.\
+- Gesti\'f3n del ritmo.\
+- Situaciones de presi\'f3n.\
+- Lectura del rival.\
+- Uso t\'e1ctico de golpes.\
+- Juego en pareja.\
+\
+Cada bloque mostrar\'e1:\
+\
+- Nombre del bloque.\
+- Conceptos disponibles en formato chip.\
+- Carrusel de clips asociados.\
+- Bot\'f3n "Ver Todo".\
+\
+Adem\'e1s, podr\'e1 existir una secci\'f3n espec\'edfica de An\'e1lisis Completos dentro de Explorar.\
+\
+---\
+\
+## 8.1 Buscador\
+\
+### Objetivo\
+\
+Permitir localizar r\'e1pidamente contenido dentro de la plataforma mediante texto libre.\
+\
+### B\'fasquedas permitidas\
+\
+El buscador estar\'e1 orientado principalmente a b\'fasquedas por:\
+\
+- T\'edtulo.\
+- Jugador.\
+- Partido.\
+- Torneo.\
+- Concepto escrito manualmente.\
+- Bloque escrito manualmente.\
+\
+### Acciones posibles\
+\
+#### Buscar\
+\
+Al realizar una b\'fasqueda, el usuario acceder\'e1 a la Pantalla de Resultados con la b\'fasqueda aplicada.\
+\
+### Reglas de comportamiento\
+\
+La b\'fasqueda no sustituye a los filtros.\
+\
+Los filtros servir\'e1n para navegar de forma estructurada.\
+\
+El buscador servir\'e1 para localizar contenido concreto cuando el usuario sabe qu\'e9 quiere encontrar.\
+\
+---\
+\
+## 8.2 Filtros globales\
+\
+### Objetivo\
+\
+Permitir al usuario refinar el contenido de Explorar de forma estructurada.\
+\
+### Filtros disponibles MVP\
+\
+Los filtros globales podr\'e1n incluir:\
+\
+- Bloque t\'e1ctico.\
+- Concepto.\
+- Nivel.\
+- Tipo de contenido.\
+\
+### Valores posibles\
+\
+#### Bloque t\'e1ctico\
+\
+- Juego desde el fondo.\
+- Transici\'f3n defensa-ataque.\
+- Juego en la red.\
+- Uso del globo.\
+- Gesti\'f3n del ritmo.\
+- Situaciones de presi\'f3n.\
+- Lectura del rival.\
+- Uso t\'e1ctico de golpes.\
+- Juego en pareja.\
+\
+#### Nivel\
+\
+- Todos los niveles.\
+- Intermedio.\
+- Avanzado.\
+\
+Durante el MVP, el nivel se utilizar\'e1 principalmente como filtro interno de clasificaci\'f3n y descubrimiento.\
+\
+No ser\'e1 obligatorio mostrar el nivel de forma destacada en las tarjetas de contenido si no aporta valor visual al usuario.\
+\
+#### Tipo de contenido\
+\
+- Clips.\
+- An\'e1lisis completos.\
+\
+### Acciones posibles\
+\
+#### Aplicar filtros\
+\
+Al aplicar filtros, el usuario acceder\'e1 a la Pantalla de Resultados con dichos filtros aplicados.\
+\
+### Reglas de comportamiento\
+\
+Los filtros globales permiten crear vistas amplias de contenido.\
+\
+Ejemplo:\
+\
+- Bloque: Juego desde el fondo.\
+- Concepto: Globo.\
+- Nivel: Medio.\
+- Tipo: Clips.\
+\
+El resultado deber\'e1 mostrarse en formato vertical, no en carrusel horizontal.\
+\
+---\
+\
+## 8.3 Conceptos dentro de bloque\
+\
+### Objetivo\
+\
+Permitir filtrar r\'e1pidamente los clips de un bloque mediante conceptos visibles y clicables.\
+\
+### Informaci\'f3n mostrada\
+\
+Los conceptos se mostrar\'e1n mediante chips clicables dentro de cada bloque.\
+\
+Ejemplo:\
+\
+#Decisiones\
+#Globo\
+#Paciencia\
+#Subir\
+#Media pista\
+\
+### Acciones posibles\
+\
+#### Filtrar concepto dentro del bloque\
+\
+Al pulsar un concepto, la fila del bloque correspondiente se filtrar\'e1 autom\'e1ticamente para mostrar clips asociados a ese concepto.\
+\
+No se abrir\'e1 una nueva p\'e1gina.\
+\
+### Reglas de comportamiento\
+\
+El filtrado deber\'e1 producirse de forma inmediata.\
+\
+El usuario podr\'e1 eliminar el filtro y volver a visualizar todos los clips del bloque.\
+\
+Los chips de concepto son filtros contextuales dentro de cada bloque.\
+\
+Cuando un clip est\'e9 asociado a varios bloques y conceptos, en la pantalla Explorar solo se mostrar\'e1n los conceptos correspondientes al bloque en el que se est\'e1 visualizando.\
+\
+Ejemplo:\
+\
+Si un mismo clip est\'e1 asociado a:\
+\
+- Transici\'f3n defensa-ataque \uc0\u8594  #Subir\
+- Uso t\'e1ctico de golpes \uc0\u8594  #Volea\
+\
+En el bloque Transici\'f3n defensa-ataque, el clip solo mostrar\'e1 el chip #Subir.\
+\
+En el bloque Uso t\'e1ctico de golpes, el mismo clip solo mostrar\'e1 el chip #Volea.\
+\
+El objetivo es evitar confusi\'f3n al filtrar dentro de cada bloque.\
+\
+No sustituyen a los filtros globales.\
+\
+---\
+\
+## 8.4 Carrusel de clips\
+\
+### Objetivo\
+\
+Mostrar ejemplos pr\'e1cticos asociados al bloque y concepto seleccionado.\
+\
+### Informaci\'f3n mostrada\
+\
+Para cada clip:\
+\
+- Miniatura.\
+- T\'edtulo.\
+- Duraci\'f3n.\
+- Conceptos asociados al bloque visible en ese momento.\
+\
+### Acciones posibles\
+\
+#### Abrir clip\
+\
+Abre la P\'e1gina de Clip al hacer clic en el clip.\
+\
+#### Guardar en Mi Lista\
+\
+A\'f1ade el clip a favoritos.\
+\
+#### Ver Todo\
+\
+Abre la Pantalla de Resultados mostrando todos los clips del bloque o concepto correspondiente.\
+\
+### Reglas de comportamiento\
+\
+Un mismo clip podr\'e1 estar asociado a m\'e1s de un concepto.\
+\
+Un mismo clip tambi\'e9n podr\'e1 aparecer en m\'e1s de un bloque si el contenido resulta relevante para varios contextos t\'e1cticos.\
+\
+En Explorar, la visualizaci\'f3n de chips deber\'e1 limitarse siempre a los conceptos pertenecientes al bloque donde aparece el clip.\
+\
+Los filtros deber\'e1n utilizar las asociaciones existentes sin duplicar contenido.\
+\
+El carrusel mostrar\'e1 solo una cantidad limitada de clips.\
+\
+Al llegar al final del carrusel, el usuario deber\'e1 tener acceso a la acci\'f3n "Ver Todo".\
+\
+La vista completa de un bloque o concepto se mostrar\'e1 siempre en la Pantalla de Resultados, en formato vertical.\
+\
+---\
+\
+## 8.5 An\'e1lisis completos en Explorar\
+\
+### Objetivo\
+\
+Permitir acceder a an\'e1lisis completos desde la pantalla Explorar sin mezclarlos necesariamente con los clips t\'e1cticos.\
+\
+### Comportamiento MVP\
+\
+Los an\'e1lisis completos podr\'e1n mostrarse como una secci\'f3n propia dentro de Explorar.\
+\
+Esta secci\'f3n funcionar\'e1 como un bloque adicional de contenido.\
+\
+Todos los conceptos (#) incluidos en los v\'eddeos del carrusel, deber\'e1n salir como chips clicables para filtrar este bloque.\
+\
+Ejemplo:\
+\
+- An\'e1lisis completos.\
+\
+### Informaci\'f3n mostrada\
+\
+Para cada an\'e1lisis:\
+\
+- Miniatura.\
+- T\'edtulo del partido.\
+- Duraci\'f3n.\
+- Jugadores.\
+- Conceptos principales asociados.\
+\
+### Acciones posibles\
+\
+#### Abrir an\'e1lisis\
+\
+Abre la P\'e1gina de An\'e1lisis Completo.\
+\
+#### Ver Todo\
+\
+Abre la Pantalla de Resultados con el tipo de contenido "An\'e1lisis completos" aplicado.\
+\
+### Reglas de comportamiento\
+\
+Los an\'e1lisis completos no tendr\'e1n necesariamente los mismos chips visibles que los bloques t\'e1cticos.\
+\
+Podr\'e1n filtrarse mediante filtros globales.\
+\
+El objetivo es mantener la pantalla limpia y evitar exceso de chips en esta secci\'f3n.\
+\
+---\
+\
+## 8.6 Reglas generales de la pantalla Explorar\
+\
+### Filosof\'eda de navegaci\'f3n\
+\
+La pantalla Explorar debe priorizar la simplicidad y el acceso r\'e1pido al contenido.\
+\
+El usuario debe poder descubrir nuevos ejemplos sin necesidad de navegar por m\'faltiples niveles o pantallas.\
+\
+### Uso de conceptos\
+\
+Los conceptos visibles en formato chip funcionar\'e1n como filtros r\'e1pidos dentro de cada bloque.\
+\
+Los filtros globales funcionar\'e1n como sistema avanzado de refinado.\
+\
+### Uso de Ver Todo\
+\
+Cada bloque podr\'e1 incluir una acci\'f3n "Ver Todo".\
+\
+Esta acci\'f3n abrir\'e1 la Pantalla de Resultados con el bloque o concepto correspondiente aplicado.\
+\
+### Objetivo de la pantalla\
+\
+Explorar debe representar visualmente la taxonom\'eda de conocimiento de Padel Film Room y facilitar que un usuario encuentre m\'faltiples ejemplos reales de una misma situaci\'f3n t\'e1ctica.\
+\
+---\
+\
+# 9. P\'e1gina de Clip\
+\
+## Objetivo\
+\
+La P\'e1gina de Clip constituye la unidad principal de consumo y aprendizaje dentro de Padel Film Room.\
+\
+Su funci\'f3n es permitir al usuario visualizar un ejemplo concreto, comprender el concepto explicado y continuar explorando situaciones relacionadas.\
+\
+La experiencia debe estar especialmente pensada para consumo m\'f3vil, ya que se espera que una parte muy relevante del consumo ocurra desde m\'f3vil o tablet.\
+\
+Pregunta que responde:\
+\
+> \'bfQu\'e9 puedo aprender de esta situaci\'f3n?\
+\
+---\
+\
+## Componentes\
+\
+La P\'e1gina de Clip estar\'e1 compuesta por:\
+\
+1. Reproductor de v\'eddeo.\
+2. Informaci\'f3n del clip.\
+3. Conceptos asociados.\
+4. Acciones sociales.\
+5. Secci\'f3n "Aparece en\'94, para vincularlo al an\'e1lisis completo en el que aparece.\
+6. Clips relacionados.\
+7. Comentarios.\
+\
+---\
+\
+## 9.1 Reproductor de v\'eddeo\
+\
+### Objetivo\
+\
+Permitir la reproducci\'f3n del clip en cualquier dispositivo.\
+\
+### Informaci\'f3n mostrada\
+\
+- V\'eddeo.\
+- Duraci\'f3n.\
+- Estado de reproducci\'f3n.\
+- Idioma seleccionado.\
+\
+### Acciones posibles\
+\
+#### Reproducir / Pausar\
+\
+Control est\'e1ndar de reproducci\'f3n.\
+\
+#### Cambiar idioma\
+\
+Permite seleccionar el idioma de audio disponible para el clip.\
+\
+#### Activar o desactivar sonido\
+\
+Permite silenciar o activar el audio.\
+\
+#### Ajustar volumen\
+\
+Permite modificar el volumen del reproductor.\
+\
+#### Pantalla completa\
+\
+Permite visualizar el clip a pantalla completa.\
+\
+### Reglas de comportamiento\
+\
+El sistema deber\'e1 recordar el punto exacto donde el usuario abandon\'f3 el clip para la funcionalidad 'Contin\'faa viendo'.\
+\
+El v\'eddeo no deber\'e1 deformarse ni recortarse.\
+\
+En m\'f3vil vertical, el v\'eddeo se mostrar\'e1 centrado dentro de una experiencia vertical, manteniendo su formato horizontal original.\
+\
+---\
+\
+## 9.2 Informaci\'f3n del clip\
+\
+### Informaci\'f3n mostrada\
+\
+- T\'edtulo.\
+- Descripci\'f3n corta.\
+- Bloque t\'e1ctico.\
+- Conceptos asociados.\
+- Duraci\'f3n.\
+\
+La descripci\'f3n explicar\'e1 brevemente qu\'e9 se trabaja en el clip.\
+\
+No se mostrar\'e1 la transcripci\'f3n completa del v\'eddeo en el MVP.\
+\
+### Acciones posibles\
+\
+#### Abrir bloque\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 Redirige a la Pantalla de Resultados mostrando clips asociados a ese bloque.\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+#### Abrir concepto\
+\
+Redirige a la Pantalla de Resultados mostrando clips asociados a ese concepto.\
+\
+### Reglas de visualizaci\'f3n\
+\
+El bloque puede aparecer como contexto principal del clip.\
+\
+Los conceptos aparecer\'e1n como chips o tags clicables.\
+\
+No ser\'e1 necesario mostrar el bloque como tag si ya aparece claramente como contexto o categor\'eda del clip.\
+\
+---\
+\
+## 9.3 Conceptos asociados\
+\
+### Objetivo\
+\
+Permitir al usuario identificar r\'e1pidamente qu\'e9 ideas t\'e1cticas se trabajan en el clip.\
+\
+### Informaci\'f3n mostrada\
+\
+Los conceptos se mostrar\'e1n como chips clicables.\
+\
+A diferencia de la pantalla Explorar, la P\'e1gina de Clip podr\'e1 mostrar todos los conceptos asociados al clip, aunque pertenezcan a distintos bloques.\
+\
+Ejemplo:\
+\
+#Globo\
+#Paciencia\
+#Media pista\
+\
+### Ubicaci\'f3n recomendada\
+\
+Los conceptos deber\'e1n aparecer en una zona visible de la p\'e1gina, preferiblemente cerca de la informaci\'f3n del clip y antes de los comentarios.\
+\
+En m\'f3vil, los conceptos deber\'e1n quedar accesibles sin generar ruido visual sobre el v\'eddeo.\
+\
+### Acciones posibles\
+\
+#### Abrir concepto\
+\
+Abre la Pantalla de Resultados con el concepto aplicado como filtro.\
+\
+---\
+\
+## 9.4 Acciones sociales\
+\
+### Acciones disponibles\
+\
+#### Mi Lista\
+\
+Permite a\'f1adir o quitar el clip de Mi Lista.\
+\
+Esta ser\'e1 la \'fanica acci\'f3n de guardado visible en la P\'e1gina de Clip.\
+\
+No deber\'e1 existir un bot\'f3n adicional llamado "Guardar" si ya existe la acci\'f3n "Mi Lista".\
+\
+La acci\'f3n funcionar\'e1 como un selector de estado.\
+\
+Si el contenido no est\'e1 guardado, al pulsar sobre 'Mi Lista' se a\'f1adir\'e1 a la lista personal del usuario.\
+\
+Si el contenido ya est\'e1 guardado, al pulsar nuevamente sobre 'Mi Lista' se eliminar\'e1 de dicha lista.\
+\
+El estado visual deber\'e1 indicar claramente si el contenido ya forma parte de Mi Lista.\
+\
+#### Me gusta\
+\
+Permite indicar que el contenido ha resultado \'fatil o interesante.\
+\
+#### Compartir\
+\
+Genera opciones para compartir el clip.\
+\
+#### Comentarios\
+\
+Permite consultar y publicar comentarios.\
+\
+### Reglas de visualizaci\'f3n\
+\
+Las acciones sociales deber\'e1n ser accesibles sin sobrecargar la experiencia de consumo.\
+\
+En m\'f3vil, podr\'e1n situarse pr\'f3ximas al reproductor o en una barra lateral/inferior seg\'fan dise\'f1o.\
+\
+En desktop, podr\'e1n situarse junto a la informaci\'f3n del clip o debajo del reproductor.\
+\
+La acci\'f3n de guardado deber\'e1 mostrarse siempre bajo el mismo concepto visual y textual: "Mi Lista".\
+\
+El objetivo es evitar duplicidades entre "Guardar" y "Mi Lista".\
+\
+---\
+\
+## 9.5 Secci\'f3n "Aparece en"\
+\
+### Objetivo\
+\
+Conectar el clip con el an\'e1lisis completo del que procede.\
+\
+### Informaci\'f3n mostrada\
+\
+Si el clip forma parte de un an\'e1lisis completo, se mostrar\'e1 una secci\'f3n con:\
+\
+- T\'edtulo del an\'e1lisis completo.\
+- Partido.\
+- Jugadores.\
+- Miniatura.\
+- Bot\'f3n "Ver an\'e1lisis completo".\
+\
+### Acciones posibles\
+\
+#### Ver an\'e1lisis completo\
+\
+Abre la P\'e1gina de An\'e1lisis Completo correspondiente.\
+\
+### Reglas de comportamiento\
+\
+Esta secci\'f3n solo se mostrar\'e1 cuando exista un an\'e1lisis completo asociado al clip.\
+\
+El objetivo es permitir que un usuario que descubre un clip pueda profundizar viendo el an\'e1lisis largo del partido.\
+\
+---\
+\
+## 9.6 Clips relacionados\
+\
+### Objetivo\
+\
+Facilitar el aprendizaje mediante repetici\'f3n de ejemplos similares.\
+\
+### Informaci\'f3n mostrada\
+\
+Lista de clips relacionados basada en:\
+\
+- Mismo concepto.\
+- Mismo bloque t\'e1ctico.\
+- Recomendaciones editoriales.\
+\
+### Acciones posibles\
+\
+#### Abrir clip relacionado\
+\
+Abre la P\'e1gina de Clip correspondiente.\
+\
+### Reglas de comportamiento\
+\
+Los clips relacionados deben priorizar ejemplos del mismo concepto antes que ejemplos del mismo bloque.\
+\
+El objetivo es que el usuario pueda ver varias situaciones distintas que refuerzan el mismo aprendizaje.\
+\
+### Filosof\'eda de aprendizaje\
+\
+La navegaci\'f3n entre clips relacionados constituye un mecanismo estrat\'e9gico de aprendizaje dentro de Padel Film Room.\
+\
+El objetivo no es \'fanicamente consumir un clip aislado, sino encadenar m\'faltiples ejemplos que permitan reconocer patrones t\'e1cticos repetidos.\
+\
+---\
+\
+## 9.7 Reproducci\'f3n autom\'e1tica y siguiente clip\
+\
+### Objetivo\
+\
+Fomentar el consumo continuo de clips relacionados y reforzar el aprendizaje mediante repetici\'f3n.\
+\
+### Comportamiento deseado\
+\
+Al finalizar un clip, la plataforma deber\'e1 facilitar el acceso al siguiente clip relacionado, priorizando clips del mismo concepto.\
+\
+### Desktop\
+\
+En desktop, al finalizar el clip podr\'e1 mostrarse un m\'f3dulo tipo:\
+\
+> Siguiente clip en 3, 2, 1...\
+\
+El usuario podr\'e1:\
+\
+- Dejar que el siguiente clip se reproduzca autom\'e1ticamente.\
+- Cancelar la reproducci\'f3n autom\'e1tica.\
+- Seleccionar otro clip relacionado.\
+\
+### M\'f3vil en visualizaci\'f3n normal\
+\
+En m\'f3vil, cuando el usuario no est\'e9 en pantalla completa, la experiencia deber\'e1 favorecer la navegaci\'f3n vertical entre clips relacionados.\
+\
+Debajo del reproductor deber\'e1 existir una indicaci\'f3n visual clara de que existe m\'e1s contenido relacionado.\
+\
+Ejemplos:\
+\
+- \uc0\u8595  Sigue aprendiendo.\
+- \uc0\u8595  Siguiente clip del mismo concepto.\
+\
+La indicaci\'f3n podr\'e1 incluir animaciones suaves o elementos visuales que comuniquen que el usuario puede seguir desplaz\'e1ndose hacia abajo.\
+\
+El objetivo es que el usuario entienda intuitivamente que existen m\'e1s ejemplos relacionados sin necesidad de explicaciones adicionales.\
+\
+### M\'f3vil en pantalla completa\
+\
+Cuando el usuario visualice el contenido en pantalla completa horizontal, el scroll vertical dejar\'e1 de estar disponible.\
+\
+En este caso, el comportamiento deber\'e1 ser equivalente al de desktop.\
+\
+Al finalizar el clip podr\'e1 mostrarse:\
+\
+> Siguiente clip en 3, 2, 1...\
+\
+El usuario podr\'e1:\
+\
+- Continuar autom\'e1ticamente.\
+- Cancelar el autoplay.\
+- Elegir otro clip relacionado.\
+\
+### Reglas de comportamiento\
+\
+La reproducci\'f3n autom\'e1tica deber\'e1 priorizar clips del mismo concepto.\
+\
+Si no existen clips del mismo concepto, se podr\'e1n recomendar clips del mismo bloque.\
+\
+El usuario deber\'e1 poder detener o evitar el autoplay.\
+\
+La experiencia m\'f3vil deber\'e1 priorizar la continuidad mediante scroll vertical cuando no se est\'e9 utilizando pantalla completa.\
+\
+La experiencia en pantalla completa deber\'e1 priorizar la continuidad mediante autoplay.\
+\
+---\
+\
+## 9.8 Comentarios\
+\
+### Objetivo\
+\
+Permitir conversaci\'f3n y debate alrededor de cada clip.\
+\
+### Informaci\'f3n mostrada\
+\
+- Lista de comentarios.\
+- Campo para escribir comentario.\
+\
+### Reglas de comportamiento\
+\
+En m\'f3vil, los comentarios podr\'e1n abrirse mediante una capa superpuesta (bottom sheet) sin interrumpir el flujo principal de consumo de contenido.\
+\
+El usuario podr\'e1 cerrar los comentarios y volver exactamente al punto donde se encontraba.\
+\
+---\
+\
+## 9.9 Reglas generales de la P\'e1gina de Clip\
+\
+### Filosof\'eda\
+\
+La p\'e1gina debe priorizar el consumo r\'e1pido y la continuidad de aprendizaje.\
+\
+### Navegaci\'f3n\
+\
+El usuario debe poder pasar de un clip a otro con el menor n\'famero posible de clics.\
+\
+### Mobile first\
+\
+La experiencia m\'f3vil ser\'e1 especialmente importante.\
+\
+El dise\'f1o deber\'e1 permitir consumir clips de forma fluida en vertical, sin deformar el v\'eddeo horizontal original.\
+\
+La navegaci\'f3n vertical entre clips relacionados deber\'e1 sentirse natural y formar parte central de la experiencia de aprendizaje en m\'f3vil.\
+\
+### Objetivo de la pantalla\
+\
+Convertir un ejemplo aislado en una oportunidad para descubrir m\'faltiples ejemplos relacionados y reforzar el aprendizaje mediante repetici\'f3n.\
+\
+El objetivo no es que el usuario vea un \'fanico clip, sino que pueda encadenar varios clips relacionados y empezar a reconocer patrones t\'e1cticos.\
+\
+### Consistencia de acciones\
+\
+La P\'e1gina de Clip no deber\'e1 mostrar simult\'e1neamente una acci\'f3n "Guardar" y una acci\'f3n "Mi Lista".\
+\
+\
+Para el MVP, la acci\'f3n correcta ser\'e1 "Mi Lista", entendida como a\'f1adir o quitar el clip de la lista personal del usuario.\
+\
+---\
+\
+# 10. P\'e1gina de An\'e1lisis Completo\
+\
+## Objetivo\
+\
+La P\'e1gina de An\'e1lisis Completo permite al usuario consumir un an\'e1lisis largo formado por una selecci\'f3n de momentos relevantes de un partido comentados por el analista.\
+\
+Su funci\'f3n es ofrecer una experiencia de profundidad t\'e1ctica mayor que la P\'e1gina de Clip, permitiendo al usuario seguir el razonamiento del analista y navegar por los distintos momentos relevantes del partido.\
+\
+Un an\'e1lisis completo no equivale a ver un partido entero.\
+\
+El an\'e1lisis completo estar\'e1 formado por varios cap\'edtulos, y cada cap\'edtulo representar\'e1 un clip o momento concreto seleccionado dentro del partido.\
+\
+La duraci\'f3n aproximada de un an\'e1lisis completo ser\'e1 de unos 20 minutos, aunque podr\'e1 variar.\
+\
+Pregunta que responde:\
+\
+> \'bfQu\'e9 puedo aprender viendo este partido analizado?\
+\
+---\
+\
+## Componentes\
+\
+La P\'e1gina de An\'e1lisis Completo estar\'e1 compuesta por:\
+\
+1. Reproductor de v\'eddeo.\
+2. Informaci\'f3n del an\'e1lisis.\
+3. Cap\'edtulos.\
+4. Conceptos asociados.\
+5. Acciones sociales.\
+6. Comentarios.\
+7. Siguiente an\'e1lisis / an\'e1lisis relacionados.\
+\
+---\
+\
+## 10.1 Reproductor de v\'eddeo\
+\
+### Objetivo\
+\
+Permitir la reproducci\'f3n del an\'e1lisis completo en cualquier dispositivo.\
+\
+### Informaci\'f3n mostrada\
+\
+- V\'eddeo.\
+- Duraci\'f3n total.\
+- Estado de reproducci\'f3n.\
+- Idioma seleccionado.\
+- Progreso de visualizaci\'f3n.\
+\
+### Acciones posibles\
+\
+#### Reproducir / Pausar\
+\
+Control est\'e1ndar de reproducci\'f3n.\
+\
+#### Cambiar idioma\
+\
+Permite seleccionar el idioma de audio disponible para el an\'e1lisis.\
+\
+#### Activar o desactivar sonido\
+\
+Permite silenciar o activar el audio.\
+\
+#### Ajustar volumen\
+\
+Permite modificar el volumen del reproductor.\
+\
+#### Pantalla completa\
+\
+Permite visualizar el an\'e1lisis a pantalla completa.\
+\
+### Reglas de comportamiento\
+\
+El sistema deber\'e1 recordar el punto exacto donde el usuario abandon\'f3 el an\'e1lisis para la funcionalidad 'Contin\'faa viendo'.\
+\
+El v\'eddeo no deber\'e1 deformarse ni recortarse.\
+\
+En m\'f3vil vertical, el v\'eddeo se mostrar\'e1 centrado dentro de una experiencia vertical, manteniendo su formato horizontal original.\
+\
+El formato y comportamiento visual del reproductor deber\'e1 ser coherente con el definido para la P\'e1gina de Clip.\
+\
+---\
+\
+## 10.2 Informaci\'f3n del an\'e1lisis\
+\
+### Informaci\'f3n mostrada\
+\
+- T\'edtulo del an\'e1lisis.\
+- Partido.\
+- Jugadores.\
+- Torneo.\
+- Duraci\'f3n.\
+- Descripci\'f3n corta.\
+- Conceptos principales tratados.\
+\
+### Reglas de visualizaci\'f3n\
+\
+La descripci\'f3n deber\'e1 explicar brevemente qu\'e9 se analiza en el v\'eddeo y por qu\'e9 puede resultar \'fatil para el usuario.\
+\
+No se mostrar\'e1 la transcripci\'f3n completa del an\'e1lisis en el MVP.\
+\
+---\
+\
+## 10.3 Cap\'edtulos\
+\
+### Objetivo\
+\
+Permitir al usuario navegar por los distintos clips o momentos que forman parte del an\'e1lisis completo.\
+\
+### Definici\'f3n funcional\
+\
+Cada cap\'edtulo representa un clip o momento seleccionado dentro del an\'e1lisis.\
+\
+El an\'e1lisis completo ser\'e1 una secuencia de cap\'edtulos.\
+\
+Al reproducir el an\'e1lisis completo, los cap\'edtulos se reproducir\'e1n de forma continua como parte de un \'fanico v\'eddeo largo.\
+\
+Al pulsar un cap\'edtulo, el reproductor saltar\'e1 al minuto correspondiente y continuar\'e1 reproduciendo el an\'e1lisis desde ese punto.\
+\
+### Informaci\'f3n mostrada\
+\
+Cada cap\'edtulo podr\'e1 mostrar:\
+\
+- Minuto de inicio.\
+- T\'edtulo del cap\'edtulo.\
+- Concepto principal asociado.\
+- Breve descripci\'f3n opcional.\
+\
+Ejemplo:\
+\
+- 00:00 Introducci\'f3n.\
+- 02:15 Transici\'f3n defensa-ataque.\
+- 05:40 Globo en mal momento.\
+- 09:20 Repetir sobre el mismo rival.\
+\
+### Acciones posibles\
+\
+#### Ir a cap\'edtulo\
+\
+Al pulsar un cap\'edtulo, el reproductor saltar\'e1 al minuto correspondiente del an\'e1lisis.\
+\
+### Reglas de comportamiento\
+\
+No abrir\'e1n una nueva p\'e1gina.\
+\
+No ser\'e1 necesario mostrar los clips derivados como tarjetas con miniatura si ya se muestran como cap\'edtulos navegables dentro del an\'e1lisis.\
+\
+En desktop, los cap\'edtulos podr\'e1n aparecer en una columna lateral o debajo del reproductor.\
+\
+En m\'f3vil, los cap\'edtulos aparecer\'e1n colapsados por defecto mediante un acorde\'f3n.\
+\
+Ejemplo:\
+\
+\uc0\u9660  Cap\'edtulos (7)\
+\
+Al expandirse, se mostrar\'e1 la lista completa de cap\'edtulos.\
+\
+---\
+\
+## 10.4 Conceptos asociados (correcci\'f3n: no se muestran al usuario porque habr\'e1 20, solo informativo para backend)\
+\
+### Objetivo\
+\
+Permitir al usuario identificar r\'e1pidamente los conceptos t\'e1cticos tratados dentro del an\'e1lisis completo.\
+\
+### Informaci\'f3n mostrada\
+\
+Los conceptos principales se mostrar\'e1n como chips clicables.\
+\
+Ejemplo:\
+\
+#Transici\'f3n\
+#Globo\
+#Paciencia\
+#Juego en pareja\
+\
+### Acciones posibles\
+\
+#### Abrir concepto\
+\
+Abre la Pantalla de Resultados con el concepto aplicado como filtro.\
+\
+### Reglas de comportamiento\
+\
+No ser\'e1 necesario mostrar todos los conceptos posibles del an\'e1lisis si la lista resulta excesiva.\
+\
+Durante el MVP, se priorizar\'e1n los conceptos principales para mantener la p\'e1gina limpia.\
+\
+---\
+\
+## 10.5 Acciones sociales\
+\
+### Acciones disponibles\
+\
+#### Mi Lista\
+\
+Permite a\'f1adir o quitar el an\'e1lisis completo de Mi Lista.\
+\
+La acci\'f3n funcionar\'e1 como un selector de estado.\
+\
+Si el an\'e1lisis no est\'e1 guardado, al pulsar sobre 'Mi Lista' se a\'f1adir\'e1 a la lista personal del usuario.\
+\
+Si el an\'e1lisis ya est\'e1 guardado, al pulsar nuevamente sobre 'Mi Lista' se eliminar\'e1 de dicha lista.\
+\
+El estado visual deber\'e1 indicar claramente si el an\'e1lisis ya forma parte de Mi Lista.\
+\
+#### Me gusta\
+\
+Permite indicar que el an\'e1lisis ha resultado \'fatil o interesante.\
+\
+#### Compartir\
+\
+Genera opciones para compartir el an\'e1lisis.\
+\
+#### Comentarios\
+\
+Permite consultar y publicar comentarios.\
+\
+### Reglas de visualizaci\'f3n\
+\
+Las acciones sociales deber\'e1n ser accesibles sin sobrecargar la experiencia de consumo.\
+\
+La acci\'f3n de guardado deber\'e1 mostrarse siempre bajo el mismo concepto visual y textual: 'Mi Lista'.\
+\
+No deber\'e1 existir un bot\'f3n adicional llamado 'Guardar'.\
+\
+---\
+\
+## 10.6 Comentarios\
+\
+### Objetivo\
+\
+Permitir conversaci\'f3n y debate alrededor del an\'e1lisis completo.\
+\
+### Informaci\'f3n mostrada\
+\
+- Lista de comentarios.\
+- Campo para escribir comentario.\
+\
+### Reglas de comportamiento\
+\
+En m\'f3vil, los comentarios podr\'e1n abrirse mediante una capa superpuesta (bottom sheet) sin interrumpir el flujo principal de consumo de contenido.\
+\
+El usuario podr\'e1 cerrar los comentarios y volver exactamente al punto donde se encontraba.\
+\
+---\
+\
+## 10.7 Reproducci\'f3n autom\'e1tica y siguiente an\'e1lisis\
+\
+### Objetivo\
+\
+Fomentar el consumo continuo de an\'e1lisis completos relacionados.\
+\
+### Comportamiento deseado\
+\
+Al finalizar un an\'e1lisis completo, la plataforma deber\'e1 facilitar el acceso a otro an\'e1lisis completo relacionado.\
+\
+### Desktop\
+\
+En desktop, al finalizar el an\'e1lisis podr\'e1 mostrarse un m\'f3dulo tipo:\
+\
+> Siguiente an\'e1lisis en 3, 2, 1...\
+\
+El usuario podr\'e1:\
+\
+- Dejar que el siguiente an\'e1lisis se reproduzca autom\'e1ticamente.\
+- Cancelar la reproducci\'f3n autom\'e1tica.\
+- Seleccionar otro an\'e1lisis relacionado.\
+\
+### M\'f3vil en visualizaci\'f3n normal\
+\
+En m\'f3vil, cuando el usuario no est\'e9 en pantalla completa, la experiencia deber\'e1 favorecer la navegaci\'f3n vertical hacia otro an\'e1lisis relacionado.\
+\
+Debajo del reproductor deber\'e1 existir una indicaci\'f3n visual clara de que existe m\'e1s contenido relacionado.\
+\
+Ejemplos:\
+\
+- \uc0\u8595  Sigue aprendiendo.\
+- \uc0\u8595  Siguiente an\'e1lisis.\
+\
+### M\'f3vil en pantalla completa\
+\
+Cuando el usuario visualice el contenido en pantalla completa horizontal, el scroll vertical dejar\'e1 de estar disponible.\
+\
+En este caso, el comportamiento deber\'e1 ser equivalente al de desktop.\
+\
+Al finalizar el an\'e1lisis podr\'e1 mostrarse:\
+\
+> Siguiente an\'e1lisis en 3, 2, 1...\
+\
+### Reglas de comportamiento\
+\
+La reproducci\'f3n autom\'e1tica deber\'e1 priorizar an\'e1lisis completos relacionados por conceptos, jugadores, torneo o decisi\'f3n editorial.\
+\
+El usuario deber\'e1 poder detener o evitar el autoplay.\
+\
+La experiencia m\'f3vil deber\'e1 priorizar la continuidad mediante scroll vertical cuando no se est\'e9 utilizando pantalla completa.\
+\
+La experiencia en pantalla completa deber\'e1 priorizar la continuidad mediante autoplay.\
+\
+La plataforma deber\'e1 comunicar visualmente que existe m\'e1s contenido relacionado disponible mediante un footer de continuidad.\
+\
+Ejemplo:\
+\
+\uc0\u8595  Sigue aprendiendo \u8595 \
+\
+El usuario acceder\'e1 al siguiente an\'e1lisis mediante scroll vertical.\
+\
+## 10.8 Reglas generales de la P\'e1gina de An\'e1lisis Completo\
+\
+### Filosof\'eda\
+\
+La P\'e1gina de An\'e1lisis Completo debe ofrecer una experiencia de mayor profundidad que la P\'e1gina de Clip.\
+\
+No debe sentirse como un curso, sino como ver un partido acompa\'f1ado por un analista que ayuda a entender qu\'e9 est\'e1 ocurriendo.\
+\
+### Navegaci\'f3n\
+\
+El usuario debe poder navegar c\'f3modamente por cap\'edtulos y acceder a otros an\'e1lisis relacionados sin perder el contexto del an\'e1lisis completo.\
+\
+### Relaci\'f3n con cap\'edtulos y clips\
+\
+El an\'e1lisis completo estar\'e1 formado por cap\'edtulos, y cada cap\'edtulo representar\'e1 un clip o momento seleccionado.\
+\
+Desde un clip individual se podr\'e1 acceder al an\'e1lisis completo mediante la secci\'f3n 'Aparece en'.\
+\
+Desde un an\'e1lisis completo, el usuario podr\'e1 navegar por sus momentos internos mediante cap\'edtulos.\
+\
+No ser\'e1 necesario duplicar esos cap\'edtulos como tarjetas independientes con miniatura dentro de la misma pantalla.\
+\
+### Mobile first\
+\
+La experiencia m\'f3vil ser\'e1 importante, pero la P\'e1gina de An\'e1lisis Completo podr\'e1 tener un consumo m\'e1s pausado que la P\'e1gina de Clip.\
+\
+En m\'f3vil, los cap\'edtulos deber\'e1n presentarse de forma clara sin saturar la pantalla.\
+\
+### Objetivo de la pantalla\
+\
+\
+Permitir al usuario profundizar en un an\'e1lisis compuesto por varios momentos seleccionados, manteniendo siempre la posibilidad de navegar por cap\'edtulos, conceptos relacionados y otros an\'e1lisis completos.\
+\
+---\
+\
+# 11. Pantalla de Resultados\
+\
+## Objetivo\
+\
+La Pantalla de Resultados es una pantalla reutilizable para mostrar conjuntos amplios de contenido en formato vertical.\
+\
+Su funci\'f3n es evitar que el usuario tenga que navegar mediante carruseles horizontales cuando quiere ver todos los contenidos disponibles de una secci\'f3n, b\'fasqueda o filtro.\
+\
+Esta pantalla actuar\'e1 como destino com\'fan para:\
+\
+- B\'fasquedas.\
+- Filtros globales.\
+- Botones "Ver Todo".\
+- Conceptos populares.\
+- Bloques completos.\
+- Listados de an\'e1lisis completos.\
+\
+Pregunta que responde:\
+\
+> \'bfQu\'e9 contenidos coinciden con lo que estoy buscando o filtrando?\
+\
+---\
+\
+## Componentes\
+\
+La Pantalla de Resultados estar\'e1 compuesta por:\
+\
+1. Cabecera de resultados.\
+2. Buscador.\
+3. Filtros aplicados.\
+4. Filtros globales.\
+5. Listado vertical o grid de contenidos.\
+6. Ordenaci\'f3n.\
+7. Estado vac\'edo.\
+\
+---\
+\
+## 11.1 Cabecera de resultados\
+\
+### Objetivo\
+\
+Indicar claramente al usuario qu\'e9 est\'e1 viendo y por qu\'e9 se muestran esos resultados.\
+\
+### Informaci\'f3n mostrada\
+\
+La cabecera podr\'e1 mostrar:\
+\
+- T\'edtulo de la vista.\
+- N\'famero de resultados.\
+- Filtro o b\'fasqueda aplicada.\
+\
+Ejemplos:\
+\
+- Resultados para "globo".\
+- Juego desde el fondo.\
+- #Paciencia.\
+- Nuevo esta semana.\
+- M\'e1s vistos esta semana.\
+- An\'e1lisis completos.\
+\
+### Reglas de comportamiento\
+\
+El t\'edtulo deber\'e1 adaptarse al origen desde el que llega el usuario.\
+\
+Si el usuario llega desde "Ver Todo" dentro de un bloque, la cabecera mostrar\'e1 el nombre del bloque.\
+\
+Si el usuario llega desde un concepto, la cabecera mostrar\'e1 el concepto aplicado.\
+\
+Si el usuario llega desde b\'fasqueda, la cabecera mostrar\'e1 el t\'e9rmino buscado.\
+\
+---\
+\
+## 11.2 Buscador\
+\
+### Objetivo\
+\
+Permitir al usuario refinar o iniciar una nueva b\'fasqueda desde la propia Pantalla de Resultados.\
+\
+### Acciones posibles\
+\
+#### Buscar\
+\
+Al introducir un t\'e9rmino de b\'fasqueda, la pantalla actualizar\'e1 los resultados en funci\'f3n del texto introducido.\
+\
+### Reglas de comportamiento\
+\
+El buscador deber\'e1 mantener coherencia con la b\'fasqueda global definida en la pantalla Explorar.\
+\
+La b\'fasqueda podr\'e1 combinarse con filtros globales.\
+\
+---\
+\
+## 11.3 Filtros aplicados\
+\
+### Objetivo\
+\
+Mostrar al usuario qu\'e9 filtros est\'e1n activos en cada momento.\
+\
+### Informaci\'f3n mostrada\
+\
+Los filtros aplicados se mostrar\'e1n como chips o etiquetas removibles.\
+\
+Ejemplos:\
+\
+- Bloque: Juego desde el fondo.\
+- Concepto: Globo.\
+- Nivel: Medio.\
+- Tipo: Clips.\
+\
+### Acciones posibles\
+\
+#### Eliminar filtro\
+\
+El usuario podr\'e1 eliminar filtros activos de forma individual.\
+\
+#### Borrar todos\
+\
+El usuario podr\'e1 limpiar todos los filtros aplicados.\
+\
+### Reglas de comportamiento\
+\
+Al eliminar un filtro, los resultados deber\'e1n actualizarse autom\'e1ticamente.\
+\
+---\
+\
+## 11.4 Filtros globales\
+\
+### Objetivo\
+\
+Permitir al usuario refinar los resultados de forma estructurada.\
+\
+### Filtros disponibles MVP\
+\
+Los filtros disponibles ser\'e1n los mismos definidos en Explorar:\
+\
+- Bloque t\'e1ctico.\
+- Concepto.\
+- Nivel.\
+- Tipo de contenido.\
+\
+### Tipo de contenido\
+\
+El filtro de tipo de contenido permitir\'e1 seleccionar:\
+\
+- Clips.\
+- An\'e1lisis completos.\
+\
+### Reglas de comportamiento\
+\
+Los filtros podr\'e1n combinarse entre s\'ed.\
+\
+Ejemplo:\
+\
+- Bloque: Transici\'f3n defensa-ataque.\
+- Concepto: Subir.\
+- Nivel: Medio.\
+- Tipo: Clips.\
+\
+El sistema deber\'e1 mostrar \'fanicamente contenidos que cumplan los filtros aplicados.\
+\
+El filtro de nivel utilizar\'e1 los valores definidos en Explorar: Todos los niveles, Intermedio, Avanzado e Intermedio / avanzado.\
+\
+El nivel podr\'e1 utilizarse para filtrar resultados aunque no se muestre necesariamente como etiqueta visible en todas las tarjetas de contenido.\
+\
+---\
+\
+## 11.5 Listado de resultados\
+\
+### Objetivo\
+\
+Mostrar todos los contenidos coincidentes en formato c\'f3modo para exploraci\'f3n vertical.\
+\
+### Informaci\'f3n mostrada\
+\
+Cada tarjeta de contenido podr\'e1 mostrar:\
+\
+- Miniatura.\
+- Tipo de contenido.\
+- T\'edtulo.\
+- Duraci\'f3n.\
+- Conceptos asociados al contenido.\
+- Partido o torneo si aplica.\
+- Jugadores si aplica.\
+- Nivel si aplica.\
+- Progreso de visualizaci\'f3n si aplica.\
+\
+### Acciones posibles\
+\
+#### Abrir contenido\
+\
+Si el resultado es un clip, abre la P\'e1gina de Clip.\
+\
+Si el resultado es un an\'e1lisis completo, abre la P\'e1gina de An\'e1lisis Completo.\
+\
+#### Mi Lista\
+\
+Permite a\'f1adir o quitar el contenido de Mi Lista.\
+\
+### Reglas de comportamiento\
+\
+La Pantalla de Resultados deber\'e1 mostrar el contenido en formato vertical o grid, no en carrusel horizontal.\
+\
+En desktop, podr\'e1 utilizarse un grid de tarjetas.\
+\
+En m\'f3vil, deber\'e1 priorizarse un listado vertical o grid simple adaptado al ancho disponible.\
+\
+El nivel no tendr\'e1 que mostrarse de forma obligatoria en todas las tarjetas, pero deber\'e1 estar disponible como metadato para b\'fasqueda y filtrado.\
+\
+En la Pantalla de Resultados, si un clip est\'e1 asociado a conceptos de varios bloques, podr\'e1n mostrarse todos los conceptos relevantes del clip, ya que la vista no est\'e1 limitada a un bloque concreto.\
+\
+---\
+\
+## 11.6 Ordenaci\'f3n\
+\
+### Objetivo\
+\
+Permitir al usuario cambiar el orden de los resultados cuando tenga sentido.\
+\
+### Ordenaciones posibles MVP\
+\
+- M\'e1s recientes.\
+- M\'e1s vistos.\
+- Duraci\'f3n.\
+- Relevancia.\
+\
+### Reglas de comportamiento\
+\
+La ordenaci\'f3n por defecto depender\'e1 del origen de la pantalla.\
+\
+Ejemplos:\
+\
+- Nuevo esta semana: m\'e1s recientes.\
+- M\'e1s vistos esta semana: m\'e1s vistos.\
+- B\'fasqueda: relevancia.\
+- Bloque completo: criterio editorial o m\'e1s recientes.\
+\
+---\
+\
+## 11.7 Estado vac\'edo\
+\
+### Objetivo\
+\
+Gestionar los casos en los que no existan resultados para una b\'fasqueda o combinaci\'f3n de filtros.\
+\
+### Informaci\'f3n mostrada\
+\
+La pantalla deber\'e1 mostrar un mensaje claro.\
+\
+Ejemplos:\
+\
+- No hemos encontrado resultados para esta b\'fasqueda.\
+- Prueba a eliminar alg\'fan filtro.\
+- Todav\'eda no hay contenido disponible para este concepto.\
+\
+### Acciones posibles\
+\
+- Borrar filtros.\
+- Volver a Explorar.\
+- Realizar una nueva b\'fasqueda.\
+\
+---\
+\
+## 11.8 Reglas generales de la Pantalla de Resultados\
+\
+### Reutilizaci\'f3n\
+\
+La Pantalla de Resultados deber\'e1 ser una pantalla reutilizable para m\'faltiples or\'edgenes de navegaci\'f3n.\
+\
+No se crear\'e1n pantallas distintas para b\'fasqueda, Ver Todo, conceptos o filtros si pueden resolverse mediante esta misma estructura.\
+\
+### Coherencia visual\
+\
+Las tarjetas, chips y acciones deber\'e1n mantener el mismo lenguaje visual que Home, Explorar, P\'e1gina de Clip y P\'e1gina de An\'e1lisis Completo.\
+\
+### Navegaci\'f3n\
+\
+El usuario deber\'e1 poder volver f\'e1cilmente a la pantalla anterior.\
+\
+### Objetivo de la pantalla\
+\
+\
+Permitir que el usuario explore en profundidad un conjunto amplio de contenidos sin perder claridad sobre qu\'e9 filtro, b\'fasqueda o criterio est\'e1 aplicando.\
+\
+# 12. Pantalla Mi Lista\
+\
+## Objetivo\
+\
+La pantalla Mi Lista permite al usuario acceder r\'e1pidamente a todo el contenido que ha decidido guardar para revisar m\'e1s adelante o consultar de nuevo.\
+\
+Su funci\'f3n es actuar como una biblioteca personal dentro de Padel Film Room.\
+\
+Pregunta que responde:\
+\
+> \'bfQu\'e9 contenido quiero conservar y volver a ver?\
+\
+---\
+\
+## Componentes\
+\
+La pantalla Mi Lista estar\'e1 compuesta por:\
+\
+1. Cabecera.\
+2. Clips guardados.\
+3. An\'e1lisis guardados.\
+4. Vistos recientemente.\
+5. Estado vac\'edo.\
+\
+---\
+\
+## 12.1 Cabecera\
+\
+### Objetivo\
+\
+Identificar claramente la biblioteca personal del usuario.\
+\
+### Informaci\'f3n mostrada\
+\
+- T\'edtulo: Mi Lista.\
+- Descripci\'f3n breve.\
+\
+Ejemplo:\
+\
+> Clips y an\'e1lisis que has guardado para volver cuando quieras.\
+\
+### Acciones posibles\
+\
+#### Gestionar lista\
+\
+Permite acceder a acciones masivas sobre el contenido guardado.\
+\
+Funcionalidades MVP:\
+\
+- Seleccionar elementos.\
+- Eliminar elementos guardados.\
+- Vaciar secci\'f3n.\
+\
+---\
+\
+## 12.2 Clips guardados\
+\
+### Objetivo\
+\
+Mostrar todos los clips que el usuario ha a\'f1adido a Mi Lista.\
+\
+### Informaci\'f3n mostrada\
+\
+Para cada clip:\
+\
+- Miniatura.\
+- T\'edtulo.\
+- Duraci\'f3n.\
+- Conceptos asociados.\
+- Bloque t\'e1ctico.\
+\
+### Acciones posibles\
+\
+#### Abrir clip\
+\
+Abre la P\'e1gina de Clip.\
+\
+#### Mi Lista\
+\
+Permite quitar el clip de Mi Lista.\
+\
+#### Ver todo\
+\
+Abre la Pantalla de Resultados mostrando \'fanicamente clips guardados.\
+\
+### Reglas de comportamiento\
+\
+Los clips se mostrar\'e1n ordenados por fecha de guardado descendente.\
+\
+Los m\'e1s recientes aparecer\'e1n primero.\
+\
+---\
+\
+## 12.3 An\'e1lisis guardados\
+\
+### Objetivo\
+\
+Mostrar todos los an\'e1lisis completos guardados.\
+\
+### Informaci\'f3n mostrada\
+\
+Para cada an\'e1lisis:\
+\
+- Miniatura.\
+- Partido.\
+- Jugadores.\
+- Torneo.\
+- Duraci\'f3n.\
+\
+### Acciones posibles\
+\
+#### Abrir an\'e1lisis\
+\
+Abre la P\'e1gina de An\'e1lisis Completo.\
+\
+#### Mi Lista\
+\
+Permite quitar el an\'e1lisis de Mi Lista.\
+\
+#### Ver todo\
+\
+Abre la Pantalla de Resultados mostrando \'fanicamente an\'e1lisis guardados.\
+\
+### Reglas de comportamiento\
+\
+Los an\'e1lisis se mostrar\'e1n ordenados por fecha de guardado descendente.\
+\
+---\
+\
+## 12.4 Vistos recientemente\
+\
+### Objetivo\
+\
+Permitir al usuario recuperar contenido reciente sin necesidad de buscarlo de nuevo.\
+\
+### Informaci\'f3n mostrada\
+\
+- Clips vistos recientemente.\
+- An\'e1lisis vistos recientemente.\
+- Progreso de reproducci\'f3n.\
+\
+### Acciones posibles\
+\
+#### Continuar viendo\
+\
+Reanuda el contenido en el \'faltimo punto visualizado.\
+\
+#### Ver historial completo\
+\
+Abre la Pantalla de Resultados mostrando el historial completo.\
+\
+### Reglas de comportamiento\
+\
+Se mostrar\'e1n \'fanicamente los contenidos consumidos recientemente.\
+\
+No es necesario que hayan sido guardados en Mi Lista.\
+\
+---\
+\
+## 12.5 Estado vac\'edo\
+\
+### Objetivo\
+\
+Gestionar el caso en el que el usuario todav\'eda no haya guardado contenido.\
+\
+### Informaci\'f3n mostrada\
+\
+Ejemplo:\
+\
+> Todav\'eda no has guardado ning\'fan contenido.\
+\
+> Guarda clips o an\'e1lisis para acceder r\'e1pidamente desde aqu\'ed.\
+\
+### Acciones posibles\
+\
+#### Ir a Explorar\
+\
+Redirige al usuario a la pantalla Explorar.\
+\
+#### Ir a Inicio\
+\
+Redirige al usuario a la pantalla Inicio.\
+\
+---\
+\
+## 12.6 Reglas generales de Mi Lista\
+\
+### Filosof\'eda\
+\
+Mi Lista funciona como una biblioteca personal, no como una herramienta de organizaci\'f3n avanzada.\
+\
+Durante el MVP no existir\'e1n carpetas, etiquetas personalizadas ni listas m\'faltiples.\
+\
+### Organizaci\'f3n\
+\
+El contenido se agrupar\'e1 por tipo:\
+\
+1. Clips guardados.\
+2. An\'e1lisis guardados.\
+3. Vistos recientemente.\
+\
+### Consistencia de acciones\
+\
+La acci\'f3n utilizada para guardar o eliminar contenido ser\'e1 siempre 'Mi Lista'.\
+\
+No deber\'e1n existir acciones paralelas denominadas:\
+\
+- Guardar.\
+- Favoritos.\
+- Marcadores.\
+\
+### Objetivo de la pantalla\
+\
+Permitir que el usuario conserve y recupere f\'e1cilmente los contenidos que considera m\'e1s \'fatiles para su aprendizaje.\
+\
+# 13. Pantalla Mi Juego\
+\
+## Objetivo\
+\
+La pantalla Mi Juego permite al usuario visualizar su actividad real dentro de Padel Film Room.\
+\
+Su funci\'f3n no es evaluar el nivel del jugador ni determinar qu\'e9 conceptos domina, sino ayudarle a entender qu\'e9 contenido ha consumido y sobre qu\'e9 aspectos t\'e1cticos ha dedicado m\'e1s tiempo.\
+\
+Pregunta que responde:\
+\
+> \'bfQu\'e9 estoy aprendiendo y consumiendo dentro de la plataforma?\
+\
+---\
+\
+## Filosof\'eda MVP\
+\
+Mi Juego debe basarse exclusivamente en datos reales de uso.\
+\
+Durante el MVP no existir\'e1n:\
+\
+- Niveles de jugador.\
+- Conceptos dominados.\
+- Rachas.\
+- Gamificaci\'f3n.\
+- Puntuaciones.\
+- Badges o logros.\
+- Recomendaciones basadas en IA.\
+\
+El objetivo es mostrar actividad objetiva y f\'e1cilmente entendible.\
+\
+---\
+\
+## Componentes\
+\
+La pantalla Mi Juego estar\'e1 compuesta por:\
+\
+1. Resumen de actividad.\
+2. Conceptos m\'e1s trabajados.\
+3. Bloques m\'e1s trabajados.\
+4. Compartir resumen de aprendizaje.\
+5. Estado vac\'edo.\
+\
+---\
+\
+## 13.1 Resumen de actividad\
+\
+### Objetivo\
+\
+Mostrar una visi\'f3n r\'e1pida de la actividad acumulada del usuario.\
+\
+### Informaci\'f3n mostrada\
+\
+Ejemplos:\
+\
+- Minutos de aprendizaje consumidos.\
+- Clips vistos.\
+- An\'e1lisis completos vistos.\
+\
+Ejemplo visual:\
+\
+- 127 minutos vistos.\
+- 24 clips vistos.\
+- 3 an\'e1lisis completos vistos.\
+\
+### Reglas de comportamiento\
+\
+Las m\'e9tricas deber\'e1n calcularse utilizando actividad real registrada dentro de la plataforma.\
+\
+No se mostrar\'e1n m\'e9tricas estimadas ni interpretaciones sobre el nivel del usuario.\
+\
+---\
+\
+## 13.2 Conceptos m\'e1s trabajados\
+\
+### Objetivo\
+\
+Ayudar al usuario a identificar qu\'e9 conceptos t\'e1cticos ha consumido con mayor frecuencia.\
+\
+### Informaci\'f3n mostrada\
+\
+Para cada concepto:\
+\
+- Nombre del concepto.\
+- N\'famero de clips vistos asociados a dicho concepto.\
+\
+Ejemplos:\
+\
+- #Globo \'b7 12 clips vistos.\
+- #Paciencia \'b7 8 clips vistos.\
+- #Subir \'b7 7 clips vistos.\
+- #Media pista \'b7 6 clips vistos.\
+\
+### Reglas de comportamiento\
+\
+Los conceptos deber\'e1n ordenarse por actividad descendente.\
+\
+La presentaci\'f3n visual recomendada ser\'e1 en formato ranking, mostrando los conceptos ordenados de mayor a menor actividad.\
+\
+Solo se tendr\'e1n en cuenta contenidos efectivamente visualizados por el usuario.\
+\
+No se mostrar\'e1n porcentajes de progreso sobre el total de clips disponibles.\
+\
+---\
+\
+## 13.3 Bloques m\'e1s trabajados\
+\
+### Objetivo\
+\
+Permitir al usuario entender sobre qu\'e9 \'e1reas t\'e1cticas est\'e1 dedicando m\'e1s tiempo.\
+\
+### Informaci\'f3n mostrada\
+\
+Para cada bloque:\
+\
+- Nombre del bloque.\
+- N\'famero de clips vistos asociados al bloque.\
+\
+Ejemplos:\
+\
+- Juego desde el fondo \'b7 15 clips.\
+- Transici\'f3n defensa-ataque \'b7 9 clips.\
+- Juego en la red \'b7 6 clips.\
+\
+### Reglas de comportamiento\
+\
+Los bloques deber\'e1n ordenarse por actividad descendente.\
+\
+La presentaci\'f3n visual recomendada ser\'e1 en formato ranking, mostrando los bloques ordenados de mayor a menor actividad.\
+\
+La informaci\'f3n deber\'e1 derivarse de la taxonom\'eda oficial de bloques y conceptos definida en Padel Film Room.\
+\
+---\
+\
+## 13.4 Compartir resumen de aprendizaje\
+\
+### Objetivo\
+\
+Permitir al usuario compartir de forma sencilla un resumen visual de su actividad dentro de Padel Film Room.\
+\
+### Filosof\'eda\
+\
+El objetivo no es gamificar el aprendizaje ni mostrar niveles o logros.\
+\
+La funcionalidad debe centrarse en compartir qu\'e9 conceptos y \'e1reas t\'e1cticas est\'e1 trabajando el usuario.\
+\
+El resumen de aprendizaje debe comunicar qu\'e9 est\'e1 aprendiendo el usuario, no su nivel ni su rendimiento.\
+\
+### Informaci\'f3n incluida\
+\
+El resumen podr\'e1 incluir:\
+\
+- Minutos de aprendizaje consumidos.\
+- Conceptos m\'e1s trabajados.\
+- Bloque m\'e1s trabajado.\
+- Periodo de tiempo correspondiente.\
+\
+### Experiencia m\'f3vil\
+\
+En m\'f3vil se mostrar\'e1 una acci\'f3n principal:\
+\
+- Compartir en Instagram.\
+\
+La plataforma generar\'e1 autom\'e1ticamente una imagen vertical optimizada para Stories (formato 9:16).\
+\
+No ser\'e1 necesario mostrar una vista previa permanente de dicha Story dentro de la pantalla Mi Juego.\
+\
+### Experiencia desktop\
+\
+En desktop podr\'e1 mostrarse una acci\'f3n:\
+\
+- Descargar imagen.\
+\
+El objetivo ser\'e1 permitir que el usuario descargue el resumen para utilizarlo posteriormente donde desee.\
+\
+### Alcance MVP\
+\
+Esta funcionalidad tendr\'e1 prioridad baja y podr\'e1 implementarse despu\'e9s del resto de funcionalidades principales de Mi Juego.\
+\
+## 13.5 Estado vac\'edo\
+\
+### Objetivo\
+\
+Gestionar el caso en el que el usuario todav\'eda no haya consumido suficiente contenido.\
+\
+### Informaci\'f3n mostrada\
+\
+Ejemplo:\
+\
+> Todav\'eda no hay actividad suficiente para mostrar estad\'edsticas.\
+\
+> Empieza a explorar clips y an\'e1lisis para construir tu historial de aprendizaje.\
+\
+### Acciones posibles\
+\
+- Ir a Inicio.\
+- Ir a Explorar.\
+\
+---\
+\
+## 13.6 Reglas generales de Mi Juego\
+\
+### Diferenciaci\'f3n respecto a Mi Lista\
+\
+Mi Juego no debe duplicar funcionalidades de Mi Lista.\
+\
+Por este motivo, no mostrar\'e1:\
+\
+- Contenido guardado.\
+- Historial reciente.\
+- Contin\'faa viendo.\
+\
+Estas funcionalidades ya existen en Mi Lista.\
+\
+### Prioridad\
+\
+La pantalla debe centrarse en actividad y aprendizaje, no en almacenamiento de contenido.\
+\
+### Objetivo de la pantalla\
+\
+\
+Ayudar al usuario a comprender qu\'e9 temas est\'e1 trabajando dentro de la plataforma mediante m\'e9tricas simples, reales y f\'e1ciles de interpretar.\
+\
+# 14. Modelo de datos MVP\
+\
+## Objetivo\
+\
+Este apartado define las principales entidades de informaci\'f3n necesarias para construir el MVP de Padel Film Room.\
+\
+No pretende ser un dise\'f1o t\'e9cnico de base de datos, sino una referencia funcional para entender qu\'e9 informaci\'f3n existe en el sistema y c\'f3mo se relaciona.\
+\
+---\
+\
+## Principios\
+\
+El modelo de datos deber\'e1 ser lo m\'e1s simple posible durante el MVP.\
+\
+Solo se incluir\'e1n entidades necesarias para soportar las funcionalidades definidas en las pantallas anteriores.\
+\
+---\
+\
+## 14.1 Usuario\
+\
+### Descripci\'f3n\
+\
+Representa a una persona registrada en la plataforma.\
+\
+### Informaci\'f3n principal\
+\
+- id\
+- nombre\
+- email\
+- idioma preferido\
+- fecha de alta\
+\
+### Relaciones\
+\
+Un usuario puede:\
+\
+- Guardar clips.\
+- Guardar an\'e1lisis.\
+- Dar me gusta.\
+- Escribir comentarios.\
+- Consumir clips.\
+- Consumir an\'e1lisis.\
+\
+---\
+\
+## 14.2 Bloque\
+\
+### Descripci\'f3n\
+\
+Representa una de las grandes \'e1reas t\'e1cticas de conocimiento de Padel Film Room.\
+\
+### Informaci\'f3n principal\
+\
+- id\
+- nombre\
+- descripci\'f3n\
+- orden de visualizaci\'f3n\
+\
+### Relaciones\
+\
+Un bloque contiene m\'faltiples conceptos.\
+\
+Un bloque puede estar asociado a m\'faltiples clips.\
+\
+---\
+\
+## 14.3 Concepto\
+\
+### Descripci\'f3n\
+\
+Representa una idea t\'e1ctica espec\'edfica dentro de un bloque.\
+\
+### Informaci\'f3n principal\
+\
+- id\
+- nombre\
+- descripci\'f3n\
+- bloque asociado\
+\
+### Relaciones\
+\
+Un concepto pertenece a un \'fanico bloque.\
+\
+Un concepto puede estar asociado a m\'faltiples clips.\
+\
+Un mismo clip puede estar asociado a varios conceptos.\
+\
+---\
+\
+## 14.4 Relaci\'f3n Clip-Bloque-Concepto\
+\
+### Descripci\'f3n\
+\
+Representa la asociaci\'f3n t\'e1ctica entre un clip, un bloque y uno o varios conceptos.\
+\
+Esta entidad permite que un mismo clip pueda aparecer en varios bloques mostrando \'fanicamente los conceptos relevantes para cada contexto.\
+\
+### Informaci\'f3n principal\
+\
+- clip asociado\
+- bloque asociado\
+- concepto asociado\
+\
+### Ejemplo\
+\
+Clip: Transici\'f3n tras bandeja\
+\
+- Transici\'f3n defensa-ataque \uc0\u8594  #Subir\
+- Uso t\'e1ctico de golpes \uc0\u8594  #Volea\
+\
+### Objetivo\
+\
+Permitir reutilizar un mismo clip en distintos contextos t\'e1cticos sin duplicar contenido.\
+\
+---\
+\
+## 14.5 Clip\
+\
+### Descripci\'f3n\
+\
+Unidad principal de aprendizaje dentro de la plataforma.\
+\
+### Informaci\'f3n principal\
+\
+- id\
+- t\'edtulo\
+- descripci\'f3n\
+- duraci\'f3n\
+- miniatura\
+- url de v\'eddeo\
+- fecha de publicaci\'f3n\
+- idiomas disponibles\
+- bloques asociados\
+- conceptos asociados por bloque\
+- nivel\
+- jugadores\
+- torneo\
+- partido\
+- an\'e1lisis completo asociado, si aplica\
+- cap\'edtulo de an\'e1lisis asociado, si aplica\
+\
+### Relaciones\
+\
+Un clip:\
+\
+- Puede estar asociado a uno o varios bloques.\
+- Puede estar asociado a varios conceptos, organizados por bloque.\
+- Puede proceder de un an\'e1lisis completo.\
+- Puede estar vinculado a un cap\'edtulo concreto de un an\'e1lisis completo.\
+- Puede existir tambi\'e9n como contenido independiente.\
+- Puede recibir comentarios.\
+- Puede recibir me gusta.\
+\
+---\
+\
+## 14.6 An\'e1lisis completo\
+\
+### Descripci\'f3n\
+\
+Contenido largo compuesto por varios momentos o cap\'edtulos.\
+\
+### Informaci\'f3n principal\
+\
+- id\
+- t\'edtulo\
+- descripci\'f3n\
+- torneo\
+- jugadores\
+- partido\
+- duraci\'f3n\
+- miniatura\
+- url de v\'eddeo\
+- fecha de publicaci\'f3n\
+- idiomas disponibles\
+- cap\'edtulos\
+- conceptos principales asociados\
+- bloques principales asociados\
+- nivel\
+\
+### Relaciones\
+\
+Un an\'e1lisis completo:\
+\
+- Contiene m\'faltiples cap\'edtulos.\
+- Puede estar asociado a m\'faltiples conceptos.\
+- Puede estar asociado a varios bloques.\
+- Puede tener clips independientes derivados de algunos de sus cap\'edtulos.\
+- Puede recibir comentarios.\
+- Puede recibir me gusta.\
+\
+No todos los cap\'edtulos tienen que existir como clips independientes.\
+\
+Por ejemplo, un cap\'edtulo de introducci\'f3n puede existir \'fanicamente dentro del an\'e1lisis completo.\
+\
+## 14.7 Cap\'edtulo de an\'e1lisis\
+\
+### Descripci\'f3n\
+\
+Representa un momento interno dentro de un an\'e1lisis completo.\
+\
+Un cap\'edtulo permite navegar dentro del v\'eddeo largo sin abrir una nueva p\'e1gina.\
+\
+### Informaci\'f3n principal\
+\
+- id\
+- an\'e1lisis completo asociado\
+- t\'edtulo\
+- descripci\'f3n opcional\
+- minuto de inicio\
+- minuto de fin, si aplica\
+- concepto principal asociado, si aplica\
+- bloque asociado, si aplica\
+- clip independiente asociado, si existe\
+\
+### Relaciones\
+\
+Un cap\'edtulo pertenece a un \'fanico an\'e1lisis completo.\
+\
+Un cap\'edtulo puede estar vinculado a un clip independiente, pero no siempre ser\'e1 as\'ed.\
+\
+Un cap\'edtulo puede tener conceptos o bloques asociados para facilitar navegaci\'f3n, b\'fasqueda y m\'e9tricas.\
+\
+---\
+\
+## 14.8 Comentario\
+\
+### Descripci\'f3n\
+\
+Mensaje publicado por un usuario sobre un clip o an\'e1lisis.\
+\
+### Informaci\'f3n principal\
+\
+- id\
+- texto\
+- fecha de creaci\'f3n\
+- usuario autor\
+\
+### Relaciones\
+\
+Un comentario pertenece a:\
+\
+- Un usuario.\
+- Un clip o an\'e1lisis completo.\
+\
+---\
+\
+## 14.9 Me gusta\
+\
+### Descripci\'f3n\
+\
+Registro de interacci\'f3n positiva sobre un contenido.\
+\
+### Informaci\'f3n principal\
+\
+- usuario\
+- contenido\
+- fecha\
+\
+### Relaciones\
+\
+Un me gusta pertenece a un usuario y a un \'fanico contenido.\
+\
+---\
+\
+## 14.10 Mi Lista\
+\
+### Descripci\'f3n\
+\
+Representa los contenidos guardados por un usuario.\
+\
+### Informaci\'f3n principal\
+\
+- usuario\
+- contenido guardado\
+- fecha de guardado\
+\
+### Relaciones\
+\
+Un usuario puede guardar:\
+\
+- Clips.\
+- An\'e1lisis completos.\
+\
+No se guardar\'e1n bloques ni conceptos durante el MVP.\
+\
+---\
+\
+## 14.11 Historial de visualizaci\'f3n\
+\
+### Descripci\'f3n\
+\
+Permite registrar la actividad de consumo de contenido.\
+\
+### Informaci\'f3n principal\
+\
+- usuario\
+- contenido\
+- fecha de \'faltima visualizaci\'f3n\
+- progreso de reproducci\'f3n\
+- completado (s\'ed/no)\
+\
+### Relaciones\
+\
+Ser\'e1 utilizado por:\
+\
+- Contin\'faa viendo.\
+- Vistos recientemente.\
+- Mi Juego.\
+- M\'e9tricas de actividad.\
+\
+---\
+\
+## 14.12 Relaciones principales\
+\
+Resumen simplificado:\
+\
+- Un bloque contiene muchos conceptos.\
+- Un concepto pertenece a un bloque.\
+- Un clip puede estar asociado a uno o varios bloques.\
+- Un clip puede tener varios conceptos, y dichos conceptos deber\'e1n mantenerse vinculados a su bloque correspondiente.\
+- Un an\'e1lisis completo contiene varios cap\'edtulos.\
+- Algunos cap\'edtulos pueden tener un clip independiente asociado.\
+- No todos los cap\'edtulos tienen que publicarse como clips independientes.\
+- Un usuario puede guardar clips y an\'e1lisis.\
+- Un usuario puede comentar clips y an\'e1lisis.\
+- Un usuario puede dar me gusta a clips y an\'e1lisis.\
+- Un usuario genera historial de visualizaci\'f3n.\
+- La asociaci\'f3n t\'e1ctica entre clips, bloques y conceptos se gestiona mediante la entidad Relaci\'f3n Clip-Bloque-Concepto.\
+\
+---\
+\
+## Objetivo del modelo de datos MVP\
+\
+Disponer de una estructura suficientemente simple para validar el producto y suficientemente flexible para evolucionar en futuras versiones sin necesidad de redise\'f1ar las entidades principales.}
