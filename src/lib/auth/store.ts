@@ -76,18 +76,6 @@ export function logout() {
   clearSaved() // Mi Lista es por-cuenta: se vacía al salir.
 }
 
-/**
- * ⚠️ SOLO DESARROLLO. Entra sin backend con una sesión ficticia, para poder navegar
- * la app mientras no hay API que devuelva un token. Quitar antes de producción
- * (el botón que lo usa solo se muestra con import.meta.env.DEV).
- */
-export function devLogin() {
-  setState({
-    token: "dev-token-sin-backend",
-    user: { email: "dev@padelfilmroom.com", displayName: "Usuario Dev", role: "Admin" },
-  })
-}
-
 /** Hook de sesión: { token, user, isAuthenticated } + acciones. */
 export function useAuth() {
   const s = useSyncExternalStore(subscribe, getAuth, getAuth)

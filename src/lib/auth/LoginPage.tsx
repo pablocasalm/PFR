@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { Play } from "lucide-react"
-import { useAuth, devLogin } from "./store"
+import { useAuth } from "./store"
 
 /**
  * Pantalla de acceso (login / registro). Es la puerta de toda la app: app.padelfilmroom
@@ -130,19 +130,6 @@ const LoginPage = () => {
             </>
           )}
         </p>
-
-        {/* ⚠️ SOLO DESARROLLO: entrar sin backend. No aparece en producción. */}
-        {import.meta.env.DEV && (
-          <button
-            onClick={() => {
-              devLogin()
-              navigate("/app/inicio", { replace: true })
-            }}
-            className="mt-6 w-full rounded-lg border border-dashed border-white/20 py-2.5 text-sm font-medium text-white/60 transition hover:border-white/40 hover:text-white"
-          >
-            Entrar sin backend (dev)
-          </button>
-        )}
       </div>
     </div>
   )
