@@ -81,11 +81,13 @@ const Hero = ({ item }: { item: ContentItem | null }) => {
       <div className="absolute inset-0 bg-gradient-to-r from-midnight via-midnight/80 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-midnight/60 to-transparent" />
 
-      <div className="relative flex min-h-[360px] flex-col justify-center gap-5 p-12">
+      <div className="relative flex min-h-[260px] flex-col justify-center gap-4 p-6 sm:p-8 md:min-h-[360px] md:gap-5 md:p-12">
         <span className="w-fit rounded-md bg-neon-cyan px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-midnight">
           Destacado
         </span>
-        <h1 className="max-w-md font-display text-6xl font-bold leading-[1.05] text-white">{title}</h1>
+        <h1 className="max-w-md font-display text-3xl font-bold leading-[1.1] text-white sm:text-4xl md:text-6xl md:leading-[1.05]">
+          {title}
+        </h1>
         <p className="max-w-sm text-sm leading-relaxed text-white/70">{subtitle}</p>
         {item && item.concepts.length > 0 && (
           <div className="flex flex-wrap gap-2">

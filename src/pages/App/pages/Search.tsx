@@ -36,7 +36,7 @@ const Thumb = ({ src, hue, className = "" }: { src?: string; hue: number; classN
 )
 
 const meta = (r: ContentItem) =>
-  [r.tournament ?? (r.type === "analysis" ? "Análisis" : "Clip"), r.level].filter(Boolean).join(" • ")
+  [r.tournament ?? (r.type === "analysis" ? "Análisis" : "Clip"), r.players].filter(Boolean).join(" • ")
 
 const ResultCard = ({ result }: { result: ContentItem }) => (
   <Link to={watchHref(result)} className="group block">

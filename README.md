@@ -94,6 +94,18 @@ npm run dev          # front en http://localhost:5173
 
 ## Roadmap (bloques grandes)
 
+### Estado actual (agosto 2026)
+Backend desplegado en **SmarterASP.NET** (`https://api.padelfilmroom.com`), frontend aún en local (Vite → backend real). Hecho en este bloque grande:
+- **Backend saneado** + **API con forma de pantalla** (home/explore/search/clips/analyses) con `ContentItem` unificado.
+- **Auth** completa: app entera detrás de `/login`, roles `User/Admin/ContentCreator`, gate de publicación. Acceso dev temporal (⚠️ quitar antes de prod).
+- **Taxonomía relacional** `ClipConcept` (§8.3/§14.4): un clip en varios bloques, conceptos por bloque, coloreado en Explorar; análisis agrega bloques/conceptos ocultos para buscador.
+- **Publicación** (wizard 2 pasos análisis+clips): subida **tus** resumible a Cloudflare Stream (sin límite 200 MB), barra de progreso, catálogo reutilizable (jugadores/sede/categoría/conceptos) vía `/api/admin/lookup`, torneo estructurado (sede/categoría/ronda/año).
+- **Reproductor** hls.js con controles a medida, **selector de calidad** y capítulos.
+- **Mi Lista** funcional (store local, pendiente sincronizar con `/api/saved`).
+- **Responsive móvil** (barra inferior, header adaptado) y **página de estado** con marca en el root de la API.
+
+**Siguiente (por impacto):** historial de visionado (Mi Juego + "Continúa viendo" + progreso) · sincronizar Mi Lista con backend · Me gusta + comentarios (POST) · filtros de Resultados · signed URLs + quitar acceso dev.
+
 ### 1. Base del front nuevo ✅
 Maquetadas todas las pantallas (Inicio, Explorar, Mi Lista, Mi Juego, Watch vídeo/clip, Search), navbar, navegación cruzada, URLs limpias con `?v=`/`?c=`. Código viejo eliminado; app en `/app`.
 

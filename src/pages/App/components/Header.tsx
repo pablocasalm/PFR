@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { NavLink, useNavigate } from "react-router-dom"
+import { NavLink, Link, useNavigate } from "react-router-dom"
 import { Search, Play, ChevronDown, LogOut, UploadCloud } from "lucide-react"
 import { useAuth, canPublish, type AuthUser } from "../../../lib/auth/store"
 
@@ -27,7 +27,7 @@ const Header = () => {
 
   return (
   <header className="sticky top-0 z-20 border-b border-white/10 bg-black/40 backdrop-blur-md">
-    <div className="flex w-full items-center gap-6 px-10 py-4">
+    <div className="flex w-full items-center gap-4 px-4 py-4 sm:px-6 md:gap-6 lg:px-10">
       {/* Logo */}
       <div className="flex items-center gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan">
@@ -39,8 +39,8 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex items-center gap-7">
+      {/* Nav (solo escritorio; en móvil se usa la barra inferior) */}
+      <nav className="hidden items-center gap-7 md:flex">
         {NAV_ITEMS.map(({ label, to }) => (
           <NavLink
             key={to}
@@ -76,8 +76,8 @@ const Header = () => {
         )}
       </nav>
 
-      {/* Buscador */}
-      <div className="ml-auto flex max-w-xl flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-2.5">
+      {/* Buscador (escritorio) */}
+      <div className="ml-auto hidden max-w-xl flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 md:flex">
         <Search className="h-4 w-4 text-white/40" />
         <input
           value={query}
@@ -87,6 +87,15 @@ const Header = () => {
           className="w-full bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none"
         />
       </div>
+
+      {/* Buscar (móvil): icono que lleva a la pantalla de búsqueda */}
+      <button
+        onClick={() => navigate("/app/search")}
+        className="ml-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:text-white md:hidden"
+        aria-label="Buscar"
+      >
+        <Search className="h-5 w-5" />
+      </button>
 
       {/* Sesión */}
       <SessionControl />
@@ -129,6 +138,16 @@ const SessionControl = () => {
               <p className="truncate text-sm font-semibold text-white">{user.displayName || "Mi cuenta"}</p>
               <p className="truncate text-xs text-white/50">{user.email}</p>
             </div>
+            {canPublish(user) && (
+              <Link
+                to="/app/publicar"
+                onClick={() => setMenuOpen(false)}
+                className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
+              >
+                <UploadCloud className="h-4 w-4" />
+                Publicar
+              </Link>
+            )}
             <button
               onClick={() => {
                 setMenuOpen(false)

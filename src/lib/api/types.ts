@@ -9,6 +9,9 @@
 
 export type ContentType = "clip" | "analysis"
 
+/** Conceptos de un contenido agrupados por bloque (§8.3): para colorear los del bloque actual. */
+export type BlockConcepts = { block: string; concepts: string[] }
+
 /** Tarjeta de contenido común a Inicio, Explorar, Resultados y Mi Lista. */
 export type ContentItem = {
   id: string
@@ -16,11 +19,11 @@ export type ContentItem = {
   title: string
   thumbnailUrl: string
   durationSeconds: number
-  concepts: string[]
+  concepts: string[] // unión plana (para contextos sin bloque: Inicio, Mi Lista, Resultados)
+  blocks?: BlockConcepts[] // conceptos por bloque (para el coloreado en Explorar)
   // Metadatos opcionales (sobre todo en análisis)
-  players?: string // "Chingotto / Galán vs Lebrón / Stupa"
-  tournament?: string // "Premier Padel Genova P2"
-  level?: string // "Intermedio" | "Avanzado" ...
+  players?: string // "Chingotto, Galán, Lebrón, Stupa"
+  tournament?: string // texto compuesto: "Premier Padel P2 · Génova 2024 · Cuartos de final"
   block?: string // bloque táctico principal (contexto)
   progress?: number // 0-100, para "continúa viendo" / "vistos recientemente"
 }
@@ -66,8 +69,8 @@ export type ClipDetail = {
   durationSeconds: number
   thumbnailUrl: string
   videoUrl: string
-  concepts: string[]
-  block?: string
+  concepts: string[] // todos los conceptos del clip (§9.3: se muestran todos)
+  blocks: string[] // bloques del clip (chips clicables §9.2)
   appearsIn?: AppearsIn | null
   related: ContentItem[]
   comments: Comment[]
@@ -86,7 +89,6 @@ export type AnalysisDetail = {
   videoUrl: string
   players?: string
   tournament?: string
-  level?: string
   concepts: string[]
   chapters: Chapter[]
   related: ContentItem[]

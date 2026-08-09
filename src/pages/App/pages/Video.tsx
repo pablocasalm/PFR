@@ -1,14 +1,5 @@
 import {
   Play,
-  RotateCcw,
-  RotateCw,
-  Volume2,
-  Captions,
-  Settings,
-  PictureInPicture2,
-  Tv,
-  Maximize,
-  Info,
   BadgeCheck,
   Trophy,
   Heart,
@@ -25,6 +16,7 @@ import { getAnalysisDetail } from "../../../lib/api/analyses"
 import type { AnalysisDetail, Chapter, Comment, ContentItem } from "../../../lib/api/types"
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
 import { useSavedItems, isSaved, toggleSavedItem } from "../../../lib/saved/store"
+import HlsPlayer from "../../../lib/player/VideoPlayer"
 
 /**
  * Video — Vista de un análisis completo en /app/watch?v=:id.
@@ -46,52 +38,9 @@ const initialsOf = (c: Comment) => c.initials ?? c.user.slice(0, 2).toUpperCase(
 // Player (placeholder hasta el bloque 6)
 // ---------------------------------------------------------------------------
 
-const VideoPlayer = ({ video }: { video: AnalysisDetail }) => {
-  // Tramos de la barra, partidos por los capítulos.
-  const bounds = [0, ...video.chapters.map((c) => (c.startSeconds / video.durationSeconds) * 100), 100]
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/10">
-      <div className="aspect-video w-full" style={thumbStyle(hueFor(video.id))}>
-        {video.thumbnailUrl && <img src={video.thumbnailUrl} alt="" className="h-full w-full object-cover" />}
-      </div>
-      <button className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white/80 backdrop-blur transition hover:text-white">
-        <Info className="h-5 w-5" />
-      </button>
-
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-5 pb-4 pt-14">
-        <div className="relative mb-4">
-          <div className="flex items-center gap-1">
-            {bounds.slice(0, -1).map((start, i) => (
-              <div key={i} className="h-1 rounded-full bg-white/25" style={{ flexGrow: bounds[i + 1] - start }} />
-            ))}
-          </div>
-          <span className="absolute top-1/2 left-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-glow" />
-        </div>
-
-        <div className="flex items-center gap-4 text-white">
-          <button className="transition hover:text-neon-cyan"><Play className="h-6 w-6" fill="currentColor" /></button>
-          <button className="relative transition hover:text-neon-cyan">
-            <RotateCcw className="h-5 w-5" />
-            <span className="absolute inset-0 flex items-center justify-center text-[7px] font-bold">10</span>
-          </button>
-          <button className="relative transition hover:text-neon-cyan">
-            <RotateCw className="h-5 w-5" />
-            <span className="absolute inset-0 flex items-center justify-center text-[7px] font-bold">10</span>
-          </button>
-          <button className="transition hover:text-neon-cyan"><Volume2 className="h-5 w-5" /></button>
-          <span className="text-xs font-medium tabular-nums text-white/90">0:00 / {formatDuration(video.durationSeconds)}</span>
-          <div className="ml-auto flex items-center gap-4">
-            <button className="transition hover:text-neon-cyan"><Captions className="h-5 w-5" /></button>
-            <button className="transition hover:text-neon-cyan"><Settings className="h-5 w-5" /></button>
-            <button className="transition hover:text-neon-cyan"><PictureInPicture2 className="h-5 w-5" /></button>
-            <button className="transition hover:text-neon-cyan"><Tv className="h-5 w-5" /></button>
-            <button className="transition hover:text-neon-cyan"><Maximize className="h-5 w-5" /></button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+const VideoPlayer = ({ video }: { video: AnalysisDetail }) => (
+  <HlsPlayer src={video.videoUrl} poster={video.thumbnailUrl} chapters={video.chapters} />
+)
 
 const ActionButton = ({ icon: Icon, label, count }: { icon: typeof Heart; label: string; count?: number }) => (
   <button className="flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/5">
@@ -111,7 +60,6 @@ const analysisToItem = (video: AnalysisDetail): ContentItem => ({
   concepts: video.concepts,
   players: video.players,
   tournament: video.tournament,
-  level: video.level,
 })
 
 /** Acción "Mi Lista" (§10.5): selector de estado guardar/quitar. */
@@ -254,27 +202,10 @@ const Video = () => {
                   )}
                   <span className="text-white/30">•</span>
                   <span>{formatDuration(video.durationSeconds)}</span>
-                  {video.level && (
-                    <>
-                      <span className="text-white/30">•</span>
-                      <span className="rounded-md border border-white/15 px-2 py-0.5 text-xs text-white/80">{video.level}</span>
-                    </>
-                  )}
                 </div>
               </div>
-
-              {video.concepts.length > 0 && (
-                <div>
-                  <p className="mb-2 text-sm font-semibold text-white">Conceptos trabajados</p>
-                  <div className="flex flex-wrap gap-2">
-                    {video.concepts.map((c) => (
-                      <span key={c} className="rounded-full border border-neon-cyan/40 px-3 py-1 text-xs font-medium text-neon-cyan">
-                        #{c}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Los conceptos del análisis NO se muestran (§10.4): son metadatos de búsqueda
+                  (agregados de sus clips). Se ven en los clips, no aquí. */}
             </div>
 
             <p className="max-w-xs text-sm leading-relaxed text-white/60">{video.description}</p>

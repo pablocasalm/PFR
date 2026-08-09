@@ -39,8 +39,9 @@ const VerTodo = ({ to }: { to: string }) => (
   </Link>
 )
 
+// Solo escritorio: en móvil se navega la rejilla con scroll táctil (y evita overflow horizontal).
 const CarouselArrow = () => (
-  <button className="absolute -right-2 top-[38%] z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white backdrop-blur transition hover:bg-black/90">
+  <button className="absolute -right-2 top-[38%] z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white backdrop-blur transition hover:bg-black/90 md:flex">
     <ChevronRight className="h-5 w-5" />
   </button>
 )
@@ -49,40 +50,51 @@ const CarouselArrow = () => (
 // Tarjetas
 // ---------------------------------------------------------------------------
 
-const ClipCard = ({ clip }: { clip: ContentItem }) => (
-  <Link to={watchHref(clip)} className="group block cursor-pointer">
-    <div className="relative overflow-hidden rounded-lg border border-white/10">
-      <Thumb src={clip.thumbnailUrl} hue={hueFor(clip.id)} className="aspect-video w-full" />
-      <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
-        {formatDuration(clip.durationSeconds)}
-      </span>
-      <span className="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100">
-        <SaveButton item={clip} variant="icon" />
-      </span>
-    </div>
-    <div className="mt-2.5 flex items-start justify-between gap-2">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-white">{clip.title}</p>
-        <p className="mt-1 text-xs leading-relaxed text-white/50">
-          {clip.players ? <>{clip.players} </> : null}
-          {clip.concepts[0] && <span className="text-neon-cyan/80">#{clip.concepts[0]}</span>}
-        </p>
+// currentBlock: bloque de la sección donde se muestra el clip. Sus conceptos van en color;
+// los de otros bloques, en gris (para que se entienda que son de otro contexto, §8.3).
+const ClipCard = ({ clip, currentBlock }: { clip: ContentItem; currentBlock: string }) => {
+  const blockConcepts = new Set(clip.blocks?.find((b) => b.block === currentBlock)?.concepts ?? [])
+  return (
+    <Link to={watchHref(clip)} className="group block cursor-pointer">
+      <div className="relative overflow-hidden rounded-lg border border-white/10">
+        <Thumb src={clip.thumbnailUrl} hue={hueFor(clip.id)} className="aspect-video w-full" />
+        <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+          {formatDuration(clip.durationSeconds)}
+        </span>
+        <span className="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100">
+          <SaveButton item={clip} variant="icon" />
+        </span>
       </div>
-      <span className="mt-0.5 shrink-0 text-white/40"><MoreVertical className="h-4 w-4" /></span>
-    </div>
-  </Link>
-)
+      <div className="mt-2.5 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-white">{clip.title}</p>
+          <div className="mt-1 flex flex-wrap gap-x-2 text-xs leading-relaxed">
+            {clip.concepts.slice(0, 4).map((c) => (
+              <span key={c} className={blockConcepts.has(c) ? "text-neon-cyan/90" : "text-white/35"}>
+                #{c}
+              </span>
+            ))}
+          </div>
+        </div>
+        <span className="mt-0.5 shrink-0 text-white/40"><MoreVertical className="h-4 w-4" /></span>
+      </div>
+    </Link>
+  )
+}
 
 const ConceptSection = ({ section, index }: { section: ExploreSection; index: number }) => {
   const Icon = ICONS[index % ICONS.length]
   const accent = ACCENTS[index % ACCENTS.length]
   return (
-    <section className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-5">
-      <div className="mb-5 flex items-center gap-3">
-        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${accent}`}>
-          <Icon className="h-4 w-4" />
-        </span>
-        <h2 className="shrink-0 text-sm font-bold uppercase tracking-[0.12em] text-white">{section.block}</h2>
+    <section className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-3 sm:p-5">
+      <div className="mb-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${accent}`}>
+            <Icon className="h-4 w-4" />
+          </span>
+          <h2 className="min-w-0 flex-1 truncate text-sm font-bold uppercase tracking-[0.12em] text-white">{section.block}</h2>
+          <VerTodo to={`/app/search?q=${encodeURIComponent(section.block)}`} />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           {section.concepts.map((c) => (
             <Chip key={c}>{c}</Chip>
@@ -91,15 +103,12 @@ const ConceptSection = ({ section, index }: { section: ExploreSection; index: nu
             <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
-        <div className="ml-auto">
-          <VerTodo to={`/app/search?q=${encodeURIComponent(section.block)}`} />
-        </div>
       </div>
 
       <div className="relative">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {section.clips.map((clip) => (
-            <ClipCard key={clip.id} clip={clip} />
+            <ClipCard key={clip.id} clip={clip} currentBlock={section.block} />
           ))}
         </div>
         <CarouselArrow />
@@ -115,8 +124,8 @@ const AnalisisCard = ({ item }: { item: ContentItem }) => (
       <p className="text-sm font-semibold text-white">{item.title}</p>
       <p className="mt-1 text-xs leading-relaxed text-white/50">
         {item.tournament}
-        {item.tournament && (item.players || item.level) ? " · " : ""}
-        {item.level}
+        {item.tournament && item.players ? " · " : ""}
+        {item.players}
       </p>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {item.concepts.slice(0, 3).map((c) => (
@@ -141,7 +150,7 @@ const Explorar = () => {
     <main className="w-full space-y-6 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-bold text-white">Explorar</h1>
+          <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">Explorar</h1>
           <p className="mt-2 text-sm text-white/60">
             Encuentra los mejores ejemplos de pádel organizados por conceptos clave.
           </p>
@@ -162,7 +171,7 @@ const Explorar = () => {
       ))}
 
       {data && data.analyses.length > 0 && (
-        <section className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-5">
+        <section className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-3 sm:p-5">
           <div className="mb-5 flex items-center gap-3">
             <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${ACCENTS[3]}`}>
               <ClipboardList className="h-4 w-4" />

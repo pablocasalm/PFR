@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import Hls from "hls.js"
-import { Play, Pause, Volume2, VolumeX, Maximize } from "lucide-react"
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings } from "lucide-react"
 import { formatDuration } from "../format"
 
 /**
@@ -25,6 +25,7 @@ type Props = {
 const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9" }: Props) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const hlsRef = useRef<Hls | null>(null)
 
   const [playing, setPlaying] = useState(false)
   const [current, setCurrent] = useState(0)
@@ -32,23 +33,38 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9" }: Props) => 
   const [muted, setMuted] = useState(false)
   const [volume, setVolume] = useState(1)
   const [fullscreen, setFullscreen] = useState(false)
+  const [levels, setLevels] = useState<{ height: number; index: number }[]>([])
+  const [qualityLevel, setQualityLevel] = useState(-1) // -1 = auto (ABR)
+  const [qualityOpen, setQualityOpen] = useState(false)
 
   // Cargar la fuente HLS (hls.js o nativo).
   useEffect(() => {
     const video = videoRef.current
     if (!video || !src) return
 
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Safari reproduce HLS de forma nativa.
-      video.src = src
-      return
-    }
-
+    // hls.js primero (Chrome/Firefox y Safari con MSE): habilita el selector de calidad y una
+    // reproducción mejor. Chrome devuelve "maybe" en canPlayType HLS pero NO lo reproduce bien
+    // de forma nativa, así que la ruta nativa se reserva para cuando hls.js NO está soportado.
     if (Hls.isSupported()) {
       const hls = new Hls()
+      hlsRef.current = hls
       hls.loadSource(src)
       hls.attachMedia(video)
-      return () => hls.destroy()
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        setLevels(
+          hls.levels
+            .map((l, i) => ({ height: l.height, index: i }))
+            .sort((a, b) => b.height - a.height),
+        )
+      })
+      return () => {
+        hls.destroy()
+        hlsRef.current = null
+      }
+    }
+
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = src
     }
   }, [src])
 
@@ -93,6 +109,13 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9" }: Props) => 
   const toggleFullscreen = () => {
     if (document.fullscreenElement) document.exitFullscreen()
     else containerRef.current?.requestFullscreen()
+  }
+
+  const selectQuality = (index: number) => {
+    const hls = hlsRef.current
+    if (hls) hls.currentLevel = index // -1 = auto (ABR)
+    setQualityLevel(index)
+    setQualityOpen(false)
   }
 
   const pct = duration > 0 ? (current / duration) * 100 : 0
@@ -176,10 +199,52 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9" }: Props) => 
             {formatDuration(Math.floor(current))} / {formatDuration(Math.floor(duration))}
           </span>
 
-          <button onClick={toggleFullscreen} className="ml-auto transition hover:text-neon-cyan" aria-label="Pantalla completa">
-            <Maximize className="h-5 w-5" />
-          </button>
-          <span className="sr-only">{fullscreen ? "En pantalla completa" : ""}</span>
+          <div className="ml-auto flex items-center gap-3">
+            {levels.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setQualityOpen((v) => !v)}
+                  className={`transition hover:text-neon-cyan ${qualityOpen ? "text-neon-cyan" : ""}`}
+                  aria-label="Ajustes"
+                >
+                  <Settings className="h-5 w-5" />
+                </button>
+                {qualityOpen && (
+                  <>
+                    {/* Capa para cerrar al hacer clic fuera */}
+                    <div className="fixed inset-0 z-10" onClick={() => setQualityOpen(false)} />
+                    <div className="absolute bottom-9 right-0 z-20 min-w-[150px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl">
+                      <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Calidad</p>
+                      <button
+                        onClick={() => selectQuality(-1)}
+                        className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${qualityLevel === -1 ? "text-neon-cyan" : "text-white"}`}
+                      >
+                        Automática
+                        {qualityLevel === -1 && <span>✓</span>}
+                      </button>
+                      {levels.map((l) => (
+                        <button
+                          key={l.index}
+                          onClick={() => selectQuality(l.index)}
+                          className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${qualityLevel === l.index ? "text-neon-cyan" : "text-white"}`}
+                        >
+                          {l.height > 0 ? `${l.height}p` : `Nivel ${l.index + 1}`}
+                          {qualityLevel === l.index && <span>✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            <button
+              onClick={toggleFullscreen}
+              className="transition hover:text-neon-cyan"
+              aria-label={fullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+            >
+              <Maximize className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

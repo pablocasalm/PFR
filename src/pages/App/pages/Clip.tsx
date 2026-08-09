@@ -1,10 +1,4 @@
 import {
-  Play,
-  SkipBack,
-  RotateCcw,
-  Volume2,
-  Settings,
-  Maximize,
   Heart,
   MessageCircle,
   Share2,
@@ -12,10 +6,6 @@ import {
   ChevronRight,
   ArrowRight,
   Send,
-  Home,
-  Search,
-  Bookmark,
-  BarChart2,
   Check,
 } from "lucide-react"
 import { Link, useSearchParams } from "react-router-dom"
@@ -24,6 +14,7 @@ import { getClipDetail } from "../../../lib/api/clips"
 import type { ClipDetail, Comment, ContentItem } from "../../../lib/api/types"
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
 import { useSavedItems, isSaved, toggleSavedItem } from "../../../lib/saved/store"
+import HlsPlayer from "../../../lib/player/VideoPlayer"
 
 /**
  * Clip — Vista de reproducción de un clip en /app/watch?c=:id.
@@ -61,7 +52,7 @@ const clipToItem = (clip: ClipDetail): ContentItem => ({
   thumbnailUrl: clip.thumbnailUrl,
   durationSeconds: clip.durationSeconds,
   concepts: clip.concepts,
-  block: clip.block,
+  block: clip.blocks?.[0],
 })
 
 /** Acción "Mi Lista" (§9.4) en la fila horizontal de acciones sociales. */
@@ -95,29 +86,6 @@ const SaveActionRail = ({ item }: { item: ContentItem }) => {
       </span>
       <span className="text-[11px] font-medium">{saved ? "Guardado" : "Mi lista"}</span>
     </button>
-  )
-}
-
-const MobileTabBar = () => {
-  const tabs = [
-    { icon: Home, label: "Inicio", to: "/app/inicio" },
-    { icon: Search, label: "Explorar", to: "/app/explorar", active: true },
-    { icon: Bookmark, label: "Mi lista", to: "/app/mi-lista" },
-    { icon: BarChart2, label: "Mi juego", to: "/app/mi-juego" },
-  ]
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-white/10 bg-black/80 px-2 py-3 backdrop-blur-md md:hidden">
-      {tabs.map(({ icon: Icon, label, to, active }) => (
-        <Link
-          key={label}
-          to={to}
-          className={`flex flex-col items-center gap-1 text-[11px] ${active ? "text-neon-cyan" : "text-white/50"}`}
-        >
-          <Icon className="h-5 w-5" />
-          {label}
-        </Link>
-      ))}
-    </nav>
   )
 }
 
@@ -252,36 +220,14 @@ const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; v
 // ---------------------------------------------------------------------------
 
 const VideoPlayer = ({ clip }: { clip: ClipDetail }) => (
-  <div className="relative overflow-hidden rounded-xl border border-white/10">
-    <div className="aspect-video w-full" style={thumbStyle(hueFor(clip.id))}>
-      {clip.thumbnailUrl && <img src={clip.thumbnailUrl} alt="" className="h-full w-full object-cover" />}
-    </div>
-    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-5 pb-4 pt-12">
-      <div className="flex items-center gap-4 text-white">
-        <button className="transition hover:text-neon-cyan"><SkipBack className="h-5 w-5" fill="currentColor" /></button>
-        <button className="transition hover:text-neon-cyan"><Play className="h-6 w-6" fill="currentColor" /></button>
-        <button className="relative transition hover:text-neon-cyan">
-          <RotateCcw className="h-5 w-5" />
-          <span className="absolute inset-0 flex items-center justify-center text-[7px] font-bold">10</span>
-        </button>
-        <span className="text-xs font-medium tabular-nums text-white/90">0:00 / {formatDuration(clip.durationSeconds)}</span>
-        <div className="relative h-1 flex-1 rounded-full bg-white/20">
-          <div className="h-full rounded-full bg-neon-cyan" style={{ width: "0%" }} />
-        </div>
-        <button className="transition hover:text-neon-cyan"><Volume2 className="h-5 w-5" /></button>
-        <button className="transition hover:text-neon-cyan"><Settings className="h-5 w-5" /></button>
-        <button className="transition hover:text-neon-cyan"><Maximize className="h-5 w-5" /></button>
-      </div>
-    </div>
-  </div>
+  <HlsPlayer src={clip.videoUrl} poster={clip.thumbnailUrl} />
 )
 
 const VerticalPlayer = ({ clip }: { clip: ClipDetail }) => (
-  <div className="relative mx-auto w-full max-w-[420px] overflow-hidden rounded-2xl border border-white/10">
-    <div className="aspect-[9/16] w-full" style={thumbStyle(hueFor(clip.id))}>
-      {clip.thumbnailUrl && <img src={clip.thumbnailUrl} alt="" className="h-full w-full object-cover" />}
-    </div>
+  <div className="relative mx-auto w-full max-w-[420px]">
+    <HlsPlayer src={clip.videoUrl} poster={clip.thumbnailUrl} aspect="9:16" />
 
+    {/* Rail de acciones sociales superpuesto (estilo móvil vertical) */}
     <div className="absolute bottom-24 right-3 flex flex-col items-center gap-5">
       {[
         { icon: Heart, label: String(clip.likes ?? 0) },
@@ -296,17 +242,6 @@ const VerticalPlayer = ({ clip }: { clip: ClipDetail }) => (
         </button>
       ))}
       <SaveActionRail item={clipToItem(clip)} />
-    </div>
-
-    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-4 pb-4 pt-12">
-      <div className="mb-3 flex items-center gap-3 text-white">
-        <button className="transition hover:text-neon-cyan"><Play className="h-6 w-6" fill="currentColor" /></button>
-        <span className="text-xs font-medium tabular-nums text-white/90">0:00 / {formatDuration(clip.durationSeconds)}</span>
-        <button className="ml-auto transition hover:text-neon-cyan"><Maximize className="h-5 w-5" /></button>
-      </div>
-      <div className="relative h-1 w-full rounded-full bg-white/20">
-        <div className="h-full rounded-full bg-neon-cyan" style={{ width: "0%" }} />
-      </div>
     </div>
   </div>
 )
@@ -339,8 +274,6 @@ const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => (
 
     <CommentList comments={clip.comments} />
     {clip.related.length > 0 && <RelatedClips related={clip.related} />}
-
-    <MobileTabBar />
   </main>
 )
 
@@ -362,7 +295,6 @@ const ClipVertical = ({ clip }: { clip: ClipDetail }) => (
       </div>
     </div>
     {clip.related.length > 0 && <RelatedClips related={clip.related} vertical />}
-    <MobileTabBar />
   </main>
 )
 
