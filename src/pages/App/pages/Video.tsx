@@ -17,6 +17,7 @@ import type { AnalysisDetail, Chapter, Comment, ContentItem } from "../../../lib
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
 import { useSavedItems, isSaved, toggleSavedItem } from "../../../lib/saved/store"
 import HlsPlayer from "../../../lib/player/VideoPlayer"
+import { saveProgress } from "../../../lib/api/history"
 
 /**
  * Video — Vista de un análisis completo en /app/watch?v=:id.
@@ -39,7 +40,15 @@ const initialsOf = (c: Comment) => c.initials ?? c.user.slice(0, 2).toUpperCase(
 // ---------------------------------------------------------------------------
 
 const VideoPlayer = ({ video }: { video: AnalysisDetail }) => (
-  <HlsPlayer src={video.videoUrl} poster={video.thumbnailUrl} chapters={video.chapters} />
+  <HlsPlayer
+    src={video.videoUrl}
+    poster={video.thumbnailUrl}
+    chapters={video.chapters}
+    initialPosition={video.resumeSeconds}
+    onProgress={(p, d) => {
+      saveProgress("analysis", video.id, p, d).catch(() => {})
+    }}
+  />
 )
 
 const ActionButton = ({ icon: Icon, label, count }: { icon: typeof Heart; label: string; count?: number }) => (

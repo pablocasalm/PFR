@@ -15,6 +15,7 @@ import type { ClipDetail, Comment, ContentItem } from "../../../lib/api/types"
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
 import { useSavedItems, isSaved, toggleSavedItem } from "../../../lib/saved/store"
 import HlsPlayer from "../../../lib/player/VideoPlayer"
+import { saveProgress } from "../../../lib/api/history"
 
 /**
  * Clip — Vista de reproducción de un clip en /app/watch?c=:id.
@@ -220,12 +221,27 @@ const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; v
 // ---------------------------------------------------------------------------
 
 const VideoPlayer = ({ clip }: { clip: ClipDetail }) => (
-  <HlsPlayer src={clip.videoUrl} poster={clip.thumbnailUrl} />
+  <HlsPlayer
+    src={clip.videoUrl}
+    poster={clip.thumbnailUrl}
+    initialPosition={clip.resumeSeconds}
+    onProgress={(p, d) => {
+      saveProgress("clip", clip.id, p, d).catch(() => {})
+    }}
+  />
 )
 
 const VerticalPlayer = ({ clip }: { clip: ClipDetail }) => (
   <div className="relative mx-auto w-full max-w-[420px]">
-    <HlsPlayer src={clip.videoUrl} poster={clip.thumbnailUrl} aspect="9:16" />
+    <HlsPlayer
+      src={clip.videoUrl}
+      poster={clip.thumbnailUrl}
+      aspect="9:16"
+      initialPosition={clip.resumeSeconds}
+      onProgress={(p, d) => {
+        saveProgress("clip", clip.id, p, d).catch(() => {})
+      }}
+    />
 
     {/* Rail de acciones sociales superpuesto (estilo móvil vertical) */}
     <div className="absolute bottom-24 right-3 flex flex-col items-center gap-5">

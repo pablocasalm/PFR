@@ -71,6 +71,7 @@ export type ClipDetail = {
   videoUrl: string
   concepts: string[] // todos los conceptos del clip (§9.3: se muestran todos)
   blocks: string[] // bloques del clip (chips clicables §9.2)
+  resumeSeconds?: number // punto donde retomar (§7.2)
   appearsIn?: AppearsIn | null
   related: ContentItem[]
   comments: Comment[]
@@ -90,6 +91,7 @@ export type AnalysisDetail = {
   players?: string
   tournament?: string
   concepts: string[]
+  resumeSeconds?: number // punto donde retomar (§7.2/§10.1)
   chapters: Chapter[]
   related: ContentItem[]
   comments: Comment[]

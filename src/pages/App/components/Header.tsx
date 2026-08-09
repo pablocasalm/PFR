@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { label: "Explorar", to: "/app/explorar" },
   { label: "Mi Lista", to: "/app/mi-lista" },
   { label: "Mi Juego", to: "/app/mi-juego" },
+  { label: "Cómo funciona", to: "/app/como-funciona" },
 ]
 
 const Header = () => {

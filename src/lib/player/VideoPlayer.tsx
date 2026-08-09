@@ -20,12 +20,22 @@ type Props = {
   chapters?: PlayerChapter[]
   /** "16:9" (horizontal, por defecto) o "9:16" (experiencia vertical móvil). */
   aspect?: "16:9" | "9:16"
+  /** Punto (segundos) donde reanudar al cargar (§7.2). */
+  initialPosition?: number
+  /** Se llama periódicamente y al pausar/salir para guardar el progreso de visionado. */
+  onProgress?: (positionSeconds: number, durationSeconds: number) => void
 }
 
-const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9" }: Props) => {
+const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosition, onProgress }: Props) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hlsRef = useRef<Hls | null>(null)
+  const onProgressRef = useRef(onProgress)
+  onProgressRef.current = onProgress
+  const currentRef = useRef(0)
+  const durationRef = useRef(0)
+  const lastReportRef = useRef(0)
+  const resumedRef = useRef(false)
 
   const [playing, setPlaying] = useState(false)
   const [current, setCurrent] = useState(0)
@@ -73,6 +83,24 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9" }: Props) => 
     const onFs = () => setFullscreen(document.fullscreenElement === containerRef.current)
     document.addEventListener("fullscreenchange", onFs)
     return () => document.removeEventListener("fullscreenchange", onFs)
+  }, [])
+
+  // Reporta el progreso de visionado (guardado en el historial).
+  const report = () => {
+    const cb = onProgressRef.current
+    if (cb && durationRef.current > 0 && currentRef.current > 0) {
+      cb(Math.floor(currentRef.current), Math.floor(durationRef.current))
+    }
+  }
+
+  // Guardar progreso al desmontar (salir del vídeo).
+  useEffect(() => {
+    return () => {
+      const cb = onProgressRef.current
+      if (cb && durationRef.current > 0 && currentRef.current > 0) {
+        cb(Math.floor(currentRef.current), Math.floor(durationRef.current))
+      }
+    }
   }, [])
 
   const togglePlay = () => {
@@ -132,9 +160,28 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9" }: Props) => 
         className="h-full w-full bg-black object-contain"
         onClick={togglePlay}
         onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
-        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+        onPause={() => {
+          setPlaying(false)
+          report()
+        }}
+        onTimeUpdate={(e) => {
+          const t = e.currentTarget.currentTime
+          setCurrent(t)
+          currentRef.current = t
+          if (onProgress && t - lastReportRef.current >= 10) {
+            lastReportRef.current = t
+            report()
+          }
+        }}
+        onLoadedMetadata={(e) => {
+          const d = e.currentTarget.duration
+          setDuration(d)
+          durationRef.current = d
+          if (initialPosition && initialPosition > 0 && !resumedRef.current) {
+            resumedRef.current = true
+            e.currentTarget.currentTime = initialPosition
+          }
+        }}
         onVolumeChange={(e) => {
           setMuted(e.currentTarget.muted)
           setVolume(e.currentTarget.volume)
