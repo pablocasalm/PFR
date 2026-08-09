@@ -3,12 +3,10 @@ import {
   BadgeCheck,
   Trophy,
   Heart,
-  MessageCircle,
   Share2,
   Bookmark,
   Check,
   Clock,
-  MoreVertical,
 } from "lucide-react"
 import { Link, useSearchParams } from "react-router-dom"
 import { useApi } from "../../../lib/hooks/useApi"
@@ -17,7 +15,12 @@ import type { AnalysisDetail, Chapter, Comment, ContentItem } from "../../../lib
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
 import { useSavedItems, isSaved, toggleSavedItem } from "../../../lib/saved/store"
 import HlsPlayer from "../../../lib/player/VideoPlayer"
+import { NextUpCard, pickNextRelated, useAutoplay } from "../../../lib/player/NextUp"
 import { saveProgress } from "../../../lib/api/history"
+import { toggleLike, addComment } from "../../../lib/api/social"
+import { useShare } from "../../../lib/share"
+import { BottomSheet } from "../../../lib/ui/BottomSheet"
+import { useState } from "react"
 
 /**
  * Video — Vista de un análisis completo en /app/watch?v=:id.
@@ -39,7 +42,7 @@ const initialsOf = (c: Comment) => c.initials ?? c.user.slice(0, 2).toUpperCase(
 // Player (placeholder hasta el bloque 6)
 // ---------------------------------------------------------------------------
 
-const VideoPlayer = ({ video }: { video: AnalysisDetail }) => (
+const VideoPlayer = ({ video, endSlot }: { video: AnalysisDetail; endSlot?: React.ReactNode }) => (
   <HlsPlayer
     src={video.videoUrl}
     poster={video.thumbnailUrl}
@@ -48,6 +51,7 @@ const VideoPlayer = ({ video }: { video: AnalysisDetail }) => (
     onProgress={(p, d) => {
       saveProgress("analysis", video.id, p, d).catch(() => {})
     }}
+    endSlot={endSlot}
   />
 )
 
@@ -58,6 +62,20 @@ const ActionButton = ({ icon: Icon, label, count }: { icon: typeof Heart; label:
     {count !== undefined && <span className="text-white">{count}</span>}
   </button>
 )
+
+/** "Compartir" real (§10.5): hoja de compartir nativa o copia el enlace con feedback. */
+const ShareButton = () => {
+  const { share, copied } = useShare()
+  return (
+    <button
+      onClick={share}
+      className="flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/5"
+    >
+      {copied ? <Check className="h-4 w-4 text-neon-cyan" /> : <Share2 className="h-4 w-4" />}
+      {copied ? "¡Enlace copiado!" : "Compartir"}
+    </button>
+  )
+}
 
 /** AnalysisDetail → ContentItem, para guardarlo en Mi Lista. */
 const analysisToItem = (video: AnalysisDetail): ContentItem => ({
@@ -170,6 +188,122 @@ const KeepLearningPanel = ({ next }: { next?: ContentItem }) => {
   )
 }
 
+/** Acciones sociales: me gusta (optimista) + comentarios (POST). */
+const Social = ({ video }: { video: AnalysisDetail }) => {
+  const [liked, setLiked] = useState(video.likedByMe ?? false)
+  const [likes, setLikes] = useState(video.likes ?? 0)
+  const [comments, setComments] = useState<Comment[]>(video.comments)
+  const [text, setText] = useState("")
+  const [sending, setSending] = useState(false)
+  const [commentsOpen, setCommentsOpen] = useState(false)
+
+  const onLike = () => {
+    const pLiked = liked
+    const pLikes = likes
+    setLiked(!pLiked)
+    setLikes(pLikes + (pLiked ? -1 : 1))
+    toggleLike("analysis", video.id)
+      .then((r) => {
+        setLiked(r.liked)
+        setLikes(r.likes)
+      })
+      .catch(() => {
+        setLiked(pLiked)
+        setLikes(pLikes)
+      })
+  }
+
+  const onSubmit = () => {
+    const body = text.trim()
+    if (!body || sending) return
+    setSending(true)
+    addComment("analysis", video.id, body)
+      .then((c) => {
+        setComments((cs) => [c, ...cs])
+        setText("")
+      })
+      .catch(() => {})
+      .finally(() => setSending(false))
+  }
+
+  const commentsBody = (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <Avatar initials="MP" hue={190} className="h-9 w-9 shrink-0" />
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && onSubmit()}
+          placeholder="Escribe un comentario..."
+          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-neon-cyan/40"
+        />
+        <button
+          onClick={onSubmit}
+          disabled={!text.trim() || sending}
+          className="rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-semibold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/50"
+        >
+          Publicar
+        </button>
+      </div>
+
+      {comments.map((c) => (
+        <div key={c.id} className="flex gap-3">
+          <Avatar initials={initialsOf(c)} hue={hueFor(c.user)} className="h-9 w-9 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm">
+              <span className="font-semibold text-white">{c.user}</span>{" "}
+              <span className="text-white/40">{c.ago}</span>
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-white/70">{c.text}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
+  return (
+    <>
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={onLike}
+          aria-pressed={liked}
+          className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition ${
+            liked ? "border-neon-cyan/50 bg-neon-cyan/10 text-neon-cyan" : "border-white/15 text-white/80 hover:bg-white/5"
+          }`}
+        >
+          <Heart className="h-4 w-4" fill={liked ? "currentColor" : "none"} />
+          Me gusta
+          <span className="text-white">{likes}</span>
+        </button>
+        <ShareButton />
+        <SaveAction item={analysisToItem(video)} />
+      </div>
+
+      {/* Comentarios: en escritorio en línea; en móvil, hoja inferior (§10.6). */}
+      <div className="hidden space-y-5 border-t border-white/10 pt-6 lg:block">
+        <h2 className="text-lg font-bold text-white">
+          Comentarios <span className="text-white/50">({comments.length})</span>
+        </h2>
+        {commentsBody}
+      </div>
+
+      <button
+        onClick={() => setCommentsOpen(true)}
+        className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm transition hover:bg-white/5 lg:hidden"
+      >
+        <span className="font-semibold text-white">
+          Comentarios <span className="text-white/50">({comments.length})</span>
+        </span>
+        <span className="font-medium text-neon-cyan">Ver todos</span>
+      </button>
+
+      <BottomSheet open={commentsOpen} onClose={() => setCommentsOpen(false)} title={`Comentarios (${comments.length})`}>
+        {commentsBody}
+      </BottomSheet>
+    </>
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Página
 // ---------------------------------------------------------------------------
@@ -178,6 +312,7 @@ const Video = () => {
   const [params] = useSearchParams()
   const id = params.get("v") ?? ""
   const { data: video, loading, error } = useApi(() => getAnalysisDetail(id), [id])
+  const [autoplay, setAutoplay] = useAutoplay()
 
   if (loading) return <main className="w-full py-8 text-sm text-white/40">Cargando análisis...</main>
   if (error || !video)
@@ -189,12 +324,21 @@ const Video = () => {
       </main>
     )
 
+  const nextAnalysis = pickNextRelated(video.related, video.concepts)
+
   return (
     <main className="w-full py-6">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
         {/* Columna principal */}
         <div className="space-y-6">
-          <VideoPlayer video={video} />
+          <VideoPlayer
+            video={video}
+            endSlot={
+              nextAnalysis ? (
+                <NextUpCard item={nextAnalysis} label="Siguiente análisis" autoplay={autoplay} onToggleAutoplay={setAutoplay} />
+              ) : undefined
+            }
+          />
 
           <div className="flex flex-col gap-6 lg:flex-row lg:justify-between">
             <div className="space-y-4">
@@ -220,50 +364,7 @@ const Video = () => {
             <p className="max-w-xs text-sm leading-relaxed text-white/60">{video.description}</p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <ActionButton icon={Heart} label="Me gusta" count={video.likes ?? 0} />
-            <ActionButton icon={MessageCircle} label="Comentarios" />
-            <ActionButton icon={Share2} label="Compartir" />
-            <SaveAction item={analysisToItem(video)} />
-          </div>
-
-          <section className="space-y-5 border-t border-white/10 pt-6">
-            <h2 className="text-lg font-bold text-white">
-              Comentarios <span className="text-white/50">({video.comments.length})</span>
-            </h2>
-
-            <div className="flex items-center gap-3">
-              <Avatar initials="MP" hue={190} className="h-9 w-9 shrink-0" />
-              <input
-                disabled
-                placeholder="Escribe un comentario..."
-                className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:outline-none"
-              />
-              <button className="rounded-lg bg-white/10 px-5 py-2.5 text-sm font-semibold text-white/50">Publicar</button>
-            </div>
-
-            {video.comments.map((c) => (
-              <div key={c.id} className="flex gap-3">
-                <Avatar initials={initialsOf(c)} hue={hueFor(c.user)} className="h-9 w-9 shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm">
-                    <span className="font-semibold text-white">{c.user}</span>{" "}
-                    <span className="text-white/40">{c.ago}</span>
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed text-white/70">{c.text}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-4 text-sm text-white/50">
-                  {c.likes !== undefined && (
-                    <button className="flex items-center gap-1.5 transition hover:text-neon-cyan">
-                      <Heart className="h-4 w-4" /> {c.likes}
-                    </button>
-                  )}
-                  <button className="transition hover:text-white">Responder</button>
-                  <button className="transition hover:text-white"><MoreVertical className="h-4 w-4" /></button>
-                </div>
-              </div>
-            ))}
-          </section>
+          <Social video={video} />
         </div>
 
         {/* Rail derecho */}

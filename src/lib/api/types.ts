@@ -25,6 +25,7 @@ export type ContentItem = {
   players?: string // "Chingotto, Galán, Lebrón, Stupa"
   tournament?: string // texto compuesto: "Premier Padel P2 · Génova 2024 · Cuartos de final"
   block?: string // bloque táctico principal (contexto)
+  level?: string // "intermedio" | "avanzado" (filtro §8.2; opcional, no siempre visible)
   progress?: number // 0-100, para "continúa viendo" / "vistos recientemente"
 }
 
@@ -97,6 +98,7 @@ export type AnalysisDetail = {
   comments: Comment[]
   likes?: number
   savedByMe?: boolean
+  likedByMe?: boolean
 }
 
 // ---------------------------------------------------------------------------

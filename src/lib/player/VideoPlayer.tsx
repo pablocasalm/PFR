@@ -24,9 +24,13 @@ type Props = {
   initialPosition?: number
   /** Se llama periódicamente y al pausar/salir para guardar el progreso de visionado. */
   onProgress?: (positionSeconds: number, durationSeconds: number) => void
+  /** Se dispara al terminar el vídeo (para autoplay / "siguiente", §9.7/§10.7). */
+  onEnded?: () => void
+  /** Contenido superpuesto al terminar (tarjeta "Siguiente en 3, 2, 1…"). Se ve también en fullscreen. */
+  endSlot?: React.ReactNode
 }
 
-const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosition, onProgress }: Props) => {
+const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosition, onProgress, onEnded, endSlot }: Props) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hlsRef = useRef<Hls | null>(null)
@@ -46,6 +50,7 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
   const [levels, setLevels] = useState<{ height: number; index: number }[]>([])
   const [qualityLevel, setQualityLevel] = useState(-1) // -1 = auto (ABR)
   const [qualityOpen, setQualityOpen] = useState(false)
+  const [ended, setEnded] = useState(false)
 
   // Cargar la fuente HLS (hls.js o nativo).
   useEffect(() => {
@@ -159,10 +164,19 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
         poster={poster}
         className="h-full w-full bg-black object-contain"
         onClick={togglePlay}
-        onPlay={() => setPlaying(true)}
+        onPlay={() => {
+          setPlaying(true)
+          setEnded(false)
+        }}
         onPause={() => {
           setPlaying(false)
           report()
+        }}
+        onEnded={() => {
+          setPlaying(false)
+          report()
+          setEnded(true)
+          onEnded?.()
         }}
         onTimeUpdate={(e) => {
           const t = e.currentTarget.currentTime
@@ -200,6 +214,11 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
             <Play className="h-7 w-7 text-white" fill="currentColor" />
           </span>
         </button>
+      )}
+
+      {/* Tarjeta "Siguiente" al terminar (autoplay §9.7/§10.7). Cubre el vídeo, también en fullscreen. */}
+      {ended && endSlot && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">{endSlot}</div>
       )}
 
       {/* Barra de controles */}
@@ -247,43 +266,58 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
           </span>
 
           <div className="ml-auto flex items-center gap-3">
-            {levels.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={() => setQualityOpen((v) => !v)}
-                  className={`transition hover:text-neon-cyan ${qualityOpen ? "text-neon-cyan" : ""}`}
-                  aria-label="Ajustes"
-                >
-                  <Settings className="h-5 w-5" />
-                </button>
-                {qualityOpen && (
-                  <>
-                    {/* Capa para cerrar al hacer clic fuera */}
-                    <div className="fixed inset-0 z-10" onClick={() => setQualityOpen(false)} />
-                    <div className="absolute bottom-9 right-0 z-20 min-w-[150px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl">
-                      <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Calidad</p>
-                      <button
-                        onClick={() => selectQuality(-1)}
-                        className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${qualityLevel === -1 ? "text-neon-cyan" : "text-white"}`}
-                      >
-                        Automática
-                        {qualityLevel === -1 && <span>✓</span>}
-                      </button>
-                      {levels.map((l) => (
+            <div className="relative">
+              <button
+                onClick={() => setQualityOpen((v) => !v)}
+                className={`transition hover:text-neon-cyan ${qualityOpen ? "text-neon-cyan" : ""}`}
+                aria-label="Ajustes"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
+              {qualityOpen && (
+                <>
+                  {/* Capa para cerrar al hacer clic fuera */}
+                  <div className="fixed inset-0 z-10" onClick={() => setQualityOpen(false)} />
+                  <div className="absolute bottom-9 right-0 z-20 min-w-[190px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl">
+                    {/* Audio (§9.1/§10.1): pista con IA, aún no disponible */}
+                    <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Audio</p>
+                    <button
+                      disabled
+                      className="flex w-full cursor-not-allowed items-center justify-between gap-4 px-3 py-1.5 text-left text-xs text-white/50"
+                    >
+                      Audio con IA
+                      <span className="rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-neon-cyan">
+                        Próximamente
+                      </span>
+                    </button>
+
+                    {levels.length > 0 && (
+                      <>
+                        <div className="my-1 border-t border-white/10" />
+                        <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Calidad</p>
                         <button
-                          key={l.index}
-                          onClick={() => selectQuality(l.index)}
-                          className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${qualityLevel === l.index ? "text-neon-cyan" : "text-white"}`}
+                          onClick={() => selectQuality(-1)}
+                          className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${qualityLevel === -1 ? "text-neon-cyan" : "text-white"}`}
                         >
-                          {l.height > 0 ? `${l.height}p` : `Nivel ${l.index + 1}`}
-                          {qualityLevel === l.index && <span>✓</span>}
+                          Automática
+                          {qualityLevel === -1 && <span>✓</span>}
                         </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+                        {levels.map((l) => (
+                          <button
+                            key={l.index}
+                            onClick={() => selectQuality(l.index)}
+                            className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${qualityLevel === l.index ? "text-neon-cyan" : "text-white"}`}
+                          >
+                            {l.height > 0 ? `${l.height}p` : `Nivel ${l.index + 1}`}
+                            {qualityLevel === l.index && <span>✓</span>}
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
             <button
               onClick={toggleFullscreen}
               className="transition hover:text-neon-cyan"

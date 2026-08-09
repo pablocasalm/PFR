@@ -61,13 +61,13 @@ const TypeBadge = ({ type }: { type: ContentItem["type"] }) =>
 // Subcomponentes
 // ---------------------------------------------------------------------------
 
-const SectionHeading = ({ title, withLink }: { title: string; withLink?: boolean }) => (
+const SectionHeading = ({ title, to }: { title: string; to?: string }) => (
   <div className="mb-5 flex items-center justify-between">
     <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">{title}</h2>
-    {withLink && (
-      <button className="flex items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110">
+    {to && (
+      <Link to={to} className="flex items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110">
         Ver todo <ChevronRight className="h-4 w-4" />
-      </button>
+      </Link>
     )}
   </div>
 )
@@ -179,7 +179,7 @@ const ContentCard = ({ item, rank }: { item: ContentItem; rank?: number }) => (
 
 const ConceptoCard = ({ concept, icon: Icon }: { concept: PopularConcept; icon: LucideIcon }) => (
   <Link
-    to={`/app/search?q=${encodeURIComponent(concept.name)}`}
+    to={`/app/search?concept=${encodeURIComponent(concept.name)}`}
     className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-left transition hover:border-neon-cyan/40 hover:bg-white/[0.04]"
   >
     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan">
@@ -236,7 +236,7 @@ const Inicio = () => {
       {/* Nuevo esta semana — clips + análisis por fecha de publicación */}
       {newThisWeek.length > 0 && (
         <section>
-          <SectionHeading title="Nuevo esta semana" withLink />
+          <SectionHeading title="Nuevo esta semana" to="/app/search?feed=new" />
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {newThisWeek.map((item) => (
               <ContentCard key={item.id} item={item} />
@@ -248,7 +248,7 @@ const Inicio = () => {
       {/* Conceptos populares */}
       {popularConcepts.length > 0 && (
         <section>
-          <SectionHeading title="Conceptos populares" withLink />
+          <SectionHeading title="Conceptos populares" to="/app/explorar" />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {popularConcepts.map((c, i) => (
               <ConceptoCard key={c.name} concept={c} icon={CONCEPT_ICONS[i % CONCEPT_ICONS.length]} />
@@ -260,7 +260,7 @@ const Inicio = () => {
       {/* Más vistos esta semana — ordenados por visualizaciones (7 días) */}
       {mostViewed.length > 0 && (
         <section>
-          <SectionHeading title="Más vistos esta semana" withLink />
+          <SectionHeading title="Más vistos esta semana" to="/app/search?feed=popular" />
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {mostViewed.map((item, i) => (
               <ContentCard key={item.id} item={item} rank={i + 1} />

@@ -1,8 +1,10 @@
-import { Clock, Clapperboard, LineChart, Medal, Info, Download, Play, Compass } from "lucide-react"
+import { Clock, Clapperboard, LineChart, Medal, Info, Download, Share2, Play, Compass } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getStats } from "../../../lib/api/history"
+import { renderMiJuegoStory } from "../../../lib/miJuegoStory"
 
 /**
  * MiJuego — Actividad real de aprendizaje (§13). Consume GET /api/history/stats.
@@ -124,6 +126,64 @@ const StoryCard = ({ minutes, concepts, block }: { minutes: number; concepts: st
   )
 }
 
+// Genera la imagen 9:16 y la comparte (móvil, Web Share con ficheros) o la descarga (escritorio).
+const ShareSummaryButton = ({ minutes, concepts, block }: { minutes: number; concepts: string[]; block: string }) => {
+  const [busy, setBusy] = useState(false)
+  const canShareImage = useMemo(() => {
+    try {
+      return !!navigator.canShare && navigator.canShare({ files: [new File([new Blob()], "s.png", { type: "image/png" })] })
+    } catch {
+      return false
+    }
+  }, [])
+
+  const onClick = async () => {
+    setBusy(true)
+    try {
+      const blob = await renderMiJuegoStory({ minutes, concepts, block })
+      const file = new File([blob], "mi-juego-pfr.png", { type: "image/png" })
+      if (canShareImage && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: "Mi Juego · Padel Film Room",
+            text: "Mi resumen de aprendizaje en Padel Film Room",
+          })
+        } catch (e) {
+          if ((e as Error)?.name === "AbortError") return // el usuario canceló
+        }
+      } else {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = "mi-juego-pfr.png"
+        a.click()
+        URL.revokeObjectURL(url)
+      }
+    } catch {
+      /* generación/compartir falló: no bloqueamos la UI */
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <button
+        onClick={onClick}
+        disabled={busy}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-neon-cyan/50 py-3 text-sm font-semibold text-neon-cyan transition hover:bg-neon-cyan/10 disabled:opacity-60"
+      >
+        {canShareImage ? <Share2 className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+        {busy ? "Generando…" : canShareImage ? "Compartir en Instagram" : "Descargar imagen"}
+      </button>
+      <p className="mt-3 text-center text-xs text-white/50">
+        {canShareImage ? "Se abrirá tu app para compartir la Story." : "Descárgala y compártela donde quieras."}
+      </p>
+    </>
+  )
+}
+
 const EmptyState = () => (
   <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
     <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-neon-cyan">
@@ -216,11 +276,11 @@ const MiJuego = () => {
                 block={stats.blocks[0]?.name ?? ""}
               />
             </div>
-            <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-neon-cyan/50 py-3 text-sm font-semibold text-neon-cyan transition hover:bg-neon-cyan/10">
-              <Download className="h-4 w-4" />
-              Descargar imagen
-            </button>
-            <p className="mt-3 text-center text-xs text-white/50">Descárgala y compártela donde quieras.</p>
+            <ShareSummaryButton
+              minutes={stats.minutes}
+              concepts={stats.concepts.slice(0, 3).map((c) => c.name)}
+              block={stats.blocks[0]?.name ?? ""}
+            />
           </aside>
         </div>
       )}
