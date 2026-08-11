@@ -63,8 +63,8 @@ export async function login(email: string, password: string) {
   })
 }
 
-export async function register(email: string, password: string, displayName?: string) {
-  const res = await apiRegister(email, password, displayName)
+export async function register(email: string, password: string, displayName?: string, inviteCode?: string) {
+  const res = await apiRegister(email, password, displayName, inviteCode)
   setState({
     token: res.token ?? null,
     user: { email: res.email ?? email, displayName: res.displayName, role: res.role as UserRole | undefined },

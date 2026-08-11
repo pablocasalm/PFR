@@ -1,25 +1,34 @@
 import { useState } from "react"
-import { Navigate, useNavigate } from "react-router-dom"
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom"
 import { Play } from "lucide-react"
 import { useAuth } from "./store"
+import { requestInvite } from "../api/invites"
 
 /**
- * Pantalla de acceso (login / registro). Es la puerta de toda la app: app.padelfilmroom
- * vive entera detrás de sesión, así que esto se ve ANTES de entrar a /app. Si ya hay
- * sesión, se redirige directamente al interior.
+ * Pantalla de acceso (login / registro / solicitar código). Es la puerta de toda la app:
+ * app.padelfilmroom vive entera detrás de sesión. Durante la beta, el registro exige un
+ * código de invitación (llega por URL, ?invite=&email=). Si el código está gastado, se
+ * puede solicitar otro por email.
  */
 
-type Mode = "login" | "register"
+type Mode = "login" | "register" | "request"
 
 const LoginPage = () => {
   const { isAuthenticated, login, register } = useAuth()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
 
-  const [mode, setMode] = useState<Mode>("login")
-  const [email, setEmail] = useState("")
+  const inviteFromUrl = params.get("invite") ?? ""
+  const emailFromUrl = params.get("email") ?? ""
+
+  const [mode, setMode] = useState<Mode>(inviteFromUrl ? "register" : "login")
+  const [email, setEmail] = useState(emailFromUrl)
   const [password, setPassword] = useState("")
   const [displayName, setDisplayName] = useState("")
+  const [inviteCode, setInviteCode] = useState(inviteFromUrl)
+  const [requestEmail, setRequestEmail] = useState(emailFromUrl)
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   // Ya autenticado → no tiene sentido ver el login.
@@ -28,16 +37,21 @@ const LoginPage = () => {
   const switchMode = (next: Mode) => {
     setMode(next)
     setError(null)
+    setInfo(null)
     setPassword("")
   }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setInfo(null)
     setLoading(true)
     try {
-      if (mode === "login") await login(email.trim(), password)
-      else await register(email.trim(), password, displayName.trim() || undefined)
+      if (mode === "login") {
+        await login(email.trim(), password)
+      } else {
+        await register(email.trim(), password, displayName.trim() || undefined, inviteCode.trim())
+      }
       navigate("/app/inicio", { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo completar la operación.")
@@ -46,8 +60,31 @@ const LoginPage = () => {
     }
   }
 
+  const submitRequest = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setInfo(null)
+    setLoading(true)
+    try {
+      const res = await requestInvite(requestEmail.trim())
+      setInfo(res.message ?? "Solicitud recibida. Te enviaremos un nuevo código pronto.")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo enviar la solicitud.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const inputCls =
     "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/50 focus:outline-none"
+
+  const title = mode === "login" ? "Inicia sesión" : mode === "register" ? "Crea tu cuenta" : "Solicitar un código"
+  const subtitle =
+    mode === "login"
+      ? "Accede a tu biblioteca táctica de Padel Film Room."
+      : mode === "register"
+        ? "Introduce tu código de invitación para unirte a la beta."
+        : "¿Tu código ya se ha usado? Pide uno nuevo con tu email."
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-midnight bg-film-room p-4 text-white">
@@ -63,55 +100,93 @@ const LoginPage = () => {
           </div>
         </div>
 
-        <h1 className="font-display text-3xl font-bold text-white">
-          {mode === "login" ? "Inicia sesión" : "Crea tu cuenta"}
-        </h1>
-        <p className="mt-1.5 text-sm text-white/60">
-          {mode === "login"
-            ? "Accede a tu biblioteca táctica de Padel Film Room."
-            : "Empieza a guardar clips y a seguir tu aprendizaje."}
-        </p>
+        <h1 className="font-display text-3xl font-bold text-white">{title}</h1>
+        <p className="mt-1.5 text-sm text-white/60">{subtitle}</p>
 
-        <form onSubmit={submit} className="mt-7 space-y-3">
-          {mode === "register" && (
+        {mode === "request" ? (
+          <form onSubmit={submitRequest} className="mt-7 space-y-3">
             <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Nombre (opcional)"
+              type="email"
+              required
+              value={requestEmail}
+              onChange={(e) => setRequestEmail(e.target.value)}
+              placeholder="Tu email"
               className={inputCls}
-              autoComplete="name"
+              autoComplete="email"
             />
-          )}
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className={inputCls}
-            autoComplete="email"
-          />
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Contraseña"
-            className={inputCls}
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
-          />
+            {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+            {info && <p className="rounded-lg bg-neon-cyan/10 px-3 py-2 text-sm text-neon-cyan">{info}</p>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-neon-cyan py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-60"
+            >
+              {loading ? "Un momento..." : "Solicitar código"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={submit} className="mt-7 space-y-3">
+            {mode === "register" && (
+              <>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Nombre (opcional)"
+                  className={inputCls}
+                  autoComplete="name"
+                />
+                <input
+                  type="text"
+                  required
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value)}
+                  placeholder="Código de invitación"
+                  className={inputCls}
+                  autoCapitalize="characters"
+                />
+              </>
+            )}
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className={inputCls}
+              autoComplete="email"
+            />
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Contraseña"
+              className={inputCls}
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+            />
 
-          {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+            {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-neon-cyan py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-60"
-          >
-            {loading ? "Un momento..." : mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-neon-cyan py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-60"
+            >
+              {loading ? "Un momento..." : mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
+            </button>
+
+            {mode === "register" && (
+              <button
+                type="button"
+                onClick={() => switchMode("request")}
+                className="w-full text-center text-xs text-white/50 transition hover:text-white"
+              >
+                ¿Tu código no funciona? Solicita otro
+              </button>
+            )}
+          </form>
+        )}
 
         <p className="mt-6 text-center text-sm text-white/60">
           {mode === "login" ? (

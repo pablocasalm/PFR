@@ -14,6 +14,6 @@ export type AuthResponse = {
 export const apiLogin = (email: string, password: string) =>
   apiPost<AuthResponse>("/api/auth/login", { email, password })
 
-/** POST /api/auth/register → crea el usuario y devuelve token. */
-export const apiRegister = (email: string, password: string, displayName?: string) =>
-  apiPost<AuthResponse>("/api/auth/register", { email, password, displayName })
+/** POST /api/auth/register → crea el usuario y devuelve token. Requiere código de invitación (beta). */
+export const apiRegister = (email: string, password: string, displayName?: string, inviteCode?: string) =>
+  apiPost<AuthResponse>("/api/auth/register", { email, password, displayName, inviteCode })

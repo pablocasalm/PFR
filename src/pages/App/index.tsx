@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import { Outlet } from "react-router-dom"
 import Header from "./components/Header"
 import MobileNav from "./components/MobileNav"
+import FeedbackButton from "./components/FeedbackButton"
 import { hydrateSaved } from "../../lib/saved/store"
 
 /**
@@ -23,6 +24,7 @@ const AppLayout = () => {
         <Outlet />
       </div>
       <MobileNav />
+      <FeedbackButton />
     </div>
   )
 }
