@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import { Play } from "lucide-react"
 import { resetPassword } from "../api/auth"
 
 /**
@@ -46,9 +45,11 @@ const ResetPasswordPage = () => {
     <div className="flex min-h-screen items-center justify-center bg-midnight bg-film-room p-4 text-white">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/40 p-8 shadow-2xl backdrop-blur-md">
         <div className="mb-7 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan">
-            <Play className="h-5 w-5" fill="currentColor" />
-          </div>
+          <img
+            src="/Logos/favicon_sinfondo.png"
+            alt="Padel Film Room"
+            className="h-11 w-11 object-contain"
+          />
           <div className="leading-none">
             <p className="text-sm font-bold uppercase tracking-wide text-white">Padel</p>
             <p className="text-sm font-bold uppercase tracking-wide text-white">Film Room</p>

@@ -1,5 +1,3 @@
-import { Play } from "lucide-react"
-
 /**
  * Pantalla de carga a pantalla completa con la identidad de PFR (logo + anillo giratorio
  * + wordmark + puntos). Se usa como fallback del router mientras cargan los chunks.
@@ -11,9 +9,11 @@ const LoadingScreen = () => (
       {/* Anillo giratorio alrededor del logo */}
       <span className="absolute inset-0 rounded-full border-2 border-white/10 border-t-neon-cyan motion-safe:animate-spin" />
       {/* Logo */}
-      <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan">
-        <Play className="h-5 w-5" fill="currentColor" />
-      </span>
+      <img
+        src="/Logos/favicon_sinfondo.png"
+        alt="Padel Film Room"
+        className="h-11 w-11 object-contain"
+      />
     </div>
 
     <p className="mt-6 text-sm font-bold uppercase tracking-[0.2em] text-white/80">Padel Film Room</p>

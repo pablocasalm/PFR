@@ -32,9 +32,9 @@ const Header = () => {
       {/* Logo */}
       <div className="flex items-center gap-3">
         <img
-          src="/Logos/favicon.png"
+          src="/Logos/favicon_sinfondo.png"
           alt="Padel Film Room"
-          className="h-11 w-11 shrink-0 rounded-full object-contain"
+          className="h-11 w-11 shrink-0 object-contain"
         />
         <div className="leading-none">
           <p className="text-sm font-bold uppercase tracking-wide text-white">Padel</p>
