@@ -55,14 +55,6 @@ const VideoPlayer = ({ video, endSlot }: { video: AnalysisDetail; endSlot?: Reac
   />
 )
 
-const ActionButton = ({ icon: Icon, label, count }: { icon: typeof Heart; label: string; count?: number }) => (
-  <button className="flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/5">
-    <Icon className="h-4 w-4" />
-    {label}
-    {count !== undefined && <span className="text-white">{count}</span>}
-  </button>
-)
-
 /** "Compartir" real (§10.5): hoja de compartir nativa o copia el enlace con feedback. */
 const ShareButton = () => {
   const { share, copied } = useShare()
