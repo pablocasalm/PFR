@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
-import { Search, Play, ChevronDown, LogOut, UploadCloud, Ticket } from "lucide-react"
+import { Search, ChevronDown, LogOut, UploadCloud, Ticket } from "lucide-react"
 import { useAuth, canPublish, isAdmin, type AuthUser } from "../../../lib/auth/store"
 
 /**
@@ -31,9 +31,11 @@ const Header = () => {
     <div className="flex w-full items-center gap-4 px-4 py-4 sm:px-6 md:gap-6 lg:px-10">
       {/* Logo */}
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan">
-          <Play className="h-5 w-5" fill="currentColor" />
-        </div>
+        <img
+          src="/Logos/favicon.png"
+          alt="Padel Film Room"
+          className="h-11 w-11 shrink-0 rounded-full object-contain"
+        />
         <div className="leading-none">
           <p className="text-sm font-bold uppercase tracking-wide text-white">Padel</p>
           <p className="text-sm font-bold uppercase tracking-wide text-white">Film Room</p>
