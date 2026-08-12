@@ -17,3 +17,11 @@ export const apiLogin = (email: string, password: string) =>
 /** POST /api/auth/register → crea el usuario y devuelve token. Requiere código de invitación (beta). */
 export const apiRegister = (email: string, password: string, displayName?: string, inviteCode?: string) =>
   apiPost<AuthResponse>("/api/auth/register", { email, password, displayName, inviteCode })
+
+/** POST /api/auth/request-password-reset → envía el email de recuperación (responde ok aunque el email no exista). */
+export const requestPasswordReset = (email: string) =>
+  apiPost<{ ok: boolean }>("/api/auth/request-password-reset", { email })
+
+/** POST /api/auth/reset-password → canjea el token y fija la nueva contraseña. */
+export const resetPassword = (token: string, newPassword: string) =>
+  apiPost<{ ok: boolean }>("/api/auth/reset-password", { token, newPassword })

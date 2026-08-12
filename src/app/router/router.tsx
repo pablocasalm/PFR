@@ -10,6 +10,7 @@ const ComoFunciona = lazy(() => import("../../pages/App/pages/ComoFunciona"))
 const Watch = lazy(() => import("../../pages/App/pages/Watch"))
 const Search = lazy(() => import("../../pages/App/pages/Search"))
 const LoginPage = lazy(() => import("../../lib/auth/LoginPage"))
+const ResetPasswordPage = lazy(() => import("../../lib/auth/ResetPasswordPage"))
 const PlayerTestPage = lazy(() => import("../../lib/player/PlayerTestPage"))
 const Publicar = lazy(() => import("../../pages/App/pages/Publicar"))
 
@@ -25,6 +26,7 @@ const withSuspense = (element: React.ReactElement) => (
 const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/app/inicio" replace /> },
   { path: "/login", element: withSuspense(<LoginPage />) },
+  { path: "/reset-password", element: withSuspense(<ResetPasswordPage />) },
   // ⚠️ Solo dev: prueba del reproductor sin backend.
   ...(import.meta.env.DEV ? [{ path: "/dev/player", element: withSuspense(<PlayerTestPage />) }] : []),
   {
