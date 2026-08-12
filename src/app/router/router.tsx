@@ -1,5 +1,6 @@
 import { Suspense, lazy } from "react"
 import { Navigate, createBrowserRouter } from "react-router-dom"
+import LoadingScreen from "../../lib/ui/LoadingScreen"
 
 const AppLayout = lazy(() => import("../../pages/App"))
 const Inicio = lazy(() => import("../../pages/App/pages/Inicio"))
@@ -19,7 +20,7 @@ const RequireAuth = lazy(() => import("../../lib/auth/RequireAuth"))
 const RequirePublisher = lazy(() => import("../../lib/auth/RequirePublisher"))
 const RequireAdmin = lazy(() => import("../../lib/auth/RequireAdmin"))
 
-const loadingFallback = <div className="p-6 text-sm text-neutral-500">Cargando...</div>
+const loadingFallback = <LoadingScreen />
 
 const withSuspense = (element: React.ReactElement) => (
   <Suspense fallback={loadingFallback}>{element}</Suspense>
