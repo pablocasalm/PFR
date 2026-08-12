@@ -22,9 +22,12 @@ const parseEmails = (raw: string): string[] => {
 
 const fmt = (iso: string | null): string => {
   if (!iso) return "—"
-  const d = new Date(iso)
+  // El backend envía las fechas en UTC pero a veces sin marca de zona ('Z'). Si no la trae,
+  // la forzamos a UTC para que toLocaleString la convierta bien a la hora local (Madrid).
+  const hasTz = /[zZ]|[+-]\d{2}:?\d{2}$/.test(iso)
+  const d = new Date(hasTz ? iso : `${iso}Z`)
   if (Number.isNaN(d.getTime())) return "—"
-  return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+  return d.toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
 }
 
 type Filter = "all" | "pending" | "used"
