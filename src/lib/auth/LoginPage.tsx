@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Navigate, useNavigate, useSearchParams } from "react-router-dom"
+import { Navigate, useNavigate, useSearchParams, useLocation } from "react-router-dom"
 import { Play } from "lucide-react"
 import { useAuth } from "./store"
 import { requestInvite } from "../api/invites"
@@ -17,12 +17,14 @@ type Mode = "login" | "register" | "request" | "forgot"
 const LoginPage = () => {
   const { isAuthenticated, login, register } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [params] = useSearchParams()
 
   const inviteFromUrl = params.get("invite") ?? ""
   const emailFromUrl = params.get("email") ?? ""
+  const isRegisterPath = location.pathname === "/register"
 
-  const [mode, setMode] = useState<Mode>(inviteFromUrl ? "register" : "login")
+  const [mode, setMode] = useState<Mode>(inviteFromUrl || isRegisterPath ? "register" : "login")
   const [email, setEmail] = useState(emailFromUrl)
   const [password, setPassword] = useState("")
   const [displayName, setDisplayName] = useState("")

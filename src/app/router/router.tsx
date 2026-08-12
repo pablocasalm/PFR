@@ -28,6 +28,7 @@ const withSuspense = (element: React.ReactElement) => (
 const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/app/inicio" replace /> },
   { path: "/login", element: withSuspense(<LoginPage />) },
+  { path: "/register", element: withSuspense(<LoginPage />) },
   { path: "/reset-password", element: withSuspense(<ResetPasswordPage />) },
   // ⚠️ Solo dev: prueba del reproductor sin backend.
   ...(import.meta.env.DEV ? [{ path: "/dev/player", element: withSuspense(<PlayerTestPage />) }] : []),
