@@ -17,6 +17,11 @@ export function canPublish(user: AuthUser | null): boolean {
   return user?.role === "ContentCreator" || user?.role === "Admin"
 }
 
+/** Solo los Admin acceden a la gestión (invitaciones, etc.). */
+export function isAdmin(user: AuthUser | null): boolean {
+  return user?.role === "Admin"
+}
+
 const TOKEN_KEY = "token"
 const USER_KEY = "user"
 

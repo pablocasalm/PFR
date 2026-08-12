@@ -13,9 +13,11 @@ const LoginPage = lazy(() => import("../../lib/auth/LoginPage"))
 const ResetPasswordPage = lazy(() => import("../../lib/auth/ResetPasswordPage"))
 const PlayerTestPage = lazy(() => import("../../lib/player/PlayerTestPage"))
 const Publicar = lazy(() => import("../../pages/App/pages/Publicar"))
+const AdminInvites = lazy(() => import("../../pages/App/pages/AdminInvites"))
 
 const RequireAuth = lazy(() => import("../../lib/auth/RequireAuth"))
 const RequirePublisher = lazy(() => import("../../lib/auth/RequirePublisher"))
+const RequireAdmin = lazy(() => import("../../lib/auth/RequireAdmin"))
 
 const loadingFallback = <div className="p-6 text-sm text-neutral-500">Cargando...</div>
 
@@ -47,6 +49,7 @@ const router = createBrowserRouter([
       { path: "watch", element: withSuspense(<Watch />) },
       { path: "search", element: withSuspense(<Search />) },
       { path: "publicar", element: withSuspense(<RequirePublisher><Publicar /></RequirePublisher>) },
+      { path: "admin/invitaciones", element: withSuspense(<RequireAdmin><AdminInvites /></RequireAdmin>) },
     ],
   },
   { path: "*", element: <Navigate to="/app/inicio" replace /> },

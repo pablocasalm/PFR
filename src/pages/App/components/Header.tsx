@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
-import { Search, Play, ChevronDown, LogOut, UploadCloud } from "lucide-react"
-import { useAuth, canPublish, type AuthUser } from "../../../lib/auth/store"
+import { Search, Play, ChevronDown, LogOut, UploadCloud, Ticket } from "lucide-react"
+import { useAuth, canPublish, isAdmin, type AuthUser } from "../../../lib/auth/store"
 
 /**
  * Header compartido del nuevo dashboard (/app).
@@ -73,6 +73,19 @@ const Header = () => {
           >
             <UploadCloud className="h-4 w-4" />
             Publicar
+          </NavLink>
+        )}
+        {isAdmin(user) && (
+          <NavLink
+            to="/app/admin/invitaciones"
+            className={({ isActive }) =>
+              `flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                isActive ? "text-neon-cyan" : "text-white/60 hover:text-white"
+              }`
+            }
+          >
+            <Ticket className="h-4 w-4" />
+            Invitaciones
           </NavLink>
         )}
       </nav>
@@ -147,6 +160,16 @@ const SessionControl = () => {
               >
                 <UploadCloud className="h-4 w-4" />
                 Publicar
+              </Link>
+            )}
+            {isAdmin(user) && (
+              <Link
+                to="/app/admin/invitaciones"
+                onClick={() => setMenuOpen(false)}
+                className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
+              >
+                <Ticket className="h-4 w-4" />
+                Invitaciones
               </Link>
             )}
             <button
