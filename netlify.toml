@@ -1,0 +1,8 @@
+# Configuración de despliegue en Netlify.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Vite 7 requiere Node >= 20.19 / 22.12 (la versión por defecto de Netlify es más antigua).
+  NODE_VERSION = "22"
