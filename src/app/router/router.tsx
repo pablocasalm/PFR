@@ -15,6 +15,7 @@ const ResetPasswordPage = lazy(() => import("../../lib/auth/ResetPasswordPage"))
 const PlayerTestPage = lazy(() => import("../../lib/player/PlayerTestPage"))
 const Publicar = lazy(() => import("../../pages/App/pages/Publicar"))
 const AdminInvites = lazy(() => import("../../pages/App/pages/AdminInvites"))
+const AdminFeedback = lazy(() => import("../../pages/App/pages/AdminFeedback"))
 
 const RequireAuth = lazy(() => import("../../lib/auth/RequireAuth"))
 const RequirePublisher = lazy(() => import("../../lib/auth/RequirePublisher"))
@@ -52,6 +53,7 @@ const router = createBrowserRouter([
       { path: "search", element: withSuspense(<Search />) },
       { path: "publicar", element: withSuspense(<RequirePublisher><Publicar /></RequirePublisher>) },
       { path: "admin/invitaciones", element: withSuspense(<RequireAdmin><AdminInvites /></RequireAdmin>) },
+      { path: "admin/reportes", element: withSuspense(<RequireAdmin><AdminFeedback /></RequireAdmin>) },
     ],
   },
   { path: "*", element: <Navigate to="/app/inicio" replace /> },

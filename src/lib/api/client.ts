@@ -34,4 +34,7 @@ export const apiGet = <T>(endpoint: string) => apiFetch<T>(endpoint)
 export const apiPost = <T>(endpoint: string, body?: unknown) =>
   apiFetch<T>(endpoint, { method: "POST", body: body ? JSON.stringify(body) : undefined })
 
+export const apiPatch = <T>(endpoint: string, body?: unknown) =>
+  apiFetch<T>(endpoint, { method: "PATCH", body: body ? JSON.stringify(body) : undefined })
+
 export const apiDelete = <T>(endpoint: string) => apiFetch<T>(endpoint, { method: "DELETE" })

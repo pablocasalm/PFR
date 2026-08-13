@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
-import { Search, ChevronDown, LogOut, UploadCloud, Ticket } from "lucide-react"
+import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox } from "lucide-react"
 import { useAuth, canPublish, isAdmin, type AuthUser } from "../../../lib/auth/store"
 
 /**
@@ -90,6 +90,19 @@ const Header = () => {
             Invitaciones
           </NavLink>
         )}
+        {isAdmin(user) && (
+          <NavLink
+            to="/app/admin/reportes"
+            className={({ isActive }) =>
+              `flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                isActive ? "text-neon-cyan" : "text-white/60 hover:text-white"
+              }`
+            }
+          >
+            <Inbox className="h-4 w-4" />
+            Reportes
+          </NavLink>
+        )}
       </nav>
 
       {/* Buscador (escritorio) */}
@@ -172,6 +185,16 @@ const SessionControl = () => {
               >
                 <Ticket className="h-4 w-4" />
                 Invitaciones
+              </Link>
+            )}
+            {isAdmin(user) && (
+              <Link
+                to="/app/admin/reportes"
+                onClick={() => setMenuOpen(false)}
+                className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
+              >
+                <Inbox className="h-4 w-4" />
+                Reportes
               </Link>
             )}
             <button
