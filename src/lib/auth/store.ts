@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react"
 import { apiLogin, apiRegister } from "../api/auth"
 import { clearSaved } from "../saved/store"
+import { invalidateApiCache } from "../hooks/useApi"
 
 /**
  * Estado de sesión sin provider global (coherente con el README): un store de módulo
@@ -79,6 +80,7 @@ export async function register(email: string, password: string, displayName?: st
 export function logout() {
   setState({ token: null, user: null })
   clearSaved() // Mi Lista es por-cuenta: se vacía al salir.
+  invalidateApiCache() // no dejar datos cacheados de la cuenta anterior.
 }
 
 /** Hook de sesión: { token, user, isAuthenticated } + acciones. */

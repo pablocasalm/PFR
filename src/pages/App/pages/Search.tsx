@@ -211,7 +211,8 @@ const Search = () => {
 
   const { data, loading, error } = useApi(
     () => getSearch(filters),
-    [filters.q, filters.block, filters.concept, filters.level, filters.type, filters.sort, filters.feed]
+    [filters.q, filters.block, filters.concept, filters.level, filters.type, filters.sort, filters.feed],
+    `search:${filters.q}|${filters.block}|${filters.concept}|${filters.level}|${filters.type}|${filters.sort}|${filters.feed}`,
   )
 
   // Conjunto base: filtra por concepto/bloque/nivel (todo menos tipo), para poder contar las tabs.

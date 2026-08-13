@@ -202,7 +202,7 @@ const MiLista = () => {
   const clips = saved.filter((i) => i.type === "clip")
   const analyses = saved.filter((i) => i.type === "analysis")
 
-  const { data: recent } = useApi(getRecent, [])
+  const { data: recent } = useApi(getRecent, [], "recent")
   const recentItems = recent ?? []
 
   const [managing, setManaging] = useState(false)

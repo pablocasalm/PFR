@@ -5,6 +5,7 @@ import { useApi } from "../../../lib/hooks/useApi"
 import { getHome } from "../../../lib/api/home"
 import type { ContentItem, PopularConcept } from "../../../lib/api/types"
 import SaveButton from "../../../lib/saved/SaveButton"
+import { Skeleton, CardGridSkeleton } from "../../../lib/ui/Skeleton"
 
 /**
  * Inicio — Dashboard principal. Consume GET /api/home (endpoint con forma de pantalla).
@@ -198,10 +199,25 @@ const ConceptoCard = ({ concept, icon: Icon }: { concept: PopularConcept; icon: 
 // Página
 // ---------------------------------------------------------------------------
 
-const Inicio = () => {
-  const { data, loading, error } = useApi(getHome, [])
+/** Esqueleto de Inicio: hero + dos filas de tarjetas. Se ve solo en la primera carga (caché fría). */
+const InicioSkeleton = () => (
+  <main className="w-full space-y-12 py-8">
+    <Skeleton className="h-64 w-full rounded-2xl sm:h-80" />
+    <section className="space-y-4">
+      <Skeleton className="h-5 w-48 rounded" />
+      <CardGridSkeleton />
+    </section>
+    <section className="space-y-4">
+      <Skeleton className="h-5 w-56 rounded" />
+      <CardGridSkeleton />
+    </section>
+  </main>
+)
 
-  if (loading) return <main className="w-full py-8 text-sm text-white/40">Cargando...</main>
+const Inicio = () => {
+  const { data, loading, error } = useApi(getHome, [], "home")
+
+  if (loading) return <InicioSkeleton />
   if (error)
     return (
       <main className="w-full py-8">

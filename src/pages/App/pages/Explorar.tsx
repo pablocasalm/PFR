@@ -7,6 +7,7 @@ import { getExplore } from "../../../lib/api/explore"
 import type { ContentItem, ExploreSection } from "../../../lib/api/types"
 import SaveButton from "../../../lib/saved/SaveButton"
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
+import { Skeleton, CardSkeleton } from "../../../lib/ui/Skeleton"
 
 /**
  * Explorar — Biblioteca táctica. Consume GET /api/explore (bloques + análisis).
@@ -230,12 +231,31 @@ const FiltersPanel = ({
   </div>
 )
 
+/** Esqueleto de la biblioteca: dos secciones de concepto con su rejilla de tarjetas. */
+const ExplorarSkeleton = () => (
+  <div className="space-y-6">
+    {Array.from({ length: 2 }).map((_, s) => (
+      <section key={s} className="space-y-5 rounded-2xl border border-white/[0.06] bg-white/[0.015] p-3 sm:p-5">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-9 w-9 rounded-lg" />
+          <Skeleton className="h-4 w-40 rounded" />
+        </div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+)
+
 // ---------------------------------------------------------------------------
 // Página
 // ---------------------------------------------------------------------------
 
 const Explorar = () => {
-  const { data, loading, error } = useApi(getExplore, [])
+  const { data, loading, error } = useApi(getExplore, [], "explore")
 
   const [showFilters, setShowFilters] = useState(false)
   const [type, setType] = useState<ContentType>("all")
@@ -320,7 +340,7 @@ const Explorar = () => {
         />
       )}
 
-      {loading && <p className="text-sm text-white/40">Cargando biblioteca...</p>}
+      {loading && <ExplorarSkeleton />}
       {error && (
         <p className="text-sm text-red-400/80">No se pudo cargar Explorar ({error}). ¿Está el backend en marcha?</p>
       )}
