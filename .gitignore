@@ -10,6 +10,7 @@ dist/clips_test/
 dist/**/*.mov
 dist/**/*.mp4
 .claude/
+docs/
 
 # Overrides locales de entorno
 .env
