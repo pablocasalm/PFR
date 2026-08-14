@@ -36,3 +36,6 @@ export type InviteRequestItem = { id: number; email: string; createdAtUtc: strin
 
 /** GET /api/admin/invite-requests (Admin) → solicitudes pendientes (sin atender todavía). */
 export const listInviteRequests = () => apiGet<InviteRequestItem[]>("/api/admin/invite-requests")
+
+/** DELETE /api/admin/invite-requests/{id} (Admin) → descarta una solicitud sin invitar (pruebas, email mal escrito). */
+export const deleteInviteRequest = (id: number) => apiDelete<{ ok: boolean }>(`/api/admin/invite-requests/${id}`)

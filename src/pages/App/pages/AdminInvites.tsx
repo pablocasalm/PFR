@@ -5,6 +5,7 @@ import {
   listInvites,
   deleteInvite,
   listInviteRequests,
+  deleteInviteRequest,
   type InviteCode,
   type InviteRequestItem,
 } from "../../../lib/api/invites"
@@ -98,6 +99,17 @@ const AdminInvites = () => {
       setError(err instanceof Error ? err.message : "No se pudo generar la invitación.")
     } finally {
       setInvitingEmail(null)
+    }
+  }
+
+  // Descarta una solicitud sin invitar (pruebas, email mal escrito).
+  const removeRequest = async (r: InviteRequestItem) => {
+    if (!window.confirm(`¿Descartar la solicitud de ${r.email}?`)) return
+    try {
+      await deleteInviteRequest(r.id)
+      setRequests((prev) => prev.filter((x) => x.id !== r.id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo descartar la solicitud.")
     }
   }
 
@@ -215,14 +227,23 @@ const AdminInvites = () => {
                   <p className="truncate text-sm text-white/90">{r.email}</p>
                   <p className="text-xs text-white/40">{fmt(r.createdAtUtc)}</p>
                 </div>
-                <button
-                  onClick={() => inviteFromRequest(r.email)}
-                  disabled={invitingEmail !== null}
-                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-1.5 text-xs font-semibold text-neon-cyan transition hover:bg-neon-cyan/20 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Send className="h-3.5 w-3.5" />
-                  {invitingEmail === r.email ? "Invitando..." : "Invitar"}
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    onClick={() => inviteFromRequest(r.email)}
+                    disabled={invitingEmail !== null}
+                    className="flex items-center gap-1.5 rounded-lg border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-1.5 text-xs font-semibold text-neon-cyan transition hover:bg-neon-cyan/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    {invitingEmail === r.email ? "Invitando..." : "Invitar"}
+                  </button>
+                  <button
+                    onClick={() => removeRequest(r)}
+                    aria-label={`Descartar solicitud de ${r.email}`}
+                    className="flex items-center rounded-lg p-1.5 text-white/40 transition hover:text-red-400"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
