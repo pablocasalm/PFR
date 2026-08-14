@@ -6,6 +6,7 @@ import { getSearch } from "../../../lib/api/search"
 import type { ContentItem } from "../../../lib/api/types"
 import SaveButton from "../../../lib/saved/SaveButton"
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
+import { BottomSheet } from "../../../lib/ui/BottomSheet"
 
 /**
  * Search — Pantalla de Resultados (§11). Destino común de búsqueda, "Ver todo",
@@ -327,12 +328,10 @@ const Search = () => {
             </div>
           )}
 
-          {/* Panel de filtros en móvil (mismo contenido que el aside) */}
-          {showFilters && (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5 lg:hidden">
-              <FilterControls filters={filters} setFilter={setFilter} onClear={clearFilters} />
-            </div>
-          )}
+          {/* Filtros en móvil: hoja inferior (mismo contenido que el aside de escritorio) */}
+          <BottomSheet open={showFilters} onClose={() => setShowFilters(false)} title="Filtros">
+            <FilterControls filters={filters} setFilter={setFilter} onClear={clearFilters} />
+          </BottomSheet>
 
           {loading && <p className="mt-6 text-sm text-white/40">Buscando...</p>}
           {error && <p className="mt-6 text-sm text-red-400/80">No se pudo buscar ({error}). ¿Está el backend en marcha?</p>}

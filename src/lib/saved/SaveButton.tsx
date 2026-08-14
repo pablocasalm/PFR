@@ -27,7 +27,7 @@ const SaveButton = ({ item, variant = "icon" }: { item: ContentItem; variant?: V
       <button
         onClick={onClick}
         aria-pressed={saved}
-        className={`flex items-center gap-2.5 text-sm font-semibold transition ${
+        className={`flex shrink-0 items-center gap-2.5 whitespace-nowrap text-sm font-semibold transition ${
           saved ? "text-neon-cyan" : "text-white hover:text-white/80"
         }`}
       >

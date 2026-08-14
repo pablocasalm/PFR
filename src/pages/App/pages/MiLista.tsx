@@ -260,7 +260,7 @@ const MiLista = () => {
 
       {/* Barra de acciones del modo gestión (§12.1) */}
       {managing && (
-        <div className="sticky top-2 z-10 flex flex-wrap items-center gap-3 rounded-xl border border-neon-cyan/30 bg-midnight/90 p-3 backdrop-blur">
+        <div className="sticky top-20 z-10 flex flex-wrap items-center gap-3 rounded-xl border border-neon-cyan/30 bg-midnight/90 p-3 backdrop-blur">
           <span className="text-sm font-medium text-white">{selected.size} seleccionados</span>
           <div className="ml-auto flex items-center gap-2">
             <button

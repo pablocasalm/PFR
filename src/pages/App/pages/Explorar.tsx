@@ -8,6 +8,8 @@ import type { ContentItem, ExploreSection } from "../../../lib/api/types"
 import SaveButton from "../../../lib/saved/SaveButton"
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
 import { Skeleton, CardSkeleton } from "../../../lib/ui/Skeleton"
+import CardRow from "../../../lib/ui/CardRow"
+import { BottomSheet } from "../../../lib/ui/BottomSheet"
 
 /**
  * Explorar — Biblioteca táctica. Consume GET /api/explore (bloques + análisis).
@@ -62,7 +64,7 @@ const VerTodo = ({ to }: { to: string }) => (
   </Link>
 )
 
-// Solo escritorio: en móvil se navega la rejilla con scroll táctil (y evita overflow horizontal).
+// Solo escritorio: en móvil el carrusel ya se navega con scroll táctil (CardRow).
 const CarouselArrow = () => (
   <button className="absolute -right-2 top-[38%] z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white backdrop-blur transition hover:bg-black/90 md:flex">
     <ChevronRight className="h-5 w-5" />
@@ -138,11 +140,11 @@ const ConceptSection = ({
       </div>
 
       <div className="relative">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <CardRow>
           {section.clips.map((clip) => (
             <ClipCard key={clip.id} clip={clip} currentBlock={section.block} />
           ))}
-        </div>
+        </CardRow>
         <CarouselArrow />
       </div>
     </section>
@@ -240,11 +242,11 @@ const ExplorarSkeleton = () => (
           <Skeleton className="h-9 w-9 rounded-lg" />
           <Skeleton className="h-4 w-40 rounded" />
         </div>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <CardRow cols="sm:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <CardSkeleton key={i} />
           ))}
-        </div>
+        </CardRow>
       </section>
     ))}
   </div>
@@ -329,7 +331,21 @@ const Explorar = () => {
         </button>
       </div>
 
+      {/* Filtros: en escritorio en línea; en móvil, hoja inferior (mismo patrón que Comentarios en Video). */}
       {showFilters && (
+        <div className="hidden lg:block">
+          <FiltersPanel
+            type={type}
+            onType={setType}
+            concepts={allConcepts}
+            selected={selected}
+            onToggleConcept={toggleConcept}
+            onClear={clear}
+          />
+        </div>
+      )}
+
+      <BottomSheet open={showFilters} onClose={() => setShowFilters(false)} title="Filtros">
         <FiltersPanel
           type={type}
           onType={setType}
@@ -338,7 +354,7 @@ const Explorar = () => {
           onToggleConcept={toggleConcept}
           onClear={clear}
         />
-      )}
+      </BottomSheet>
 
       {loading && <ExplorarSkeleton />}
       {error && (

@@ -19,6 +19,7 @@ import { useSavedItems, isSaved, toggleSavedItem } from "../../../lib/saved/stor
 import { toggleLike, addComment } from "../../../lib/api/social"
 import { useShare } from "../../../lib/share"
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
+import CardRow from "../../../lib/ui/CardRow"
 import HlsPlayer from "../../../lib/player/VideoPlayer"
 import { NextUpCard, pickNextRelated, useAutoplay } from "../../../lib/player/NextUp"
 import { saveProgress } from "../../../lib/api/history"
@@ -222,22 +223,24 @@ const AppearsIn = ({ clip }: { clip: ClipDetail }) => {
   if (!clip.appearsIn) return null
   const a = clip.appearsIn
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-      <div className="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg" style={thumbStyle(250)}>
-        {a.thumbnailUrl ? (
-          <img src={a.thumbnailUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        ) : (
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white/70">VS</span>
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs text-white/50">Aparece en:</p>
-        <p className="text-sm font-semibold leading-snug text-white">{a.title}</p>
-        {a.event && <p className="mt-0.5 text-xs text-white/50">{a.event}</p>}
+    <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex min-w-0 items-center gap-4">
+        <div className="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg" style={thumbStyle(250)}>
+          {a.thumbnailUrl ? (
+            <img src={a.thumbnailUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          ) : (
+            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white/70">VS</span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-white/50">Aparece en:</p>
+          <p className="text-sm font-semibold leading-snug text-white">{a.title}</p>
+          {a.event && <p className="mt-0.5 text-xs text-white/50">{a.event}</p>}
+        </div>
       </div>
       <Link
         to={`/app/watch?v=${a.analysisId}`}
-        className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110"
+        className="flex items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110 sm:shrink-0"
       >
         Ver análisis completo <ChevronRight className="h-4 w-4" />
       </Link>
@@ -339,7 +342,10 @@ const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; v
         Ver todos los clips del concepto <ArrowRight className="h-4 w-4" />
       </button>
     </div>
-    <div className={`grid gap-4 ${vertical ? "grid-cols-2 sm:grid-cols-4 lg:grid-cols-6" : "grid-cols-2 sm:grid-cols-4"}`}>
+    <CardRow
+      itemWidth={vertical ? "w-[30vw]" : "w-[40vw]"}
+      cols={vertical ? "sm:grid-cols-4 lg:grid-cols-6" : "sm:grid-cols-4"}
+    >
       {related.map((item) => (
         <Link key={item.id} to={watchHref(item)} className="group cursor-pointer">
           <div className="relative overflow-hidden rounded-xl border border-white/10">
@@ -364,7 +370,7 @@ const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; v
           )}
         </Link>
       ))}
-    </div>
+    </CardRow>
   </section>
 )
 

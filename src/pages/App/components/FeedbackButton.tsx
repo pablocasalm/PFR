@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useLocation, useSearchParams } from "react-router-dom"
 import { MessageSquarePlus, X, Check, Bug, Lightbulb, MessageCircle } from "lucide-react"
 import { sendFeedback, type FeedbackType } from "../../../lib/api/feedback"
@@ -23,6 +23,27 @@ const FeedbackButton = () => {
   const [message, setMessage] = useState("")
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+
+  // En móvil el botón flota sobre contenido largo con scroll: se aparta mientras se
+  // hace scroll hacia abajo (para no tapar tarjetas/enlaces) y vuelve al parar o subir.
+  const [hidden, setHidden] = useState(false)
+  const lastY = useRef(0)
+  useEffect(() => {
+    lastY.current = window.scrollY
+    let ticking = false
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const y = window.scrollY
+        setHidden(y > lastY.current && y > 120)
+        lastY.current = y
+        ticking = false
+      })
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   const close = () => {
     setOpen(false)
@@ -62,7 +83,9 @@ const FeedbackButton = () => {
       <button
         onClick={() => setOpen(true)}
         aria-label="Reportar un fallo o enviar feedback"
-        className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full border border-neon-cyan/40 bg-midnight/90 px-4 py-2.5 text-sm font-semibold text-neon-cyan shadow-lg backdrop-blur transition hover:bg-neon-cyan/10 md:bottom-6"
+        className={`fixed bottom-24 left-4 z-40 flex items-center gap-2 rounded-full border border-neon-cyan/40 bg-midnight/90 px-4 py-2.5 text-sm font-semibold text-neon-cyan shadow-lg backdrop-blur transition-all duration-300 hover:bg-neon-cyan/10 md:bottom-6 md:left-auto md:right-6 md:translate-y-0 md:opacity-100 ${
+          hidden ? "translate-y-20 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
+        }`}
       >
         <MessageSquarePlus className="h-4 w-4" />
         <span className="hidden sm:inline">Reportar / Feedback</span>

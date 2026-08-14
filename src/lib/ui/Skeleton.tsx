@@ -1,3 +1,5 @@
+import CardRow from "./CardRow"
+
 /**
  * Primitivas de "skeleton" (esqueleto de carga). Bloques con pulso sutil que imitan el layout
  * mientras llegan los datos, en vez de un "Cargando..." plano. Respetan prefers-reduced-motion.
@@ -17,11 +19,11 @@ export const CardSkeleton = () => (
   </div>
 )
 
-/** Rejilla de N tarjetas, con el mismo grid responsive que usan las páginas. */
+/** Fila de N tarjetas, con el mismo carrusel/grid responsive que usan las páginas. */
 export const CardGridSkeleton = ({ count = 5 }: { count?: number }) => (
-  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+  <CardRow>
     {Array.from({ length: count }).map((_, i) => (
       <CardSkeleton key={i} />
     ))}
-  </div>
+  </CardRow>
 )

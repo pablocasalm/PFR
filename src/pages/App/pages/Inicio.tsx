@@ -6,6 +6,7 @@ import { getHome } from "../../../lib/api/home"
 import type { ContentItem, PopularConcept } from "../../../lib/api/types"
 import SaveButton from "../../../lib/saved/SaveButton"
 import { Skeleton, CardGridSkeleton } from "../../../lib/ui/Skeleton"
+import CardRow from "../../../lib/ui/CardRow"
 
 /**
  * Inicio — Dashboard principal. Consume GET /api/home (endpoint con forma de pantalla).
@@ -102,10 +103,10 @@ const Hero = ({ item }: { item: ContentItem | null }) => {
             ))}
           </div>
         )}
-        <div className="mt-2 flex items-center gap-5">
+        <div className="mt-2 flex items-center gap-3 sm:gap-5">
           <Link
             to={item ? watchHref(item) : "/app/explorar"}
-            className="flex items-center gap-2 rounded-lg bg-neon-cyan px-6 py-3 text-sm font-semibold text-midnight transition hover:brightness-110"
+            className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-neon-cyan px-4 py-3 text-sm font-semibold text-midnight transition hover:brightness-110 sm:px-6"
           >
             <Play className="h-4 w-4" fill="currentColor" />
             Ver contenido
@@ -123,17 +124,17 @@ const ContinueCard = ({ item }: { item: ContentItem }) => {
   return (
     <Link
       to={watchHref(item)}
-      className="flex overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition hover:border-white/20"
+      className="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition hover:border-white/20 sm:flex-row"
     >
-      <div className="relative w-56 shrink-0">
-        <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="h-full min-h-[150px]" />
+      <div className="relative w-full shrink-0 sm:w-56">
+        <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-full sm:h-full sm:min-h-[150px]" />
         <span className="absolute inset-0 flex items-center justify-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-white/80 bg-black/30 backdrop-blur-sm">
             <Play className="h-5 w-5 text-white" fill="currentColor" />
           </span>
         </span>
       </div>
-      <div className="flex flex-1 flex-col justify-center gap-4 p-6">
+      <div className="flex flex-1 flex-col justify-center gap-4 p-4 sm:p-6">
         <h3 className="text-base font-medium leading-snug text-white">{item.title}</h3>
         <div>
           <p className="mb-2 text-sm text-neon-cyan">
@@ -253,11 +254,11 @@ const Inicio = () => {
       {newThisWeek.length > 0 && (
         <section>
           <SectionHeading title="Nuevo esta semana" to="/app/search?feed=new" />
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <CardRow>
             {newThisWeek.map((item) => (
               <ContentCard key={item.id} item={item} />
             ))}
-          </div>
+          </CardRow>
         </section>
       )}
 
@@ -277,11 +278,11 @@ const Inicio = () => {
       {mostViewed.length > 0 && (
         <section>
           <SectionHeading title="Más vistos esta semana" to="/app/search?feed=popular" />
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <CardRow>
             {mostViewed.map((item, i) => (
               <ContentCard key={item.id} item={item} rank={i + 1} />
             ))}
-          </div>
+          </CardRow>
         </section>
       )}
     </main>
