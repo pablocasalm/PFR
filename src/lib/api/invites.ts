@@ -30,3 +30,9 @@ export const listInvites = () => apiGet<InviteCode[]>("/api/admin/invites")
 
 /** DELETE /api/admin/invites/{id} (Admin) → elimina un código. */
 export const deleteInvite = (id: number) => apiDelete<{ ok: boolean }>(`/api/admin/invites/${id}`)
+
+/** Solicitud de acceso pendiente (formulario público de la landing o "pedir otro código"). */
+export type InviteRequestItem = { id: number; email: string; createdAtUtc: string }
+
+/** GET /api/admin/invite-requests (Admin) → solicitudes pendientes (sin atender todavía). */
+export const listInviteRequests = () => apiGet<InviteRequestItem[]>("/api/admin/invite-requests")
