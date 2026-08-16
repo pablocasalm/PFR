@@ -14,6 +14,15 @@ import { formatDuration } from "../format"
 
 export type PlayerChapter = { startSeconds: number; title: string }
 
+// Safari en iPhone no soporta Fullscreen API sobre el contenedor (solo en iPad, iPadOS 16.4+):
+// hay que usar el método nativo del propio <video>, que además dispara sus propios eventos
+// en vez de "fullscreenchange". Mismo workaround que usa YouTube en iOS.
+type IOSVideoElement = HTMLVideoElement & {
+  webkitEnterFullscreen?: () => void
+  webkitExitFullscreen?: () => void
+  webkitDisplayingFullscreen?: boolean
+}
+
 type Props = {
   src: string
   poster?: string
@@ -90,6 +99,21 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
     return () => document.removeEventListener("fullscreenchange", onFs)
   }, [])
 
+  // Safari en iPhone no dispara "fullscreenchange" para el modo nativo del <video>: escucha
+  // sus propios eventos webkit para que el icono de pantalla completa refleje el estado real.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    const onBegin = () => setFullscreen(true)
+    const onEnd = () => setFullscreen(false)
+    video.addEventListener("webkitbeginfullscreen", onBegin)
+    video.addEventListener("webkitendfullscreen", onEnd)
+    return () => {
+      video.removeEventListener("webkitbeginfullscreen", onBegin)
+      video.removeEventListener("webkitendfullscreen", onEnd)
+    }
+  }, [])
+
   // Reporta el progreso de visionado (guardado en el historial).
   const report = () => {
     const cb = onProgressRef.current
@@ -140,8 +164,22 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
   }
 
   const toggleFullscreen = () => {
-    if (document.fullscreenElement) document.exitFullscreen()
-    else containerRef.current?.requestFullscreen()
+    const container = containerRef.current
+    const video = videoRef.current as IOSVideoElement | null
+
+    if (video?.webkitDisplayingFullscreen) {
+      video.webkitExitFullscreen?.()
+      return
+    }
+    if (document.fullscreenElement) {
+      document.exitFullscreen()
+      return
+    }
+    if (container?.requestFullscreen) {
+      container.requestFullscreen().catch(() => video?.webkitEnterFullscreen?.())
+    } else {
+      video?.webkitEnterFullscreen?.()
+    }
   }
 
   const selectQuality = (index: number) => {
