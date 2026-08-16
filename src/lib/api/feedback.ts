@@ -1,8 +1,8 @@
-import { apiPost, apiGet, apiDelete, apiPatch } from "./client"
+import { apiGet, apiDelete, apiPatch, apiPostForm, apiGetBlob } from "./client"
 
 /**
- * Feedback de beta. Envía el mensaje con el contexto (ruta y, si aplica, el contenido)
- * para poder triarlo. Requiere sesión.
+ * Feedback de beta. Envía el mensaje con el contexto (ruta y, si aplica, el contenido) y una
+ * captura opcional, para poder triarlo. Requiere sesión.
  */
 export type FeedbackType = "bug" | "idea" | "other"
 
@@ -12,10 +12,20 @@ export type FeedbackPayload = {
   page?: string
   contentType?: "clip" | "analysis"
   contentId?: string
+  image?: File
 }
 
-export const sendFeedback = (payload: FeedbackPayload) =>
-  apiPost<{ ok: boolean }>("/api/feedback", payload)
+/** Va como multipart/form-data (no JSON) para poder incluir la imagen. */
+export const sendFeedback = (payload: FeedbackPayload) => {
+  const form = new FormData()
+  form.set("message", payload.message)
+  if (payload.type) form.set("type", payload.type)
+  if (payload.page) form.set("page", payload.page)
+  if (payload.contentType) form.set("contentType", payload.contentType)
+  if (payload.contentId) form.set("contentId", payload.contentId)
+  if (payload.image) form.set("image", payload.image)
+  return apiPostForm<{ ok: boolean }>("/api/feedback", form)
+}
 
 /* ---- Gestión (solo Admin) ---- */
 
@@ -37,6 +47,7 @@ export type FeedbackItem = {
   userName: string | null
   createdAtUtc: string
   resolvedAtUtc: string | null
+  hasImage: boolean
 }
 
 export type FeedbackCounts = { new: number; inProgress: number; resolved: number }
@@ -61,3 +72,6 @@ export const updateFeedback = (id: number, patch: { status?: FeedbackStatus; adm
 
 /** DELETE /api/admin/feedback/{id} → elimina un reporte. */
 export const deleteFeedback = (id: number) => apiDelete<{ ok: boolean }>(`/api/admin/feedback/${id}`)
+
+/** La captura va autenticada (Admin), así que se trae como blob y se monta con createObjectURL. */
+export const getFeedbackImageBlob = (id: number) => apiGetBlob(`/api/admin/feedback/${id}/image`)

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { useLocation, useSearchParams } from "react-router-dom"
-import { MessageSquarePlus, X, Check, Bug, Lightbulb, MessageCircle } from "lucide-react"
+import { MessageSquarePlus, X, Check, Bug, Lightbulb, MessageCircle, ImagePlus, Trash2 } from "lucide-react"
 import { sendFeedback, type FeedbackType } from "../../../lib/api/feedback"
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 /**
  * Botón flotante de feedback para la beta. Visible en toda la app. El usuario elige primero
@@ -23,6 +25,10 @@ const FeedbackButton = () => {
   const [message, setMessage] = useState("")
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [image, setImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageError, setImageError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // En móvil el botón flota sobre contenido largo con scroll: se aparta mientras se
   // hace scroll hacia abajo (para no tapar tarjetas/enlaces) y vuelve al parar o subir.
@@ -45,11 +51,36 @@ const FeedbackButton = () => {
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
+  const clearImage = () => {
+    if (imagePreview) URL.revokeObjectURL(imagePreview)
+    setImage(null)
+    setImagePreview(null)
+    setImageError(null)
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
   const close = () => {
     setOpen(false)
     setSent(false)
     setMessage("")
     setType("bug")
+    clearImage()
+  }
+
+  const onPickImage = (file: File | undefined) => {
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      setImageError("El archivo debe ser una imagen.")
+      return
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setImageError("La imagen no puede superar 5 MB.")
+      return
+    }
+    if (imagePreview) URL.revokeObjectURL(imagePreview)
+    setImage(file)
+    setImagePreview(URL.createObjectURL(file))
+    setImageError(null)
   }
 
   const onSubmit = async () => {
@@ -66,9 +97,11 @@ const FeedbackButton = () => {
         page: location.pathname + location.search,
         contentType: clip ? "clip" : analysis ? "analysis" : undefined,
         contentId: clip ?? analysis ?? undefined,
+        image: image ?? undefined,
       })
       setSent(true)
       setMessage("")
+      clearImage()
     } catch {
       // Silencioso: no bloqueamos al usuario si falla el envío.
     } finally {
@@ -146,6 +179,37 @@ const FeedbackButton = () => {
                   placeholder={type === "bug" ? "¿Qué ocurrió? ¿En qué pantalla?" : "Escribe tu comentario..."}
                   className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
                 />
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => onPickImage(e.target.files?.[0])}
+                />
+                {imagePreview ? (
+                  <div className="mt-3 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-2">
+                    <img src={imagePreview} alt="Captura adjunta" className="h-12 w-12 rounded object-cover" />
+                    <span className="flex-1 truncate text-xs text-white/60">{image?.name}</span>
+                    <button
+                      onClick={clearImage}
+                      aria-label="Quitar imagen"
+                      className="text-white/50 transition hover:text-white"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="mt-3 flex items-center gap-2 text-xs font-medium text-white/50 transition hover:text-white"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    Adjuntar captura (opcional)
+                  </button>
+                )}
+                {imageError && <p className="mt-1 text-xs text-red-400">{imageError}</p>}
+
                 <button
                   onClick={onSubmit}
                   disabled={!message.trim() || sending}

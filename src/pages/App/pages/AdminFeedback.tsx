@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react"
-import { Inbox, Bug, Lightbulb, MessageCircle, Trash2, Save, History, ChevronDown } from "lucide-react"
+import { Inbox, Bug, Lightbulb, MessageCircle, Trash2, Save, History, ChevronDown, ImageIcon, X } from "lucide-react"
 import {
   listFeedback,
   updateFeedback,
   deleteFeedback,
+  getFeedbackImageBlob,
   type FeedbackItem,
   type FeedbackStatus,
   type FeedbackType,
@@ -231,6 +232,23 @@ const ReportCard = ({
   const TypeIcon = typeMeta.icon
   const noteChanged = note.trim() !== (item.adminNote ?? "")
 
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+
+  useEffect(() => {
+    if (!item.hasImage) return
+    let url: string | null = null
+    getFeedbackImageBlob(item.id)
+      .then((blob) => {
+        url = URL.createObjectURL(blob)
+        setImageUrl(url)
+      })
+      .catch(() => {})
+    return () => {
+      if (url) URL.revokeObjectURL(url)
+    }
+  }, [item.id, item.hasImage])
+
   return (
     <article className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
       {/* Cabecera: tipo + estado + fecha */}
@@ -247,6 +265,39 @@ const ReportCard = ({
 
       {/* Mensaje */}
       <p className="whitespace-pre-wrap text-sm text-white/90">{item.message}</p>
+
+      {/* Captura adjunta */}
+      {item.hasImage && (
+        <button
+          onClick={() => imageUrl && setLightboxOpen(true)}
+          className="mt-3 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 p-1.5 transition hover:border-white/20"
+        >
+          {imageUrl ? (
+            <img src={imageUrl} alt="Captura del reporte" className="h-16 w-16 rounded object-cover" />
+          ) : (
+            <span className="flex h-16 w-16 items-center justify-center rounded bg-white/5 text-white/30">
+              <ImageIcon className="h-5 w-5" />
+            </span>
+          )}
+        </button>
+      )}
+      {lightboxOpen && imageUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            onClick={() => setLightboxOpen(false)}
+            aria-label="Cerrar"
+            className="absolute right-4 top-4 text-white/70 transition hover:text-white"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <img src={imageUrl} alt="Captura del reporte" className="max-h-full max-w-full rounded-lg object-contain" />
+        </div>
+      )}
 
       {/* Contexto */}
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/50">
