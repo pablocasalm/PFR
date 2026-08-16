@@ -10,6 +10,7 @@ import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/form
 import { Skeleton, CardSkeleton } from "../../../lib/ui/Skeleton"
 import CardRow from "../../../lib/ui/CardRow"
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
+import FilterPanel, { type FilterSection } from "../components/FilterPanel"
 
 /**
  * Explorar — Biblioteca táctica. Consume GET /api/explore (bloques + análisis).
@@ -173,65 +174,7 @@ const AnalisisCard = ({ item }: { item: ContentItem }) => (
   </Link>
 )
 
-// ---------------------------------------------------------------------------
-// Panel de filtros
-// ---------------------------------------------------------------------------
-
 const TYPE_LABELS: Record<ContentType, string> = { all: "Todos", clips: "Clips", analyses: "Análisis" }
-
-const FiltersPanel = ({
-  type,
-  onType,
-  concepts,
-  selected,
-  onToggleConcept,
-  onClear,
-}: {
-  type: ContentType
-  onType: (t: ContentType) => void
-  concepts: string[]
-  selected: Set<string>
-  onToggleConcept: (concept: string) => void
-  onClear: () => void
-}) => (
-  <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-white/50">Tipo</span>
-      {(Object.keys(TYPE_LABELS) as ContentType[]).map((t) => (
-        <button
-          key={t}
-          type="button"
-          onClick={() => onType(t)}
-          aria-pressed={type === t}
-          className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-            type === t ? "border-neon-cyan/60 bg-neon-cyan/15 text-neon-cyan" : "border-white/15 text-white/70 hover:text-white"
-          }`}
-        >
-          {TYPE_LABELS[t]}
-        </button>
-      ))}
-    </div>
-
-    {concepts.length > 0 && (
-      <div className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-white/50">Conceptos</span>
-        <div className="flex flex-wrap gap-2">
-          {concepts.map((c) => (
-            <Chip key={c} active={selected.has(c)} onClick={() => onToggleConcept(c)}>
-              {c}
-            </Chip>
-          ))}
-        </div>
-      </div>
-    )}
-
-    {(selected.size > 0 || type !== "all") && (
-      <button type="button" onClick={onClear} className="text-xs font-medium text-white/60 underline-offset-2 transition hover:text-white hover:underline">
-        Limpiar filtros
-      </button>
-    )}
-  </div>
-)
 
 /** Esqueleto de la biblioteca: dos secciones de concepto con su rejilla de tarjetas. */
 const ExplorarSkeleton = () => (
@@ -261,6 +204,7 @@ const Explorar = () => {
 
   const [showFilters, setShowFilters] = useState(false)
   const [type, setType] = useState<ContentType>("all")
+  const [selectedBlock, setSelectedBlock] = useState("")
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const toggleConcept = (concept: string) =>
@@ -272,6 +216,7 @@ const Explorar = () => {
   const clear = () => {
     setSelected(new Set())
     setType("all")
+    setSelectedBlock("")
   }
 
   // Lista global de conceptos para el panel (bloques + análisis), ordenada y sin repetir.
@@ -285,14 +230,15 @@ const Explorar = () => {
   const conceptActive = selected.size > 0
   const matches = (concepts: string[]) => !conceptActive || concepts.some((c) => selected.has(c))
 
-  // Clips: filtra por concepto dentro de cada sección y descarta las secciones vacías.
+  // Clips: filtra por bloque + concepto y descarta las secciones vacías.
   const visibleSections = useMemo(() => {
     if (type === "analyses" || !data) return []
     return data.sections
+      .filter((sec) => !selectedBlock || sec.block === selectedBlock)
       .map((sec) => ({ ...sec, clips: sec.clips.filter((cl) => matches(cl.concepts)) }))
       .filter((sec) => sec.clips.length > 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, type, selected])
+  }, [data, type, selectedBlock, selected])
 
   const visibleAnalyses = useMemo(() => {
     if (type === "clips" || !data) return []
@@ -300,7 +246,29 @@ const Explorar = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, type, selected])
 
-  const activeCount = selected.size + (type !== "all" ? 1 : 0)
+  // Secciones del panel de filtros compartido (mismo componente que Search/Resultados).
+  const filterSections: FilterSection[] = [
+    {
+      title: "Tipo",
+      options: (Object.keys(TYPE_LABELS) as ContentType[]).map((t) => ({ value: t, label: TYPE_LABELS[t] })),
+      isActive: (v) => type === v,
+      onToggle: (v) => setType(v as ContentType),
+    },
+    {
+      title: "Bloque",
+      options: (data?.sections ?? []).map((sec) => ({ value: sec.block, label: sec.block })),
+      isActive: (v) => selectedBlock === v,
+      onToggle: (v) => setSelectedBlock((prev) => (prev === v ? "" : v)),
+    },
+    {
+      title: "Conceptos",
+      options: allConcepts.map((c) => ({ value: c, label: `#${c}` })),
+      isActive: (v) => selected.has(v),
+      onToggle: toggleConcept,
+    },
+  ]
+
+  const activeCount = selected.size + (type !== "all" ? 1 : 0) + (selectedBlock ? 1 : 0)
   const noResults = !!data && !loading && visibleSections.length === 0 && visibleAnalyses.length === 0
 
   return (
@@ -334,26 +302,12 @@ const Explorar = () => {
       {/* Filtros: en escritorio en línea; en móvil, hoja inferior (mismo patrón que Comentarios en Video). */}
       {showFilters && (
         <div className="hidden lg:block">
-          <FiltersPanel
-            type={type}
-            onType={setType}
-            concepts={allConcepts}
-            selected={selected}
-            onToggleConcept={toggleConcept}
-            onClear={clear}
-          />
+          <FilterPanel sections={filterSections} onClear={clear} showClear={activeCount > 0} />
         </div>
       )}
 
       <BottomSheet open={showFilters} onClose={() => setShowFilters(false)} title="Filtros">
-        <FiltersPanel
-          type={type}
-          onType={setType}
-          concepts={allConcepts}
-          selected={selected}
-          onToggleConcept={toggleConcept}
-          onClear={clear}
-        />
+        <FilterPanel sections={filterSections} onClear={clear} showClear={activeCount > 0} />
       </BottomSheet>
 
       {loading && <ExplorarSkeleton />}

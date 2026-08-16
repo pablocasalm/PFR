@@ -1,25 +1,27 @@
 import { useMemo, useState } from "react"
 import { useSearchParams, Link } from "react-router-dom"
-import { SlidersHorizontal, X, Check, Compass } from "lucide-react"
+import { SlidersHorizontal, X, Compass } from "lucide-react"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getSearch } from "../../../lib/api/search"
 import type { ContentItem } from "../../../lib/api/types"
 import SaveButton from "../../../lib/saved/SaveButton"
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
+import FilterPanel, { type FilterSection } from "../components/FilterPanel"
 
 /**
  * Search — Pantalla de Resultados (§11). Destino común de búsqueda, "Ver todo",
  * conceptos populares y filtros globales. Todo el estado vive en la URL, así que
  * cada origen entra con sus filtros ya aplicados y son compartibles/navegables.
  *
- * Filtrado: se envían los filtros al backend (contrato de `getSearch`) y además se
- * refina en cliente lo que los datos ya permiten (tipo, concepto, bloque, nivel y
- * orden por duración), para que la UI filtre de verdad aunque el backend aún no honre
- * todos los parámetros. El resto de ordenaciones (recientes/vistos) las resuelve el server.
+ * Filtrado: type/block/concept NO se mandan al backend — se piden los resultados con
+ * q/sort/feed únicamente y todo lo demás (tipo, bloque, concepto, orden por duración) se
+ * filtra en cliente sobre ese conjunto completo. Si se mandaran, cada filtro activo
+ * recortaría "data" y falsearía los contadores/opciones de los demás filtros (bug real:
+ * ver reporte de beta sobre los contadores de pestañas).
  */
 
-// Taxonomía oficial de bloques (§5).
+// Taxonomía oficial de bloques (§5). Mismos campos que el panel de filtros de Explorar.
 const BLOCKS = [
   "Juego desde el fondo",
   "Transición defensa-ataque",
@@ -31,10 +33,6 @@ const BLOCKS = [
   "Uso táctico de golpes",
   "Juego en pareja",
 ]
-const LEVELS = [
-  { v: "intermedio", l: "Intermedio" },
-  { v: "avanzado", l: "Avanzado" },
-]
 const SORTS = [
   { v: "relevance", l: "Más relevantes" },
   { v: "recent", l: "Más recientes" },
@@ -42,7 +40,7 @@ const SORTS = [
   { v: "duration", l: "Duración" },
 ]
 
-type Filters = { q: string; block: string; concept: string; level: string; type: string; sort: string; feed: string }
+type Filters = { q: string; block: string; concept: string; type: string; sort: string; feed: string }
 
 // Cabecera adaptada al origen desde el que llega el usuario (§11.1).
 const headerTitle = (f: Filters): string => {
@@ -54,7 +52,6 @@ const headerTitle = (f: Filters): string => {
   if (f.feed === "history") return "Vistos recientemente"
   if (f.type === "analysis") return "Análisis completos"
   if (f.type === "clip") return "Clips"
-  if (f.level) return `Nivel: ${LEVELS.find((l) => l.v === f.level)?.l ?? f.level}`
   return "Explorar resultados"
 }
 
@@ -63,7 +60,6 @@ const appliedChips = (f: Filters): { key: keyof Filters; label: string }[] => {
   const chips: { key: keyof Filters; label: string }[] = []
   if (f.block) chips.push({ key: "block", label: f.block })
   if (f.concept) chips.push({ key: "concept", label: `#${f.concept}` })
-  if (f.level) chips.push({ key: "level", label: `Nivel: ${LEVELS.find((l) => l.v === f.level)?.l ?? f.level}` })
   if (f.type) chips.push({ key: "type", label: f.type === "analysis" ? "Análisis" : "Clips" })
   return chips
 }
@@ -113,71 +109,6 @@ const ResultCard = ({ result }: { result: ContentItem }) => (
 )
 
 // ---------------------------------------------------------------------------
-// Controles de filtro (compartidos por el aside de escritorio y el panel móvil)
-// ---------------------------------------------------------------------------
-
-const OptionRow = ({ label, checked, onClick }: { label: string; checked: boolean; onClick: () => void }) => (
-  <button type="button" onClick={onClick} className="flex w-full items-center justify-between py-1.5 text-left text-sm">
-    <span className={`flex items-center gap-2.5 ${checked ? "text-white" : "text-white/80"}`}>
-      <span className={`flex h-4 w-4 items-center justify-center rounded border ${checked ? "border-neon-cyan bg-neon-cyan" : "border-white/30"}`}>
-        {checked && <Check className="h-3 w-3 text-midnight" strokeWidth={3} />}
-      </span>
-      {label}
-    </span>
-  </button>
-)
-
-const FilterControls = ({
-  filters,
-  setFilter,
-  onClear,
-}: {
-  filters: Filters
-  setFilter: (patch: Partial<Filters>) => void
-  onClear: () => void
-}) => (
-  <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <span className="flex items-center gap-2 text-sm font-semibold text-white">
-        <SlidersHorizontal className="h-4 w-4" /> Filtros
-      </span>
-      <button onClick={onClear} className="text-xs font-medium text-neon-cyan transition hover:brightness-110">
-        Limpiar todo
-      </button>
-    </div>
-
-    <div>
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-white/40">Tipo de contenido</p>
-      <div className="space-y-0.5">
-        <OptionRow label="Todos" checked={!filters.type} onClick={() => setFilter({ type: "" })} />
-        <OptionRow label="Clips" checked={filters.type === "clip"} onClick={() => setFilter({ type: "clip" })} />
-        <OptionRow label="Análisis completos" checked={filters.type === "analysis"} onClick={() => setFilter({ type: "analysis" })} />
-      </div>
-    </div>
-
-    <div>
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-white/40">Nivel</p>
-      <div className="space-y-0.5">
-        <OptionRow label="Todos los niveles" checked={!filters.level} onClick={() => setFilter({ level: "" })} />
-        {LEVELS.map((lv) => (
-          <OptionRow key={lv.v} label={lv.l} checked={filters.level === lv.v} onClick={() => setFilter({ level: lv.v })} />
-        ))}
-      </div>
-    </div>
-
-    <div>
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-white/40">Bloque táctico</p>
-      <div className="space-y-0.5">
-        <OptionRow label="Todos los bloques" checked={!filters.block} onClick={() => setFilter({ block: "" })} />
-        {BLOCKS.map((b) => (
-          <OptionRow key={b} label={b} checked={filters.block === b} onClick={() => setFilter({ block: filters.block === b ? "" : b })} />
-        ))}
-      </div>
-    </div>
-  </div>
-)
-
-// ---------------------------------------------------------------------------
 // Página
 // ---------------------------------------------------------------------------
 
@@ -189,7 +120,6 @@ const Search = () => {
     q: params.get("q") ?? "",
     block: params.get("block") ?? "",
     concept: params.get("concept") ?? "",
-    level: params.get("level") ?? "",
     type: params.get("type") ?? "",
     sort: params.get("sort") ?? "",
     feed: params.get("feed") ?? "",
@@ -210,24 +140,29 @@ const Search = () => {
     setParams(next)
   }
 
-  // No se manda "type" al backend: el tipo se filtra en cliente (más abajo) para que los
-  // contadores de las pestañas Todos/Clips/Análisis salgan siempre bien, sobre el conjunto
-  // completo. Si se mandara, cada cambio de pestaña recortaría "data" y falsearía las otras dos.
   const { data, loading, error } = useApi(
-    () => getSearch({ ...filters, type: undefined }),
-    [filters.q, filters.block, filters.concept, filters.level, filters.sort, filters.feed],
-    `search:${filters.q}|${filters.block}|${filters.concept}|${filters.level}|${filters.sort}|${filters.feed}`,
+    () => getSearch({ q: filters.q, sort: filters.sort, feed: filters.feed }),
+    [filters.q, filters.sort, filters.feed],
+    `search:${filters.q}|${filters.sort}|${filters.feed}`,
   )
 
-  // Conjunto base: filtra por concepto/bloque/nivel (todo menos tipo), para poder contar las tabs.
+  // Todos los conceptos disponibles para el filtro, del conjunto SIN filtrar (igual que en
+  // Explorar): si se derivaran de "base" ya recortado por bloque/concepto, la lista de
+  // opciones se corrompería en cuanto hubiera otro filtro activo.
+  const allConcepts = useMemo(() => {
+    const s = new Set<string>()
+    ;(data?.results ?? []).forEach((r) => (r.concepts ?? []).forEach((c) => s.add(c)))
+    return Array.from(s).sort((a, b) => a.localeCompare(b))
+  }, [data])
+
+  // Conjunto base: filtra por concepto/bloque (todo menos tipo), para poder contar las tabs.
   const base = useMemo(() => {
     let items = data?.results ?? []
     if (filters.concept) items = items.filter((i) => (i.concepts ?? []).includes(filters.concept))
     if (filters.block) items = items.filter((i) => i.block === filters.block || (i.blocks ?? []).some((b) => b.block === filters.block))
-    if (filters.level) items = items.filter((i) => !i.level || i.level === filters.level)
     return items
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, filters.concept, filters.block, filters.level])
+  }, [data, filters.concept, filters.block])
 
   const counts = {
     all: base.length,
@@ -246,6 +181,32 @@ const Search = () => {
   const chips = appliedChips(filters)
   const activeCount = chips.length
   const empty = !loading && !error && results.length === 0
+
+  // Secciones del panel de filtros compartido (mismo componente que Explorar).
+  const filterSections: FilterSection[] = [
+    {
+      title: "Tipo",
+      options: [
+        { value: "", label: "Todos" },
+        { value: "clip", label: "Clips" },
+        { value: "analysis", label: "Análisis" },
+      ],
+      isActive: (v) => (filters.type || "") === v,
+      onToggle: (v) => setFilter({ type: v }),
+    },
+    {
+      title: "Bloque",
+      options: BLOCKS.map((b) => ({ value: b, label: b })),
+      isActive: (v) => filters.block === v,
+      onToggle: (v) => setFilter({ block: filters.block === v ? "" : v }),
+    },
+    {
+      title: "Conceptos",
+      options: allConcepts.map((c) => ({ value: c, label: `#${c}` })),
+      isActive: (v) => filters.concept === v,
+      onToggle: (v) => setFilter({ concept: filters.concept === v ? "" : v }),
+    },
+  ]
 
   const typeTabs: { key: string; label: string; count: number }[] = [
     { key: "", label: "Todos", count: counts.all },
@@ -333,7 +294,7 @@ const Search = () => {
 
           {/* Filtros en móvil: hoja inferior (mismo contenido que el aside de escritorio) */}
           <BottomSheet open={showFilters} onClose={() => setShowFilters(false)} title="Filtros">
-            <FilterControls filters={filters} setFilter={setFilter} onClear={clearFilters} />
+            <FilterPanel sections={filterSections} onClear={clearFilters} showClear={activeCount > 0} />
           </BottomSheet>
 
           {loading && <p className="mt-6 text-sm text-white/40">Buscando...</p>}
@@ -370,8 +331,8 @@ const Search = () => {
         </div>
 
         {/* Aside de filtros (escritorio) */}
-        <aside className="hidden h-fit rounded-2xl border border-white/10 bg-white/[0.02] p-5 lg:block">
-          <FilterControls filters={filters} setFilter={setFilter} onClear={clearFilters} />
+        <aside className="hidden h-fit lg:block">
+          <FilterPanel sections={filterSections} onClear={clearFilters} showClear={activeCount > 0} />
         </aside>
       </div>
     </main>
