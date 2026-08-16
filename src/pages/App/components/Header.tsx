@@ -29,8 +29,8 @@ const Header = () => {
   return (
   <header className="sticky top-0 z-20 border-b border-white/10 bg-black/40 backdrop-blur-md">
     <div className="flex w-full items-center gap-4 px-4 py-4 sm:px-6 md:gap-6 lg:px-10">
-      {/* Logo */}
-      <div className="flex items-center gap-3">
+      {/* Logo: vuelve a Inicio */}
+      <Link to="/app/inicio" className="flex items-center gap-3">
         <img
           src="/Logos/favicon_sinfondo.png"
           alt="Padel Film Room"
@@ -40,7 +40,7 @@ const Header = () => {
           <p className="text-sm font-bold uppercase tracking-wide text-white">Padel</p>
           <p className="text-sm font-bold uppercase tracking-wide text-white">Film Room</p>
         </div>
-      </div>
+      </Link>
 
       {/* Nav (solo escritorio; en móvil/tablet se usa la barra inferior — no cabe antes de xl) */}
       <nav className="hidden items-center gap-7 xl:flex">
