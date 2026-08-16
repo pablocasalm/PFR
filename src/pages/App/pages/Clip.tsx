@@ -430,7 +430,7 @@ const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => {
     <NextUpCard item={nextClip} label="Siguiente clip" autoplay={autoplay} onToggleAutoplay={setAutoplay} />
   ) : undefined
   return (
-    <main className="w-full space-y-6 py-6 pb-28 md:pb-8">
+    <main className="w-full space-y-6 py-6 pb-28 xl:pb-8">
       <VideoPlayer clip={clip} endSlot={endSlot} />
 
       {/* Móvil: pista visual de que hay más contenido relacionado hacia abajo (§9.7) */}
@@ -479,7 +479,7 @@ const ClipVertical = ({ clip }: { clip: ClipDetail }) => {
     <NextUpCard item={nextClip} label="Siguiente clip" autoplay={autoplay} onToggleAutoplay={setAutoplay} />
   ) : undefined
   return (
-    <main className="w-full py-6 pb-28 md:pb-8">
+    <main className="w-full py-6 pb-28 xl:pb-8">
       <div className="grid gap-8 lg:grid-cols-[420px_1fr] lg:items-start">
         <VerticalPlayer clip={clip} social={social} endSlot={endSlot} />
         <div className="space-y-6">

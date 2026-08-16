@@ -42,8 +42,8 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Nav (solo escritorio; en móvil se usa la barra inferior) */}
-      <nav className="hidden items-center gap-7 md:flex">
+      {/* Nav (solo escritorio; en móvil/tablet se usa la barra inferior — no cabe antes de xl) */}
+      <nav className="hidden items-center gap-7 xl:flex">
         {NAV_ITEMS.map(({ label, to }) => (
           <NavLink
             key={to}
@@ -106,7 +106,7 @@ const Header = () => {
       </nav>
 
       {/* Buscador (escritorio) */}
-      <div className="ml-auto hidden max-w-xl flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 md:flex">
+      <div className="ml-auto hidden max-w-xl flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 xl:flex">
         <Search className="h-4 w-4 text-white/40" />
         <input
           value={query}
@@ -141,7 +141,7 @@ const SessionControl = () => {
   if (!user) return null
 
   return (
-    <div className="relative ml-auto md:ml-0">
+    <div className="relative ml-auto xl:ml-0">
       <button onClick={() => setMenuOpen((v) => !v)} className="flex items-center gap-1.5">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-neon-cyan text-sm font-bold text-midnight">
           {initials(user)}
