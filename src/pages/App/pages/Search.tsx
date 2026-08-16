@@ -210,10 +210,13 @@ const Search = () => {
     setParams(next)
   }
 
+  // No se manda "type" al backend: el tipo se filtra en cliente (más abajo) para que los
+  // contadores de las pestañas Todos/Clips/Análisis salgan siempre bien, sobre el conjunto
+  // completo. Si se mandara, cada cambio de pestaña recortaría "data" y falsearía las otras dos.
   const { data, loading, error } = useApi(
-    () => getSearch(filters),
-    [filters.q, filters.block, filters.concept, filters.level, filters.type, filters.sort, filters.feed],
-    `search:${filters.q}|${filters.block}|${filters.concept}|${filters.level}|${filters.type}|${filters.sort}|${filters.feed}`,
+    () => getSearch({ ...filters, type: undefined }),
+    [filters.q, filters.block, filters.concept, filters.level, filters.sort, filters.feed],
+    `search:${filters.q}|${filters.block}|${filters.concept}|${filters.level}|${filters.sort}|${filters.feed}`,
   )
 
   // Conjunto base: filtra por concepto/bloque/nivel (todo menos tipo), para poder contar las tabs.
