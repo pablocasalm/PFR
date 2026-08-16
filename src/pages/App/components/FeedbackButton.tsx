@@ -144,7 +144,7 @@ const FeedbackButton = () => {
                   onChange={(e) => setMessage(e.target.value)}
                   rows={4}
                   placeholder={type === "bug" ? "¿Qué ocurrió? ¿En qué pantalla?" : "Escribe tu comentario..."}
-                  className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none"
+                  className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
                 />
                 <button
                   onClick={onSubmit}

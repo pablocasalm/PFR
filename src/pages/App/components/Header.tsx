@@ -117,15 +117,6 @@ const Header = () => {
         />
       </div>
 
-      {/* Buscar (móvil): icono que lleva a la pantalla de búsqueda */}
-      <button
-        onClick={() => navigate("/app/search")}
-        className="ml-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:text-white md:hidden"
-        aria-label="Buscar"
-      >
-        <Search className="h-5 w-5" />
-      </button>
-
       {/* Sesión */}
       <SessionControl />
     </div>
@@ -150,7 +141,7 @@ const SessionControl = () => {
   if (!user) return null
 
   return (
-    <div className="relative">
+    <div className="relative ml-auto md:ml-0">
       <button onClick={() => setMenuOpen((v) => !v)} className="flex items-center gap-1.5">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-neon-cyan text-sm font-bold text-midnight">
           {initials(user)}

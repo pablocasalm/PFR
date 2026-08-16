@@ -235,7 +235,7 @@ const MiLista = () => {
     <main className="w-full space-y-10 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-bold text-white">Mi Lista</h1>
+          <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">Mi Lista</h1>
           <p className="mt-2 text-sm text-white/60">
             Clips y análisis que has guardado para volver cuando quieras.
           </p>
