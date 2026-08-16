@@ -1,18 +1,21 @@
 import { NavLink } from "react-router-dom"
-import { Home, Compass, Search, Bookmark, BarChart2 } from "lucide-react"
+import { Home, Compass, Bookmark, BarChart2, BookOpen } from "lucide-react"
 
 /**
  * Barra de navegación inferior — móvil y tablet (xl:hidden; el nav de escritorio del
- * Header no cabe bien por debajo de 1280px, ni siquiera en iPad). Las 4 secciones +
- * Buscar, patrón habitual en apps de móvil.
+ * Header no cabe bien por debajo de 1280px, ni siquiera en iPad).
+ *
+ * Sin "Buscar": la lupa vive ahora en el Header (junto al avatar, como en escritorio) y
+ * abre el overlay de búsqueda en vez de ser una pestaña propia — antes navegaba directo a
+ * la pantalla de Resultados, que es un destino de "después de buscar", no de navegación.
  */
 
 const ITEMS = [
   { to: "/app/inicio", label: "Inicio", icon: Home },
   { to: "/app/explorar", label: "Explorar", icon: Compass },
-  { to: "/app/search", label: "Buscar", icon: Search },
   { to: "/app/mi-lista", label: "Mi Lista", icon: Bookmark },
   { to: "/app/mi-juego", label: "Mi Juego", icon: BarChart2 },
+  { to: "/app/como-funciona", label: "Cómo funciona", icon: BookOpen },
 ]
 
 const MobileNav = () => (

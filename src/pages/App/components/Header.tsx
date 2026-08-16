@@ -2,6 +2,7 @@ import { useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
 import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox } from "lucide-react"
 import { useAuth, canPublish, isAdmin, type AuthUser } from "../../../lib/auth/store"
+import SearchOverlay from "./SearchOverlay"
 
 /**
  * Header compartido del nuevo dashboard (/app).
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
 const Header = () => {
   const navigate = useNavigate()
   const [query, setQuery] = useState("")
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const { user } = useAuth()
 
   const submitSearch = () => {
@@ -27,6 +29,7 @@ const Header = () => {
   }
 
   return (
+  <>
   <header className="sticky top-0 z-20 border-b border-white/10 bg-black/40 backdrop-blur-md">
     <div className="flex w-full items-center gap-4 px-4 py-4 sm:px-6 md:gap-6 lg:px-10">
       {/* Logo: vuelve a Inicio */}
@@ -117,10 +120,21 @@ const Header = () => {
         />
       </div>
 
+      {/* Buscar (móvil/tablet): abre el overlay de búsqueda, no navega directo */}
+      <button
+        onClick={() => setMobileSearchOpen(true)}
+        className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:text-white xl:hidden"
+        aria-label="Buscar"
+      >
+        <Search className="h-5 w-5" />
+      </button>
+
       {/* Sesión */}
       <SessionControl />
     </div>
   </header>
+  <SearchOverlay open={mobileSearchOpen} onClose={() => setMobileSearchOpen(false)} />
+  </>
   )
 }
 
