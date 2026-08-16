@@ -377,7 +377,7 @@ La b\'fasqueda global deber\'e1 permitir localizar:\
 - Bloques.\
 - Torneo\
 \
-Para que la b\'fasqueda funcione correctamente, tanto los clips como los an\'e1lisis completos deber\'e1n tener metadatos asociados como jugadores, torneo, nivel, bloque y conceptos.\
+Para que la b\'fasqueda funcione correctamente, tanto los clips como los an\'e1lisis completos deber\'e1n tener metadatos asociados como jugadores, torneo, bloque y conceptos.\
 \
 ---\
 \
@@ -727,7 +727,6 @@ Los filtros globales podr\'e1n incluir:\
 \
 - Bloque t\'e1ctico.\
 - Concepto.\
-- Nivel.\
 - Tipo de contenido.\
 \
 ### Valores posibles\
@@ -743,16 +742,6 @@ Los filtros globales podr\'e1n incluir:\
 - Lectura del rival.\
 - Uso t\'e1ctico de golpes.\
 - Juego en pareja.\
-\
-#### Nivel\
-\
-- Todos los niveles.\
-- Intermedio.\
-- Avanzado.\
-\
-Durante el MVP, el nivel se utilizar\'e1 principalmente como filtro interno de clasificaci\'f3n y descubrimiento.\
-\
-No ser\'e1 obligatorio mostrar el nivel de forma destacada en las tarjetas de contenido si no aporta valor visual al usuario.\
 \
 #### Tipo de contenido\
 \
@@ -773,7 +762,6 @@ Ejemplo:\
 \
 - Bloque: Juego desde el fondo.\
 - Concepto: Globo.\
-- Nivel: Medio.\
 - Tipo: Clips.\
 \
 El resultado deber\'e1 mostrarse en formato vertical, no en carrusel horizontal.\
@@ -1774,7 +1762,6 @@ Ejemplos:\
 \
 - Bloque: Juego desde el fondo.\
 - Concepto: Globo.\
-- Nivel: Medio.\
 - Tipo: Clips.\
 \
 ### Acciones posibles\
@@ -1805,7 +1792,6 @@ Los filtros disponibles ser\'e1n los mismos definidos en Explorar:\
 \
 - Bloque t\'e1ctico.\
 - Concepto.\
-- Nivel.\
 - Tipo de contenido.\
 \
 ### Tipo de contenido\
@@ -1823,14 +1809,9 @@ Ejemplo:\
 \
 - Bloque: Transici\'f3n defensa-ataque.\
 - Concepto: Subir.\
-- Nivel: Medio.\
 - Tipo: Clips.\
 \
 El sistema deber\'e1 mostrar \'fanicamente contenidos que cumplan los filtros aplicados.\
-\
-El filtro de nivel utilizar\'e1 los valores definidos en Explorar: Todos los niveles, Intermedio, Avanzado e Intermedio / avanzado.\
-\
-El nivel podr\'e1 utilizarse para filtrar resultados aunque no se muestre necesariamente como etiqueta visible en todas las tarjetas de contenido.\
 \
 ---\
 \
@@ -1851,7 +1832,6 @@ Cada tarjeta de contenido podr\'e1 mostrar:\
 - Conceptos asociados al contenido.\
 - Partido o torneo si aplica.\
 - Jugadores si aplica.\
-- Nivel si aplica.\
 - Progreso de visualizaci\'f3n si aplica.\
 \
 ### Acciones posibles\
@@ -1873,8 +1853,6 @@ La Pantalla de Resultados deber\'e1 mostrar el contenido en formato vertical o g
 En desktop, podr\'e1 utilizarse un grid de tarjetas.\
 \
 En m\'f3vil, deber\'e1 priorizarse un listado vertical o grid simple adaptado al ancho disponible.\
-\
-El nivel no tendr\'e1 que mostrarse de forma obligatoria en todas las tarjetas, pero deber\'e1 estar disponible como metadato para b\'fasqueda y filtrado.\
 \
 En la Pantalla de Resultados, si un clip est\'e1 asociado a conceptos de varios bloques, podr\'e1n mostrarse todos los conceptos relevantes del clip, ya que la vista no est\'e1 limitada a un bloque concreto.\
 \
@@ -2522,7 +2500,6 @@ Unidad principal de aprendizaje dentro de la plataforma.\
 - idiomas disponibles\
 - bloques asociados\
 - conceptos asociados por bloque\
-- nivel\
 - jugadores\
 - torneo\
 - partido\
@@ -2565,7 +2542,6 @@ Contenido largo compuesto por varios momentos o cap\'edtulos.\
 - cap\'edtulos\
 - conceptos principales asociados\
 - bloques principales asociados\
-- nivel\
 \
 ### Relaciones\
 \
