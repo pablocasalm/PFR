@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { Inbox, Bug, Lightbulb, MessageCircle, Trash2, Save } from "lucide-react"
+import { Inbox, Bug, Lightbulb, MessageCircle, Trash2, Save, History, ChevronDown } from "lucide-react"
 import {
   listFeedback,
   updateFeedback,
@@ -39,7 +39,8 @@ const STATUS_META: Record<FeedbackStatus, { label: string; cls: string }> = {
 const STATUS_ORDER: FeedbackStatus[] = ["new", "in_progress", "resolved"]
 
 type TypeFilter = "all" | FeedbackType
-type StatusFilter = "all" | FeedbackStatus
+// "resolved" no es una pestaña de Estado: los resueltos viven aparte, en el Historial.
+type StatusFilter = "all" | "new" | "in_progress"
 
 const AdminFeedback = () => {
   const [items, setItems] = useState<FeedbackItem[]>([])
@@ -47,6 +48,7 @@ const AdminFeedback = () => {
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all")
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   const refresh = async () => {
     setLoading(true)
@@ -74,12 +76,21 @@ const AdminFeedback = () => {
     [items],
   )
 
+  // Activos (nuevo/en progreso): lo que se ve por defecto. Los resueltos van aparte, al Historial.
   const filtered = useMemo(
     () =>
       items.filter(
-        (i) => (statusFilter === "all" || i.status === statusFilter) && (typeFilter === "all" || i.type === typeFilter),
+        (i) =>
+          i.status !== "resolved" &&
+          (statusFilter === "all" || i.status === statusFilter) &&
+          (typeFilter === "all" || i.type === typeFilter),
       ),
     [items, statusFilter, typeFilter],
+  )
+
+  const resolvedItems = useMemo(
+    () => items.filter((i) => i.status === "resolved" && (typeFilter === "all" || i.type === typeFilter)),
+    [items, typeFilter],
   )
 
   const patchLocal = (id: number, patch: Partial<FeedbackItem>) =>
@@ -136,13 +147,12 @@ const AdminFeedback = () => {
 
       {error && <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
-      {/* Filtros por estado */}
+      {/* Filtros por estado (los resueltos no viven aquí, ver Historial más abajo) */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 className="mr-2 text-sm font-bold uppercase tracking-wide text-white/70">Estado</h2>
-        <button onClick={() => setStatusFilter("all")} className={tabCls(statusFilter === "all")}>Todos ({items.length})</button>
+        <button onClick={() => setStatusFilter("all")} className={tabCls(statusFilter === "all")}>Todos ({counts.new + counts.in_progress})</button>
         <button onClick={() => setStatusFilter("new")} className={tabCls(statusFilter === "new")}>Nuevos ({counts.new})</button>
         <button onClick={() => setStatusFilter("in_progress")} className={tabCls(statusFilter === "in_progress")}>En progreso ({counts.in_progress})</button>
-        <button onClick={() => setStatusFilter("resolved")} className={tabCls(statusFilter === "resolved")}>Resueltos ({counts.resolved})</button>
       </div>
 
       {/* Filtros por tipo */}
@@ -157,7 +167,7 @@ const AdminFeedback = () => {
       {loading ? (
         <p className="text-sm text-white/40">Cargando...</p>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-white/40">No hay reportes que mostrar.</p>
+        <p className="text-sm text-white/40">No hay reportes activos.</p>
       ) : (
         <div className="space-y-4">
           {filtered.map((item) => (
@@ -169,6 +179,35 @@ const AdminFeedback = () => {
               onRemove={remove}
             />
           ))}
+        </div>
+      )}
+
+      {/* Historial: reportes ya resueltos, plegado por defecto para no mezclarlos con los activos. */}
+      {!loading && resolvedItems.length > 0 && (
+        <div className="mt-8 border-t border-white/10 pt-6">
+          <button
+            onClick={() => setHistoryOpen((v) => !v)}
+            aria-expanded={historyOpen}
+            className="flex w-full items-center gap-2 text-left text-sm font-bold uppercase tracking-wide text-white/70 transition hover:text-white"
+          >
+            <History className="h-4 w-4" />
+            Historial ({resolvedItems.length})
+            <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${historyOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {historyOpen && (
+            <div className="mt-4 space-y-4">
+              {resolvedItems.map((item) => (
+                <ReportCard
+                  key={item.id}
+                  item={item}
+                  onChangeStatus={changeStatus}
+                  onSaveNote={saveNote}
+                  onRemove={remove}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </main>
