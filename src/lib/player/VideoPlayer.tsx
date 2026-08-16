@@ -304,7 +304,7 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
           </span>
 
           <div className="ml-auto flex items-center gap-3">
-            <div className="relative">
+            <div className="relative flex items-center">
               <button
                 onClick={() => setQualityOpen((v) => !v)}
                 className={`transition hover:text-neon-cyan ${qualityOpen ? "text-neon-cyan" : ""}`}
