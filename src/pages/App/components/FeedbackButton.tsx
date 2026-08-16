@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useLocation, useSearchParams } from "react-router-dom"
-import { MessageSquarePlus, X, Check, Bug, Lightbulb, MessageCircle, ImagePlus, Trash2 } from "lucide-react"
+import { MessageSquarePlus, X, Check, Bug, Lightbulb, MessageCircle, UploadCloud, Trash2 } from "lucide-react"
 import { sendFeedback, type FeedbackType } from "../../../lib/api/feedback"
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -172,13 +172,6 @@ const FeedbackButton = () => {
                 </div>
 
                 <p className="mb-3 text-sm text-white/60">{activeHint}</p>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={4}
-                  placeholder={type === "bug" ? "¿Qué ocurrió? ¿En qué pantalla?" : "Escribe tu comentario..."}
-                  className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
-                />
 
                 <input
                   ref={fileInputRef}
@@ -188,27 +181,37 @@ const FeedbackButton = () => {
                   onChange={(e) => onPickImage(e.target.files?.[0])}
                 />
                 {imagePreview ? (
-                  <div className="mt-3 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-2">
-                    <img src={imagePreview} alt="Captura adjunta" className="h-12 w-12 rounded object-cover" />
-                    <span className="flex-1 truncate text-xs text-white/60">{image?.name}</span>
+                  <div className="mb-3 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-2.5">
+                    <img src={imagePreview} alt="Captura adjunta" className="h-12 w-12 shrink-0 rounded object-cover" />
+                    <span className="min-w-0 flex-1 truncate text-xs text-white/60">{image?.name}</span>
                     <button
                       onClick={clearImage}
                       aria-label="Quitar imagen"
-                      className="text-white/50 transition hover:text-white"
+                      className="shrink-0 p-1 text-white/50 transition hover:text-white"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="mt-3 flex items-center gap-2 text-xs font-medium text-white/50 transition hover:text-white"
+                    className="mb-3 flex w-full flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-white/15 bg-white/[0.02] px-4 py-4 text-center transition hover:border-neon-cyan/40 hover:bg-white/5 active:bg-white/5"
                   >
-                    <ImagePlus className="h-4 w-4" />
-                    Adjuntar captura (opcional)
+                    <UploadCloud className="h-5 w-5 text-white/50" />
+                    <span className="text-xs font-medium text-white/70">Adjuntar una captura (opcional)</span>
+                    <span className="text-[11px] text-white/35">PNG, JPG o WEBP · máx. 5&nbsp;MB</span>
                   </button>
                 )}
-                {imageError && <p className="mt-1 text-xs text-red-400">{imageError}</p>}
+                {imageError && <p className="-mt-2 mb-3 text-xs text-red-400">{imageError}</p>}
+
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={4}
+                  placeholder={type === "bug" ? "¿Qué ocurrió? ¿En qué pantalla?" : "Escribe tu comentario..."}
+                  className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
+                />
 
                 <button
                   onClick={onSubmit}
