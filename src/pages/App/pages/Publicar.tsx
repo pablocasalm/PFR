@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { UploadCloud, Film, Plus, Trash2, X, CheckCircle2 } from "lucide-react"
-import { createDirectUpload, uploadToCloudflare, readVideoDuration, publish } from "../../../lib/api/admin"
+import { createDirectUpload, uploadToCloudflare, readVideoDuration, publish, type PublishChapterInput } from "../../../lib/api/admin"
 import CatalogPicker from "../components/CatalogPicker"
 
 /**
@@ -32,8 +32,17 @@ const ROUNDS = [
 
 type Group = { block: string; concepts: string[] }
 type ClipDraft = { file: File | null; title: string; description: string; groups: Group[] }
+type ChapterDraft = { time: string; title: string; concept: string }
 
 const emptyClip = (): ClipDraft => ({ file: null, title: "", description: "", groups: [{ block: BLOCKS[0], concepts: [] }] })
+const emptyChapter = (): ChapterDraft => ({ time: "", title: "", concept: "" })
+
+/** "mm:ss" o "hh:mm:ss" (solo dígitos y ":") → segundos. null si el formato no es válido. */
+const parseTimeToSeconds = (text: string): number | null => {
+  const parts = text.trim().split(":").map((p) => p.trim())
+  if (parts.length === 0 || parts.length > 3 || parts.some((p) => p === "" || !/^\d+$/.test(p))) return null
+  return parts.map(Number).reduce((acc, n) => acc * 60 + n, 0)
+}
 
 const inputCls =
   "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/50 focus:outline-none"
@@ -82,6 +91,7 @@ const Publicar = () => {
   const [category, setCategory] = useState("")
   const [round, setRound] = useState("")
   const [year, setYear] = useState("")
+  const [chapters, setChapters] = useState<ChapterDraft[]>([])
 
   // Clips
   const [clips, setClips] = useState<ClipDraft[]>([emptyClip()])
@@ -107,6 +117,11 @@ const Publicar = () => {
   const removeGroup = (ci: number, gi: number) =>
     setClips((cs) => cs.map((c, idx) => (idx === ci ? { ...c, groups: c.groups.filter((_, j) => j !== gi) } : c)))
 
+  const updateChapter = (i: number, patch: Partial<ChapterDraft>) =>
+    setChapters((cs) => cs.map((c, idx) => (idx === i ? { ...c, ...patch } : c)))
+  const addChapter = () => setChapters((cs) => [...cs, emptyChapter()])
+  const removeChapter = (i: number) => setChapters((cs) => cs.filter((_, idx) => idx !== i))
+
   const goToClips = () => {
     setError(null)
     if (!aFile) return setError("Sube el vídeo del análisis.")
@@ -119,6 +134,14 @@ const Publicar = () => {
     setDone(null)
     const validClips = clips.filter((c) => c.file && c.title.trim())
     if (validClips.length === 0) return setError("Añade al menos un clip con vídeo y título.")
+
+    const chapterInputs: PublishChapterInput[] = []
+    for (const ch of chapters) {
+      if (!ch.title.trim()) continue
+      const startSeconds = parseTimeToSeconds(ch.time)
+      if (startSeconds === null) return setError(`Formato de tiempo inválido en el capítulo "${ch.title.trim()}" (usa mm:ss).`)
+      chapterInputs.push({ startSeconds, title: ch.title.trim(), concept: ch.concept.trim() || undefined })
+    }
 
     setBusy(true)
     setProgress({ label: "Subiendo análisis…", percent: 0 })
@@ -161,6 +184,7 @@ const Publicar = () => {
           category: category || undefined,
           round: round || undefined,
           year: year ? Number(year) : undefined,
+          chapters: chapterInputs,
         },
         clips: clipInputs,
       })
@@ -176,6 +200,7 @@ const Publicar = () => {
       setCategory("")
       setRound("")
       setYear("")
+      setChapters([])
       setClips([emptyClip()])
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo publicar el contenido.")
@@ -241,6 +266,44 @@ const Publicar = () => {
             </label>
           </div>
           <p className="text-xs text-white/40">Jugadores, sede, categoría, ronda y año se aplican también a todos los clips.</p>
+
+          {/* Capítulos (opcional): momento (mm:ss) + título + concepto opcional. §v1: minuto a mano. */}
+          <div className="space-y-2">
+            <span className="mb-1.5 block text-xs font-medium text-white/50">Capítulos (opcional)</span>
+            {chapters.map((ch, i) => (
+              <div key={i} className="flex flex-col gap-2 rounded-lg border border-white/10 bg-white/[0.02] p-3 sm:flex-row sm:items-center">
+                <input
+                  value={ch.time}
+                  onChange={(e) => updateChapter(i, { time: e.target.value })}
+                  placeholder="mm:ss"
+                  className={`${inputCls} sm:w-24 sm:shrink-0`}
+                />
+                <input
+                  value={ch.title}
+                  onChange={(e) => updateChapter(i, { title: e.target.value })}
+                  placeholder="Título del capítulo"
+                  className={`${inputCls} flex-1`}
+                />
+                <input
+                  value={ch.concept}
+                  onChange={(e) => updateChapter(i, { concept: e.target.value })}
+                  placeholder="Concepto (opcional)"
+                  className={`${inputCls} sm:w-40 sm:shrink-0`}
+                />
+                <button
+                  onClick={() => removeChapter(i)}
+                  className="self-end text-white/40 transition hover:text-red-400 sm:self-center"
+                  aria-label="Quitar capítulo"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            <button onClick={addChapter} className="flex items-center gap-1.5 text-xs font-medium text-neon-cyan transition hover:brightness-110">
+              <Plus className="h-3.5 w-3.5" /> Añadir capítulo
+            </button>
+          </div>
+
           <button onClick={goToClips} className="w-full rounded-lg bg-neon-cyan py-3 text-sm font-bold text-midnight transition hover:brightness-110">
             Siguiente: clips
           </button>

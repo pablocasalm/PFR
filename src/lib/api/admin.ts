@@ -24,6 +24,8 @@ export type PublishClipInput = {
   blocks: BlockConceptsInput[]
 }
 
+export type PublishChapterInput = { startSeconds: number; title: string; concept?: string }
+
 export type PublishInput = {
   analysis: {
     uid: string
@@ -35,6 +37,7 @@ export type PublishInput = {
     category?: string
     round?: string
     year?: number
+    chapters: PublishChapterInput[]
   }
   clips: PublishClipInput[]
 }
