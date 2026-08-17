@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { useSearchParams, Link } from "react-router-dom"
+import Fuse from "fuse.js"
 import { SlidersHorizontal, X, Compass } from "lucide-react"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getSearch } from "../../../lib/api/search"
@@ -15,11 +16,31 @@ import FilterPanel, { type FilterSection } from "../components/FilterPanel"
  * cada origen entra con sus filtros ya aplicados y son compartibles/navegables.
  *
  * Filtrado: type/block/concept NO se mandan al backend — se piden los resultados con
- * q/sort/feed únicamente y todo lo demás (tipo, bloque, concepto, orden por duración) se
- * filtra en cliente sobre ese conjunto completo. Si se mandaran, cada filtro activo
+ * sort/feed únicamente y todo lo demás (texto, tipo, bloque, concepto, orden por duración)
+ * se filtra en cliente sobre ese conjunto completo. Si se mandaran, cada filtro activo
  * recortaría "data" y falsearía los contadores/opciones de los demás filtros (bug real:
  * ver reporte de beta sobre los contadores de pestañas).
+ *
+ * Búsqueda de texto (q): NO se manda al backend — un match exacto por substring dejaba
+ * fuera casos tan básicos como "Globos" no encontrando "Globo" (plural/singular). En su
+ * lugar se trae el catálogo completo y se rastrea con Fuse.js (fuzzy), que tolera plurales,
+ * erratas y coincidencias parciales, y muestra los resultados más parecidos aunque no haya
+ * un match exacto en vez de dejar la pantalla vacía.
  */
+
+// Umbral de tolerancia de Fuse: 0 = match exacto, 1 = matchea cualquier cosa. 0.4 tolera
+// plurales/erratas típicas sin degenerar en resultados sin relación con la búsqueda.
+const FUSE_OPTIONS: ConstructorParameters<typeof Fuse<ContentItem>>[1] = {
+  keys: [
+    { name: "title", weight: 3 },
+    { name: "concepts", weight: 2 },
+    { name: "block", weight: 1.5 },
+    { name: "players", weight: 1 },
+    { name: "tournament", weight: 1 },
+  ],
+  threshold: 0.4,
+  ignoreLocation: true,
+}
 
 // Taxonomía oficial de bloques (§5). Mismos campos que el panel de filtros de Explorar.
 const BLOCKS = [
@@ -141,28 +162,39 @@ const Search = () => {
   }
 
   const { data, loading, error } = useApi(
-    () => getSearch({ q: filters.q, sort: filters.sort, feed: filters.feed }),
-    [filters.q, filters.sort, filters.feed],
-    `search:${filters.q}|${filters.sort}|${filters.feed}`,
+    () => getSearch({ sort: filters.sort, feed: filters.feed }),
+    [filters.sort, filters.feed],
+    `search:${filters.sort}|${filters.feed}`,
   )
 
-  // Todos los conceptos disponibles para el filtro, del conjunto SIN filtrar (igual que en
-  // Explorar): si se derivaran de "base" ya recortado por bloque/concepto, la lista de
-  // opciones se corrompería en cuanto hubiera otro filtro activo.
+  // Índice fuzzy sobre el catálogo completo recibido (se reconstruye solo cuando cambian
+  // los datos, no en cada tecleo — la búsqueda en sí se resuelve en memoria).
+  const fuse = useMemo(() => new Fuse(data?.results ?? [], FUSE_OPTIONS), [data])
+
+  // Con texto: ranking por similitud (tolera plurales/erratas). Sin texto: catálogo tal cual.
+  const searched = useMemo(() => {
+    if (!filters.q) return data?.results ?? []
+    return fuse.search(filters.q).map((r) => r.item)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fuse, filters.q])
+
+  // Todos los conceptos disponibles para el filtro, del conjunto SIN filtrar por concepto/bloque
+  // (igual que en Explorar): si se derivaran de "base" ya recortado, la lista de opciones se
+  // corrompería en cuanto hubiera otro filtro activo. Sí reflejan la búsqueda de texto (q).
   const allConcepts = useMemo(() => {
     const s = new Set<string>()
-    ;(data?.results ?? []).forEach((r) => (r.concepts ?? []).forEach((c) => s.add(c)))
+    searched.forEach((r) => (r.concepts ?? []).forEach((c) => s.add(c)))
     return Array.from(s).sort((a, b) => a.localeCompare(b))
-  }, [data])
+  }, [searched])
 
   // Conjunto base: filtra por concepto/bloque (todo menos tipo), para poder contar las tabs.
   const base = useMemo(() => {
-    let items = data?.results ?? []
+    let items = searched
     if (filters.concept) items = items.filter((i) => (i.concepts ?? []).includes(filters.concept))
     if (filters.block) items = items.filter((i) => i.block === filters.block || (i.blocks ?? []).some((b) => b.block === filters.block))
     return items
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, filters.concept, filters.block])
+  }, [searched, filters.concept, filters.block])
 
   const counts = {
     all: base.length,

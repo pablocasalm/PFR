@@ -6,7 +6,10 @@ import type { SearchResponse } from "./types"
  * Una única llamada sirve a todos los orígenes: búsqueda, "Ver todo", conceptos y filtros globales.
  *
  * GET /api/search?q&block&concept&level&type&sort&feed
- *  - q: texto libre (título, jugador, torneo, partido, concepto/bloque escritos).
+ *  - q: texto libre. El backend lo soporta (match por substring, bidireccional), pero
+ *    Search.tsx ya NO lo manda: hace fuzzy matching en cliente con Fuse.js sobre el catálogo
+ *    completo, para tolerar plurales/erratas y mostrar resultados parecidos aunque no haya
+ *    match exacto (§11.7). Queda disponible para otros posibles consumidores de la API.
  *  - block: bloque táctico (nombre de la taxonomía).
  *  - concept: concepto (#) aplicado como filtro.
  *  - level: "intermedio" | "avanzado" (vacío = todos).
