@@ -155,7 +155,7 @@ const SessionControl = () => {
   if (!user) return null
 
   return (
-    <div className="relative ml-auto xl:ml-0">
+    <div className="relative">
       <button onClick={() => setMenuOpen((v) => !v)} className="flex items-center gap-1.5">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-neon-cyan text-sm font-bold text-midnight">
           {initials(user)}
