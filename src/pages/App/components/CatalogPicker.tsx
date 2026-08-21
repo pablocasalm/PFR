@@ -1,11 +1,18 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { X, Plus } from "lucide-react"
 import { lookup, type CatalogType } from "../../../lib/api/admin"
 
 /**
- * Buscador genérico reutilizable (jugadores / sedes / categorías). El front manda el `type`
- * y muestra sugerencias del catálogo; si no hay coincidencia, ofrece "Crear «X»".
+ * Buscador genérico reutilizable (jugadores / sedes / categorías / conceptos). El front manda
+ * el `type` y muestra sugerencias del catálogo; si no hay coincidencia, ofrece "Crear «X»".
  * multi=true → varios valores (jugadores); multi=false → uno solo (sede, categoría).
+ *
+ * `extraSuggestions` (opcional): valores a sugerir además de los del servidor, aunque no
+ * estén guardados todavía. Lo usa Publicar.tsx para conceptos: al publicar varios clips a la
+ * vez en una sola petición, un concepto escrito en el clip 1 no existe aún en BD cuando se
+ * rellena el clip 4, así que el lookup del servidor no lo ve — pero si ya está en el propio
+ * formulario sin guardar, aquí sí se sugiere, evitando que se escriba dos veces con distinta
+ * grafía ("Subir" vs "subir") y se fragmente el concepto.
  */
 
 const inputCls =
@@ -18,6 +25,7 @@ const CatalogPicker = ({
   onChange,
   placeholder,
   block,
+  extraSuggestions,
 }: {
   type: CatalogType
   multi?: boolean
@@ -25,9 +33,10 @@ const CatalogPicker = ({
   onChange: (values: string[]) => void
   placeholder?: string
   block?: string // para type="concept": filtra sugerencias por bloque
+  extraSuggestions?: string[] // ver comentario de arriba
 }) => {
   const [q, setQ] = useState("")
-  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [serverSuggestions, setServerSuggestions] = useState<string[]>([])
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -35,7 +44,7 @@ const CatalogPicker = ({
     const t = setTimeout(async () => {
       try {
         const res = await lookup(type, q, block)
-        if (active) setSuggestions(res)
+        if (active) setServerSuggestions(res)
       } catch {
         /* el backend puede no estar disponible: se ignora y solo se podrá crear */
       }
@@ -45,6 +54,20 @@ const CatalogPicker = ({
       clearTimeout(t)
     }
   }, [q, type, block])
+
+  // Extra primero (más relevante: es lo que se está escribiendo ahora mismo en este mismo
+  // formulario) + servidor, sin duplicados (comparando sin mayúsculas).
+  const suggestions = useMemo(() => {
+    const seen = new Set<string>()
+    const merged: string[] = []
+    for (const s of [...(extraSuggestions ?? []), ...serverSuggestions]) {
+      const key = s.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      merged.push(s)
+    }
+    return merged
+  }, [extraSuggestions, serverSuggestions])
 
   const add = (name: string) => {
     const value = name.trim()
@@ -60,7 +83,9 @@ const CatalogPicker = ({
 
   const remove = (name: string) => onChange(selected.filter((s) => s !== name))
 
-  const filtered = suggestions.filter((s) => !selected.some((v) => v.toLowerCase() === s.toLowerCase()))
+  const filtered = suggestions.filter(
+    (s) => !selected.some((v) => v.toLowerCase() === s.toLowerCase()) && (q.trim() === "" || s.toLowerCase().includes(q.trim().toLowerCase())),
+  )
   const canCreate = q.trim().length > 0 && !suggestions.some((s) => s.toLowerCase() === q.trim().toLowerCase())
 
   return (

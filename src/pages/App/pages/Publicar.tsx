@@ -117,6 +117,17 @@ const Publicar = () => {
   const removeGroup = (ci: number, gi: number) =>
     setClips((cs) => cs.map((c, idx) => (idx === ci ? { ...c, groups: c.groups.filter((_, j) => j !== gi) } : c)))
 
+  // Conceptos ya escritos en OTROS clips de este mismo bloque, todavía sin guardar (el
+  // análisis + todos sus clips se publican juntos en una sola petición al final) — para que
+  // el buscador de conceptos los sugiera aunque el backend aún no los conozca (§ ver
+  // CatalogPicker). Evita que "Subir" en un clip y "subir" en otro acaben siendo conceptos
+  // distintos en BD solo por no haberse visto el uno al otro mientras se publicaban.
+  const conceptsForBlock = (block: string) => {
+    const set = new Set<string>()
+    for (const c of clips) for (const g of c.groups) if (g.block === block) for (const concept of g.concepts) set.add(concept)
+    return Array.from(set)
+  }
+
   const updateChapter = (i: number, patch: Partial<ChapterDraft>) =>
     setChapters((cs) => cs.map((c, idx) => (idx === i ? { ...c, ...patch } : c)))
   const addChapter = () => setChapters((cs) => [...cs, emptyChapter()])
@@ -356,6 +367,7 @@ const Publicar = () => {
                       selected={g.concepts}
                       onChange={(v) => updateGroup(ci, gi, { concepts: v })}
                       placeholder="Busca o crea un concepto…"
+                      extraSuggestions={conceptsForBlock(g.block)}
                     />
                   </div>
                 ))}
