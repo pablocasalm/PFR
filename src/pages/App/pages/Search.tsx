@@ -50,7 +50,7 @@ const BLOCKS = [
   "Uso del globo",
   "Gestión del ritmo",
   "Situaciones de presión",
-  "Lectura del rival",
+  "Lectura táctica del rival",
   "Uso táctico de golpes",
   "Juego en pareja",
 ]

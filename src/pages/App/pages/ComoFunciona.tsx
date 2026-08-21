@@ -369,7 +369,7 @@ const ComoFunciona = () => {
                     <span className="concept">#Presión</span>
                   </div>
                   <div className="branch" style={{ "--c": "#5b8cff" } as React.CSSProperties}>
-                    <span className="block">Lectura del rival</span>
+                    <span className="block">Lectura táctica del rival</span>
                     <span className="arrow">
                       <svg width="18" height="18">
                         <use href="#i-arrow" />
