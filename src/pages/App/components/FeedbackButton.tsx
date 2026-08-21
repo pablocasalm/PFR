@@ -5,6 +5,9 @@ import { sendFeedback, type FeedbackType } from "../../../lib/api/feedback"
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
+/** Evento con el que el tour de bienvenida abre/cierra este modal desde fuera (ver lib/onboarding/tour.ts). */
+export const TOUR_OPEN_FEEDBACK_EVENT = "pfr:tour-open-feedback"
+
 /**
  * Botón flotante de feedback para la beta. Visible en toda la app. El usuario elige primero
  * el tipo (fallo / idea / otro) y escribe el mensaje. Se adjunta automáticamente el contexto:
@@ -49,6 +52,13 @@ const FeedbackButton = () => {
     }
     window.addEventListener("scroll", onScroll, { passive: true })
     return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
+  // El tour de bienvenida abre este modal para enseñarlo (§ beta) sin duplicar su lógica.
+  useEffect(() => {
+    const onTourToggle = (e: Event) => setOpen((e as CustomEvent<boolean>).detail)
+    window.addEventListener(TOUR_OPEN_FEEDBACK_EVENT, onTourToggle)
+    return () => window.removeEventListener(TOUR_OPEN_FEEDBACK_EVENT, onTourToggle)
   }, [])
 
   const clearImage = () => {
@@ -128,7 +138,10 @@ const FeedbackButton = () => {
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={close} />
-          <div className="relative w-full max-w-md rounded-t-2xl border border-white/10 bg-midnight p-5 sm:rounded-2xl">
+          <div
+            id="tour-feedback-modal"
+            className="relative w-full max-w-md rounded-t-2xl border border-white/10 bg-midnight p-5 sm:rounded-2xl"
+          >
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-base font-bold text-white">¿Qué quieres contarnos?</h2>
               <button onClick={close} aria-label="Cerrar" className="text-white/60 transition hover:text-white">
