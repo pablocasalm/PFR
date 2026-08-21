@@ -114,6 +114,7 @@ const FeedbackButton = () => {
   return (
     <>
       <button
+        id="tour-feedback-button"
         onClick={() => setOpen(true)}
         aria-label="Reportar un fallo o enviar feedback"
         className={`fixed bottom-24 left-4 z-40 flex items-center gap-2 rounded-full border border-neon-cyan/40 bg-midnight/90 px-4 py-2.5 text-sm font-semibold text-neon-cyan shadow-lg backdrop-blur transition-all duration-300 hover:bg-neon-cyan/10 xl:bottom-6 xl:left-auto xl:right-6 xl:translate-y-0 xl:opacity-100 ${

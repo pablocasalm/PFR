@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react"
-import { apiLogin, apiRegister } from "../api/auth"
+import { apiLogin, apiRegister, markOnboardingSeen } from "../api/auth"
 import { clearSaved } from "../saved/store"
 import { invalidateApiCache } from "../hooks/useApi"
 
@@ -10,7 +10,7 @@ import { invalidateApiCache } from "../hooks/useApi"
  */
 
 export type UserRole = "User" | "Admin" | "ContentCreator"
-export type AuthUser = { email: string; displayName?: string | null; role?: UserRole }
+export type AuthUser = { email: string; displayName?: string | null; role?: UserRole; hasSeenOnboarding?: boolean }
 type AuthState = { token: string | null; user: AuthUser | null }
 
 /** Pueden publicar contenido los ContentCreator y los Admin. El resto solo consume. */
@@ -65,7 +65,12 @@ export async function login(email: string, password: string) {
   const res = await apiLogin(email, password)
   setState({
     token: res.token ?? null,
-    user: { email: res.email ?? email, displayName: res.displayName, role: res.role as UserRole | undefined },
+    user: {
+      email: res.email ?? email,
+      displayName: res.displayName,
+      role: res.role as UserRole | undefined,
+      hasSeenOnboarding: res.hasSeenOnboarding,
+    },
   })
 }
 
@@ -73,7 +78,12 @@ export async function register(email: string, password: string, displayName?: st
   const res = await apiRegister(email, password, displayName, inviteCode)
   setState({
     token: res.token ?? null,
-    user: { email: res.email ?? email, displayName: res.displayName, role: res.role as UserRole | undefined },
+    user: {
+      email: res.email ?? email,
+      displayName: res.displayName,
+      role: res.role as UserRole | undefined,
+      hasSeenOnboarding: res.hasSeenOnboarding,
+    },
   })
 }
 
@@ -81,6 +91,17 @@ export function logout() {
   setState({ token: null, user: null })
   clearSaved() // Mi Lista es por-cuenta: se vacía al salir.
   invalidateApiCache() // no dejar datos cacheados de la cuenta anterior.
+}
+
+/** Marca el tour de bienvenida como visto: avisa al backend (recordado por cuenta, no por
+ * dispositivo) y actualiza el estado local al momento. */
+export async function markOnboardingSeenAndSync() {
+  if (state.user) setState({ ...state, user: { ...state.user, hasSeenOnboarding: true } }) // optimista
+  try {
+    await markOnboardingSeen()
+  } catch {
+    // no crítico: en el peor caso se vuelve a mostrar el tour la próxima vez
+  }
 }
 
 /** Hook de sesión: { token, user, isAuthenticated } + acciones. */

@@ -30,3 +30,56 @@
     scroll-behavior: smooth;
   }
 }
+
+/* Tour de bienvenida (driver.js) con la identidad visual de la app — sus estilos por
+   defecto son claros, y aquí todo es oscuro. !important porque driver.js ya trae sus
+   propias reglas y el orden final del CSS entre chunks no está garantizado. */
+.driver-popover {
+  background: #0c1220 !important; /* midnight-soft */
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 1rem !important;
+  font-family: "Space Grotesk", sans-serif !important;
+}
+.driver-popover-title {
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+.driver-popover-description {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+.driver-popover-progress-text {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+.driver-popover-close-btn {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+.driver-popover-close-btn:hover {
+  color: #fff !important;
+}
+.driver-popover-footer button {
+  background: transparent !important;
+  text-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+  border-radius: 0.5rem !important;
+}
+.driver-popover-footer .driver-popover-next-btn,
+.driver-popover-footer .driver-popover-done-btn {
+  background: #28f0e0 !important; /* neon-cyan */
+  border-color: #28f0e0 !important;
+  color: #05070c !important; /* midnight */
+  font-weight: 700 !important;
+}
+.driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: #0c1220 !important;
+}
+.driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: #0c1220 !important;
+}
+.driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: #0c1220 !important;
+}
+.driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: #0c1220 !important;
+}

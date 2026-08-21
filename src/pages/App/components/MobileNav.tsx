@@ -24,6 +24,7 @@ const MobileNav = () => (
       <NavLink
         key={to}
         to={to}
+        id={to === "/app/como-funciona" ? "tour-como-funciona-mobile" : undefined}
         className={({ isActive }) =>
           `flex flex-1 flex-col items-center gap-1 py-1 text-[10px] font-medium transition-colors ${
             isActive ? "text-neon-cyan" : "text-white/50"

@@ -8,6 +8,7 @@ export type AuthResponse = {
   email?: string
   displayName?: string | null
   role?: string // "User" | "Admin" | "ContentCreator"
+  hasSeenOnboarding?: boolean
 }
 
 /** POST /api/auth/login → token + datos de usuario. Lanza Error con el mensaje del backend si falla. */
@@ -25,3 +26,6 @@ export const requestPasswordReset = (email: string) =>
 /** POST /api/auth/reset-password → canjea el token y fija la nueva contraseña. */
 export const resetPassword = (token: string, newPassword: string) =>
   apiPost<{ ok: boolean }>("/api/auth/reset-password", { token, newPassword })
+
+/** POST /api/auth/onboarding-seen → marca el tour de bienvenida (beta) como visto, para no repetirlo. */
+export const markOnboardingSeen = () => apiPost<{ ok: boolean }>("/api/auth/onboarding-seen")

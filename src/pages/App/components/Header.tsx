@@ -51,6 +51,7 @@ const Header = () => {
           <NavLink
             key={to}
             to={to}
+            id={to === "/app/como-funciona" ? "tour-como-funciona-desktop" : undefined}
             className={({ isActive }) =>
               `relative text-sm font-medium transition-colors ${
                 isActive ? "text-neon-cyan" : "text-white/60 hover:text-white"
