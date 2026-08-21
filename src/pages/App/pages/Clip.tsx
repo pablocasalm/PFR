@@ -23,6 +23,7 @@ import CardRow from "../../../lib/ui/CardRow"
 import HlsPlayer from "../../../lib/player/VideoPlayer"
 import { NextUpCard, pickNextRelated, useAutoplay } from "../../../lib/player/NextUp"
 import { saveProgress } from "../../../lib/api/history"
+import EditContentLink from "../components/EditContentLink"
 
 /**
  * Clip — Vista de reproducción de un clip en /app/watch?c=:id.
@@ -450,6 +451,7 @@ const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => {
         <h1 className="font-display text-3xl font-bold text-white">{clip.title}</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-white/60">{clip.description}</p>
         <Concepts concepts={clip.concepts} />
+        <EditContentLink type="clip" id={clip.id} />
       </div>
 
       <AppearsIn clip={clip} />
@@ -490,6 +492,7 @@ const ClipVertical = ({ clip }: { clip: ClipDetail }) => {
             <h1 className="font-display text-3xl font-bold text-white">{clip.title}</h1>
             <p className="text-sm leading-relaxed text-white/60">{clip.description}</p>
             <Concepts concepts={clip.concepts} />
+            <EditContentLink type="clip" id={clip.id} />
           </div>
           <AppearsIn clip={clip} />
           <ClipComments social={social} />

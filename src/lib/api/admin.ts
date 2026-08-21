@@ -1,5 +1,5 @@
 import * as tus from "tus-js-client"
-import { apiGet, apiPost } from "./client"
+import { apiGet, apiPost, apiPatch } from "./client"
 
 /**
  * Publicación de contenido (solo Admin/ContentCreator). Flujo Direct Creator Upload:
@@ -44,6 +44,48 @@ export type PublishInput = {
 
 export const publish = (input: PublishInput) =>
   apiPost<{ ok: boolean; analysisId: string; clipIds: string[] }>("/api/admin/publish", input)
+
+// --- Edición de contenido ya publicado (v1 básica: título/descripción/bloques/conceptos;
+// sin reasignar a qué análisis "aparece" un clip ni tocar el vídeo — queda para "Estudio") ---
+
+export type PatchClipInput = {
+  title: string
+  description?: string
+  players: string[]
+  blocks: BlockConceptsInput[]
+}
+
+export const patchClip = (id: string, input: PatchClipInput) =>
+  apiPatch<{ ok: boolean }>(`/api/admin/clips/${id}`, input)
+
+export type PatchAnalysisInput = {
+  title: string
+  description?: string
+  players: string[]
+  venue?: string
+  category?: string
+  round?: string
+  year?: number
+}
+
+export const patchAnalysis = (id: string, input: PatchAnalysisInput) =>
+  apiPatch<{ ok: boolean }>(`/api/admin/analyses/${id}`, input)
+
+// Datos en bruto para precargar el formulario de edición (distinto del GET público, que
+// devuelve todo ya compuesto/aplanado para mostrar, no para editar).
+export type ClipForEdit = { title: string; description: string; players: string[]; blocks: BlockConceptsInput[] }
+export const getClipForEdit = (id: string) => apiGet<ClipForEdit>(`/api/admin/clips/${id}`)
+
+export type AnalysisForEdit = {
+  title: string
+  description: string
+  players: string[]
+  venue: string | null
+  category: string | null
+  round: string | null
+  year: number | null
+}
+export const getAnalysisForEdit = (id: string) => apiGet<AnalysisForEdit>(`/api/admin/analyses/${id}`)
 
 // --- Catálogo reutilizable (autocompletado): un solo endpoint, el front manda el `type` ---
 

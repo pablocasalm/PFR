@@ -21,6 +21,7 @@ import { toggleLike, addComment } from "../../../lib/api/social"
 import { useShare } from "../../../lib/share"
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import { useState } from "react"
+import EditContentLink from "../components/EditContentLink"
 
 /**
  * Video — Vista de un análisis completo en /app/watch?v=:id.
@@ -347,6 +348,9 @@ const Video = () => {
                   )}
                   <span className="text-white/30">•</span>
                   <span>{formatDuration(video.durationSeconds)}</span>
+                </div>
+                <div className="mt-2">
+                  <EditContentLink type="analysis" id={video.id} />
                 </div>
               </div>
               {/* Los conceptos del análisis NO se muestran (§10.4): son metadatos de búsqueda

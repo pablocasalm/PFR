@@ -14,6 +14,7 @@ const LoginPage = lazy(() => import("../../lib/auth/LoginPage"))
 const ResetPasswordPage = lazy(() => import("../../lib/auth/ResetPasswordPage"))
 const PlayerTestPage = lazy(() => import("../../lib/player/PlayerTestPage"))
 const Publicar = lazy(() => import("../../pages/App/pages/Publicar"))
+const Editar = lazy(() => import("../../pages/App/pages/Editar"))
 const AdminInvites = lazy(() => import("../../pages/App/pages/AdminInvites"))
 const AdminFeedback = lazy(() => import("../../pages/App/pages/AdminFeedback"))
 
@@ -52,6 +53,7 @@ const router = createBrowserRouter([
       { path: "watch", element: withSuspense(<Watch />) },
       { path: "search", element: withSuspense(<Search />) },
       { path: "publicar", element: withSuspense(<RequirePublisher><Publicar /></RequirePublisher>) },
+      { path: "editar/:type/:id", element: withSuspense(<RequirePublisher><Editar /></RequirePublisher>) },
       { path: "admin/invitaciones", element: withSuspense(<RequireAdmin><AdminInvites /></RequireAdmin>) },
       { path: "admin/reportes", element: withSuspense(<RequireAdmin><AdminFeedback /></RequireAdmin>) },
     ],
