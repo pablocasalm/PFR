@@ -346,7 +346,7 @@ const ReportCard = ({
           onChange={(e) => setNote(e.target.value)}
           rows={1}
           placeholder="Nota interna (opcional)..."
-          className="min-h-[38px] flex-1 resize-y rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none"
+          className="min-h-[38px] flex-1 resize-y rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-xs"
         />
         <button
           onClick={() => onSaveNote(item, note.trim())}

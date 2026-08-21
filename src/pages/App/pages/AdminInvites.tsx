@@ -184,7 +184,7 @@ const AdminInvites = () => {
             onChange={(e) => setRaw(e.target.value)}
             rows={5}
             placeholder="Pega los emails separados por comas, espacios o saltos de línea..."
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none"
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
           />
           <p className="mt-1.5 text-xs text-white/50">
             {emails.length} email{plural} válido{plural} detectado{plural}.

@@ -45,7 +45,7 @@ const parseTimeToSeconds = (text: string): number | null => {
 }
 
 const inputCls =
-  "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/50 focus:outline-none"
+  "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/50 focus:outline-none sm:text-sm"
 
 const FileDrop = ({ file, onFile, label }: { file: File | null; onFile: (f: File | null) => void; label: string }) => (
   <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 bg-white/[0.02] px-4 py-8 text-center transition hover:border-neon-cyan/40">

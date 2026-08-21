@@ -280,7 +280,7 @@ const Search = () => {
                 <select
                   value={filters.sort || "relevance"}
                   onChange={(e) => setFilter({ sort: e.target.value === "relevance" ? "" : e.target.value })}
-                  className="rounded-lg border border-white/15 bg-midnight px-3 py-2 text-sm text-white focus:border-neon-cyan/40 focus:outline-none"
+                  className="rounded-lg border border-white/15 bg-midnight px-3 py-2 text-base text-white focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
                 >
                   {SORTS.map((s) => (
                     <option key={s.v} value={s.v}>

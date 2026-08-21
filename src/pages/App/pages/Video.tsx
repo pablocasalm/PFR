@@ -227,7 +227,7 @@ const Social = ({ video }: { video: AnalysisDetail }) => {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onSubmit()}
           placeholder="Escribe un comentario..."
-          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-neon-cyan/40"
+          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:outline-none focus:border-neon-cyan/40 sm:text-sm"
         />
         <button
           onClick={onSubmit}

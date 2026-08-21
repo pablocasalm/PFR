@@ -266,7 +266,7 @@ const CommentList = ({ social, hideHeading = false }: { social: ClipSocial; hide
           onChange={(e) => social.setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && social.onSubmit()}
           placeholder="Añadir un comentario..."
-          className="w-full bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none"
+          className="w-full bg-transparent text-base text-white placeholder:text-white/40 focus:outline-none sm:text-sm"
         />
         <button
           onClick={social.onSubmit}

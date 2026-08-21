@@ -16,8 +16,9 @@ const ResetPasswordPage = () => {
   const [done, setDone] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  // text-base (16px): evita el zoom automático de iOS Safari al enfocar el input (ver LoginPage).
   const inputCls =
-    "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/50 focus:outline-none"
+    "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/50 focus:outline-none sm:text-sm"
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()

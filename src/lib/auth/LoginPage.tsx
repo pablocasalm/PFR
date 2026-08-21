@@ -83,8 +83,11 @@ const LoginPage = () => {
     }
   }
 
+  // text-base (16px): por debajo de eso, iOS Safari hace zoom automático al enfocar el
+  // input, y como es una SPA el zoom se queda "pegado" al navegar a /app/inicio tras
+  // el login (no hay recarga real de página que lo resetee).
   const inputCls =
-    "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/50 focus:outline-none"
+    "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/50 focus:outline-none sm:text-sm"
 
   const title =
     mode === "login" ? "Inicia sesión"
