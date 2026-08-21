@@ -378,7 +378,7 @@ const ComoFunciona = () => {
                     <span className="concept">#Insistencia</span>
                   </div>
                   <div className="branch" style={{ "--c": "#befc4b" } as React.CSSProperties}>
-                    <span className="block">Gestión del ritmo</span>
+                    <span className="block">Gestión del ritmo del punto</span>
                     <span className="arrow">
                       <svg width="18" height="18">
                         <use href="#i-arrow" />
