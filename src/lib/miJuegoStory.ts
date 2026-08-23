@@ -3,7 +3,7 @@
  * compartir en Stories. Se dibuja en un canvas 1080×1920 con la identidad de PFR,
  * replicando la vista previa (StoryCard). Devuelve un PNG (Blob).
  */
-export type StoryData = { minutes: number; concepts: string[]; block: string }
+export type StoryData = { minutes: number; concepts: string[]; block: string; name?: string }
 
 const CYAN = "#28f0e0"
 
@@ -28,7 +28,7 @@ function fitFont(ctx: CanvasRenderingContext2D, text: string, weight: number, si
   return s
 }
 
-export async function renderMiJuegoStory({ minutes, concepts, block }: StoryData): Promise<Blob> {
+export async function renderMiJuegoStory({ minutes, concepts, block, name }: StoryData): Promise<Blob> {
   const W = 1080
   const H = 1920
   const pad = 90
@@ -117,6 +117,20 @@ export async function renderMiJuegoStory({ minutes, concepts, block }: StoryData
   ctx.fillText("PADEL", pad + 92, 104)
   ctx.fillText("FILM ROOM", pad + 92, 138)
   ctx.restore()
+
+  // Nombre de quien comparte (arriba a la derecha, § reporte de beta).
+  if (name) {
+    ctx.save()
+    ctx.textAlign = "right"
+    ctx.fillStyle = "rgba(255,255,255,0.85)"
+    ctx.font = "600 30px 'Space Grotesk', sans-serif"
+    const maxNameW = W - pad * 2 - 200
+    let nameText = name
+    while (ctx.measureText(nameText).width > maxNameW && nameText.length > 1) nameText = nameText.slice(0, -1)
+    if (nameText !== name) nameText = nameText.trimEnd() + "…"
+    ctx.fillText(nameText, W - pad, 138)
+    ctx.restore()
+  }
 
   ctx.textBaseline = "alphabetic"
 

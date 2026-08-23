@@ -5,6 +5,7 @@ import { Link } from "react-router-dom"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getStats } from "../../../lib/api/history"
 import { renderMiJuegoStory } from "../../../lib/miJuegoStory"
+import { useAuth } from "../../../lib/auth/store"
 
 /**
  * MiJuego — Actividad real de aprendizaje (§13). Consume GET /api/history/stats.
@@ -77,7 +78,17 @@ const RankPanel = ({ title, items }: { title: string; items: Rank[] }) => {
   )
 }
 
-const StoryCard = ({ minutes, concepts, block }: { minutes: number; concepts: string[]; block: string }) => {
+const StoryCard = ({
+  minutes,
+  concepts,
+  block,
+  name,
+}: {
+  minutes: number
+  concepts: string[]
+  block: string
+  name?: string
+}) => {
   const month = new Date().toLocaleDateString("es-ES", { month: "long", year: "numeric" })
   return (
     <div className="relative aspect-[9/16] overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-[#0a1622] via-[#070d16] to-[#04060a] p-6">
@@ -91,14 +102,17 @@ const StoryCard = ({ minutes, concepts, block }: { minutes: number; concepts: st
         style={{ background: "radial-gradient(circle at 35% 30%, #ecfccb, #84cc16)" }}
       />
       <div className="relative z-10 flex h-full flex-col">
-        <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan">
-            <Play className="h-3.5 w-3.5" fill="currentColor" />
-          </span>
-          <div className="text-[10px] font-bold uppercase leading-none tracking-wide text-white">
-            <p>Padel</p>
-            <p>Film Room</p>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan">
+              <Play className="h-3.5 w-3.5" fill="currentColor" />
+            </span>
+            <div className="text-[10px] font-bold uppercase leading-none tracking-wide text-white">
+              <p>Padel</p>
+              <p>Film Room</p>
+            </div>
           </div>
+          {name && <p className="max-w-[40%] truncate text-right text-xs font-semibold text-white/80">{name}</p>}
         </div>
         <p className="mt-6 w-fit border-b-2 border-neon-cyan pb-1 text-sm font-bold uppercase capitalize tracking-wide text-neon-cyan">
           {month}
@@ -115,19 +129,31 @@ const StoryCard = ({ minutes, concepts, block }: { minutes: number; concepts: st
             </div>
           </>
         )}
-        {block && (
-          <>
-            <p className="mt-auto text-[11px] font-bold uppercase tracking-wide text-neon-cyan">Bloque principal</p>
-            <p className="font-display text-xl font-bold uppercase leading-tight text-white">{block}</p>
-          </>
-        )}
       </div>
+      {/* Posición absoluta (no mt-auto): en algunos móviles el empuje por flex terminaba
+          empujando el valor del bloque fuera del área visible de la tarjeta (§reporte de beta). */}
+      {block && (
+        <div className="absolute inset-x-6 bottom-6 z-10">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-neon-cyan">Bloque principal</p>
+          <p className="font-display text-xl font-bold uppercase leading-tight text-white">{block}</p>
+        </div>
+      )}
     </div>
   )
 }
 
 // Genera la imagen 9:16 y la comparte (móvil, Web Share con ficheros) o la descarga (escritorio).
-const ShareSummaryButton = ({ minutes, concepts, block }: { minutes: number; concepts: string[]; block: string }) => {
+const ShareSummaryButton = ({
+  minutes,
+  concepts,
+  block,
+  name,
+}: {
+  minutes: number
+  concepts: string[]
+  block: string
+  name?: string
+}) => {
   const [busy, setBusy] = useState(false)
   const canShareImage = useMemo(() => {
     try {
@@ -140,7 +166,7 @@ const ShareSummaryButton = ({ minutes, concepts, block }: { minutes: number; con
   const onClick = async () => {
     setBusy(true)
     try {
-      const blob = await renderMiJuegoStory({ minutes, concepts, block })
+      const blob = await renderMiJuegoStory({ minutes, concepts, block, name })
       const file = new File([blob], "mi-juego-pfr.png", { type: "image/png" })
       if (canShareImage && navigator.canShare?.({ files: [file] })) {
         try {
@@ -217,6 +243,8 @@ const EmptyState = () => (
 
 const MiJuego = () => {
   const { data: stats, loading, error } = useApi(getStats, [])
+  const { user } = useAuth()
+  const name = user?.displayName ?? undefined
 
   if (loading) return <main className="w-full py-8 text-sm text-white/40">Cargando...</main>
   if (error)
@@ -275,12 +303,14 @@ const MiJuego = () => {
                 minutes={stats.minutes}
                 concepts={stats.concepts.slice(0, 3).map((c) => c.name)}
                 block={stats.blocks[0]?.name ?? ""}
+                name={name}
               />
             </div>
             <ShareSummaryButton
               minutes={stats.minutes}
               concepts={stats.concepts.slice(0, 3).map((c) => c.name)}
               block={stats.blocks[0]?.name ?? ""}
+              name={name}
             />
           </aside>
         </div>
