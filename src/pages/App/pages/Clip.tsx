@@ -353,9 +353,9 @@ const ClipComments = ({ social }: { social: ClipSocial }) => {
 const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; vertical?: boolean }) => (
   <section className={vertical ? "mt-10 space-y-4" : "space-y-4"}>
     <div className="flex items-center justify-between">
-      <h2 className="text-lg font-bold text-white">A continuación</h2>
+      <h2 className="text-lg font-bold text-white">Sigue aprendiendo</h2>
       <button className="flex items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110">
-        Ver todos los clips del concepto <ArrowRight className="h-4 w-4" />
+        Ver clips de conceptos relacionados <ArrowRight className="h-4 w-4" />
       </button>
     </div>
     <CardRow
