@@ -215,6 +215,12 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
           report()
           setEnded(true)
           onEnded?.()
+          // En iPhone, ver "en horizontal" suele significar el modo nativo de pantalla completa
+          // (webkitEnterFullscreen) — la tarjeta "Siguiente" vive fuera de ese elemento nativo y
+          // no se ve ahí, así que el countdown avanzaba de vídeo sin que nadie se enterara (§
+          // reporte de beta). Al terminar, se sale de ese modo para que la tarjeta sea visible.
+          const video = videoRef.current as IOSVideoElement | null
+          if (video?.webkitDisplayingFullscreen) video.webkitExitFullscreen?.()
         }}
         onTimeUpdate={(e) => {
           const t = e.currentTarget.currentTime
