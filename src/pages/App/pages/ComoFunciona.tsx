@@ -93,6 +93,11 @@ const css = `
     text-transform: uppercase;
     letter-spacing: 0.2em;
     color: var(--faint);
+    border: none;
+    background: none;
+    padding: 0;
+    font-family: inherit;
+    cursor: pointer;
   }
   .hero .scroll-cue svg { animation: cf-bob 1.8s ease-in-out infinite; }
 
@@ -260,6 +265,16 @@ const css = `
 
 const ComoFunciona = () => {
   const rootRef = useRef<HTMLDivElement>(null)
+  const heroRef = useRef<HTMLElement>(null)
+
+  // El "Desliza" de la portada era solo un indicador visual sin acción — ahora sí lleva a
+  // la siguiente sección (§reporte de beta).
+  const scrollToNextSection = () => {
+    const next = heroRef.current?.nextElementSibling
+    if (!next) return
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    next.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" })
+  }
 
   // Reveal por scroll (mismo comportamiento que el artifact). Respeta prefers-reduced-motion.
   useEffect(() => {
@@ -329,18 +344,18 @@ const ComoFunciona = () => {
 
       <main>
         {/* 1 · Hero */}
-        <section className="hero">
+        <section className="hero" ref={heroRef}>
           <div className="wrap">
             <h1>
               Cómo usar <span className="accent">Padel Film Room</span>
             </h1>
             <p>Aprende a reconocer situaciones reales de partido, entender el juego y tomar mejores decisiones cuando vuelvas a la pista.</p>
-            <span className="scroll-cue">
+            <button type="button" className="scroll-cue" onClick={scrollToNextSection}>
               Desliza
               <svg width="18" height="18">
                 <use href="#i-down" />
               </svg>
-            </span>
+            </button>
           </div>
         </section>
 
