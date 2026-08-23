@@ -11,6 +11,7 @@ import { Skeleton, CardSkeleton } from "../../../lib/ui/Skeleton"
 import CardRow from "../../../lib/ui/CardRow"
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import FilterPanel, { type FilterSection } from "../components/FilterPanel"
+import WatchedBadge from "../components/WatchedBadge"
 
 /**
  * Explorar — Biblioteca táctica. Consume GET /api/explore (bloques + análisis).
@@ -37,9 +38,10 @@ const ICONS: LucideIcon[] = [LayoutGrid, ArrowLeftRight, Grip, ClipboardList]
 // Helpers visuales
 // ---------------------------------------------------------------------------
 
-const Thumb = ({ src, hue, className = "" }: { src?: string; hue: number; className?: string }) => (
+const Thumb = ({ src, hue, className = "", completed = false }: { src?: string; hue: number; className?: string; completed?: boolean }) => (
   <div className={`relative overflow-hidden ${className}`} style={thumbStyle(hue)}>
     {src && <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />}
+    {completed && <WatchedBadge />}
   </div>
 )
 
@@ -83,7 +85,7 @@ const ClipCard = ({ clip, currentBlock }: { clip: ContentItem; currentBlock: str
   return (
     <Link to={watchHref(clip)} className="group block cursor-pointer">
       <div className="relative overflow-hidden rounded-lg border border-white/10">
-        <Thumb src={clip.thumbnailUrl} hue={hueFor(clip.id)} className="aspect-video w-full" />
+        <Thumb src={clip.thumbnailUrl} hue={hueFor(clip.id)} className="aspect-video w-full" completed={clip.completed} />
         <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
           {formatDuration(clip.durationSeconds)}
         </span>
@@ -154,7 +156,7 @@ const ConceptSection = ({
 
 const AnalisisCard = ({ item }: { item: ContentItem }) => (
   <Link to={watchHref(item)} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-3 transition hover:border-white/20">
-    <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-28 shrink-0 rounded-lg" />
+    <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-28 shrink-0 rounded-lg" completed={item.completed} />
     <div className="min-w-0 flex-1">
       <p className="text-sm font-semibold text-white">{item.title}</p>
       <p className="mt-1 text-xs leading-relaxed text-white/50">

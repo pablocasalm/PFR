@@ -24,6 +24,7 @@ import HlsPlayer from "../../../lib/player/VideoPlayer"
 import { NextUpCard, pickNextRelated, useAutoplay } from "../../../lib/player/NextUp"
 import { saveProgress } from "../../../lib/api/history"
 import EditContentLink from "../components/EditContentLink"
+import WatchedBadge from "../components/WatchedBadge"
 
 /**
  * Clip — Vista de reproducción de un clip en /app/watch?c=:id.
@@ -358,6 +359,7 @@ const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; v
             <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
               {formatDuration(item.durationSeconds)}
             </span>
+            {item.completed && <WatchedBadge />}
           </div>
           <p className="mt-2 line-clamp-2 text-sm font-medium text-white">{item.title}</p>
           {!vertical && (

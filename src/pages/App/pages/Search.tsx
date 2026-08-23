@@ -9,6 +9,7 @@ import SaveButton from "../../../lib/saved/SaveButton"
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import FilterPanel, { type FilterSection } from "../components/FilterPanel"
+import WatchedBadge from "../components/WatchedBadge"
 
 /**
  * Search — Pantalla de Resultados (§11). Destino común de búsqueda, "Ver todo",
@@ -89,9 +90,10 @@ const appliedChips = (f: Filters): { key: keyof Filters; label: string }[] => {
 // Helpers visuales
 // ---------------------------------------------------------------------------
 
-const Thumb = ({ src, hue, progress }: { src?: string; hue: number; progress?: number }) => (
+const Thumb = ({ src, hue, progress, completed }: { src?: string; hue: number; progress?: number; completed?: boolean }) => (
   <div className="relative aspect-video w-full overflow-hidden rounded-lg" style={thumbStyle(hue)}>
     {src && <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />}
+    {completed && <WatchedBadge />}
     {progress !== undefined && progress > 0 && (
       <span className="absolute inset-x-0 bottom-0 h-1 bg-white/20">
         <span className="block h-full bg-neon-cyan" style={{ width: `${Math.min(progress, 100)}%` }} />
@@ -106,7 +108,7 @@ const meta = (r: ContentItem) =>
 const ResultCard = ({ result }: { result: ContentItem }) => (
   <Link to={watchHref(result)} className="group block">
     <div className="relative overflow-hidden rounded-lg border border-white/10">
-      <Thumb src={result.thumbnailUrl} hue={hueFor(result.id)} progress={result.progress} />
+      <Thumb src={result.thumbnailUrl} hue={hueFor(result.id)} progress={result.progress} completed={result.completed} />
       <span className="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100" onClick={(e) => e.preventDefault()}>
         <SaveButton item={result} variant="icon" />
       </span>

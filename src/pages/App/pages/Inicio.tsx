@@ -7,6 +7,7 @@ import type { ContentItem, PopularConcept } from "../../../lib/api/types"
 import SaveButton from "../../../lib/saved/SaveButton"
 import { Skeleton, CardGridSkeleton } from "../../../lib/ui/Skeleton"
 import CardRow from "../../../lib/ui/CardRow"
+import WatchedBadge from "../components/WatchedBadge"
 
 /**
  * Inicio — Dashboard principal. Consume GET /api/home (endpoint con forma de pantalla).
@@ -153,6 +154,7 @@ const ContentCard = ({ item, rank }: { item: ContentItem; rank?: number }) => (
   <Link to={watchHref(item)} className="group block w-full cursor-pointer">
     <div className="relative overflow-hidden rounded-xl border border-white/10">
       <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-full" />
+      {item.completed && <WatchedBadge />}
       {rank != null && (
         <span className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-neon-cyan text-sm font-bold text-midnight">
           {rank}
