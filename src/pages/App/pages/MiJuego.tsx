@@ -259,8 +259,9 @@ const MiJuego = () => {
               <div>
                 <p className="text-sm font-semibold text-white">¿Qué significa esto?</p>
                 <p className="mt-1 text-sm leading-relaxed text-white/60">
-                  Estos rankings se generan con los clips y análisis que has visto de verdad. Cuanto más
-                  contenido consumas, más preciso será tu resumen.
+                  "Vistos" cuenta todo lo que has empezado a ver (no hace falta acabarlo), y "min
+                  aprendiendo" suma el tiempo reproducido de todo ello. Los rankings de conceptos y
+                  bloques se calculan igual: cuanto más contenido consumas, más preciso será tu resumen.
                 </p>
               </div>
             </div>

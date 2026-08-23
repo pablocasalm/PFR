@@ -27,6 +27,7 @@ export type ContentItem = {
   block?: string // bloque táctico principal (contexto)
   level?: string // "intermedio" | "avanzado" (filtro §8.2; opcional, no siempre visible)
   progress?: number // 0-100, para "continúa viendo" / "vistos recientemente"
+  completed?: boolean // solo en items de historial: si ya se marcó como visto
 }
 
 /** Concepto popular (chip con contador), para Inicio y Explorar. */

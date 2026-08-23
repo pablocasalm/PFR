@@ -204,6 +204,8 @@ const MiLista = () => {
 
   const { data: recent } = useApi(getRecent, [], "recent")
   const recentItems = recent ?? []
+  const inProgressItems = recentItems.filter((i) => !i.completed)
+  const finishedItems = recentItems.filter((i) => i.completed)
 
   const [managing, setManaging] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -313,12 +315,23 @@ const MiLista = () => {
             </p>
           )}
 
-          {/* Vistos recientemente (§12.4) */}
-          {recentItems.length > 0 && (
+          {/* Vistos recientemente (§12.4): en curso primero (para continuar), luego finalizados. */}
+          {inProgressItems.length > 0 && (
+            <section>
+              <SectionHeading title="Continuar viendo" count={inProgressItems.length} />
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                {inProgressItems.map((item) => (
+                  <RecentCard key={item.id} item={item} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {finishedItems.length > 0 && (
             <section>
               <SectionHeading
                 title="Vistos recientemente"
-                count={recentItems.length}
+                count={finishedItems.length}
                 action={
                   <Link to="/app/search?feed=history" className="text-sm font-medium text-neon-cyan transition hover:brightness-110">
                     Ver historial completo
@@ -326,7 +339,7 @@ const MiLista = () => {
                 }
               />
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                {recentItems.map((item) => (
+                {finishedItems.map((item) => (
                   <RecentCard key={item.id} item={item} />
                 ))}
               </div>
