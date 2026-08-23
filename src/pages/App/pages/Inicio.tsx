@@ -92,7 +92,19 @@ const Hero = ({ item }: { item: ContentItem | null }) => {
           {title}
         </h1>
         <p className="max-w-sm text-sm leading-relaxed text-white/70">{subtitle}</p>
-        {item && item.concepts.length > 0 && (
+        {item && item.type === "analysis" && item.blocks && item.blocks.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {item.blocks.map((b) => (
+              <span
+                key={b.block}
+                className="rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-1 text-xs font-medium text-neon-cyan"
+              >
+                {b.block}
+              </span>
+            ))}
+          </div>
+        )}
+        {item && item.type === "clip" && item.concepts.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {item.concepts.map((c) => (
               <span
@@ -172,11 +184,17 @@ const ContentCard = ({ item, rank }: { item: ContentItem; rank?: number }) => (
     </div>
     <p className="mt-2 text-sm font-medium leading-snug text-white">{item.title}</p>
     <div className="mt-2 flex flex-wrap gap-2">
-      {item.concepts.slice(0, 3).map((c) => (
-        <span key={c} className="text-[11px] text-neon-cyan/80">
-          #{c}
-        </span>
-      ))}
+      {item.type === "analysis"
+        ? item.blocks?.map((b) => (
+            <span key={b.block} className="text-[11px] text-neon-cyan/80">
+              {b.block}
+            </span>
+          ))
+        : item.concepts.slice(0, 3).map((c) => (
+            <span key={c} className="text-[11px] text-neon-cyan/80">
+              #{c}
+            </span>
+          ))}
     </div>
   </Link>
 )

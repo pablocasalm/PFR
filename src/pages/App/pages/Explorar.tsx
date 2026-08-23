@@ -165,8 +165,8 @@ const AnalisisCard = ({ item }: { item: ContentItem }) => (
         {item.players}
       </p>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
-        {item.concepts.slice(0, 3).map((c) => (
-          <span key={c} className="text-[11px] text-neon-cyan/80">#{c}</span>
+        {item.blocks?.map((b) => (
+          <span key={b.block} className="text-[11px] text-neon-cyan/80">{b.block}</span>
         ))}
       </div>
     </div>
@@ -232,12 +232,23 @@ const Explorar = () => {
   const conceptActive = selected.size > 0
   const matches = (concepts: string[]) => !conceptActive || concepts.some((c) => selected.has(c))
 
+  // Un clip puede tener el mismo concepto en distintos bloques (raro, pero posible) o aparecer
+  // en varias secciones porque tiene otros bloques propios: el filtro de un concepto debe mirar
+  // SOLO los conceptos de ESE bloque, no la lista plana del clip — si no, un concepto de un
+  // bloque "cuela" al clip en otras secciones donde ese concepto ni siquiera aplica (reporte de
+  // beta: el hashtag aparecía en gris en secciones donde no pintaba nada).
+  const matchesInBlock = (clip: ContentItem, block: string) => {
+    if (!conceptActive) return true
+    const scoped = clip.blocks?.find((b) => b.block === block)?.concepts ?? []
+    return scoped.some((c) => selected.has(c))
+  }
+
   // Clips: filtra por bloque + concepto y descarta las secciones vacías.
   const visibleSections = useMemo(() => {
     if (type === "analyses" || !data) return []
     return data.sections
       .filter((sec) => !selectedBlock || sec.block === selectedBlock)
-      .map((sec) => ({ ...sec, clips: sec.clips.filter((cl) => matches(cl.concepts)) }))
+      .map((sec) => ({ ...sec, clips: sec.clips.filter((cl) => matchesInBlock(cl, sec.block)) }))
       .filter((sec) => sec.clips.length > 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, type, selectedBlock, selected])
