@@ -23,6 +23,7 @@ import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import { useState } from "react"
 import EditContentLink from "../components/EditContentLink"
 import WatchedBadge from "../components/WatchedBadge"
+import { useAuth } from "../../../lib/auth/store"
 
 /**
  * Video — Vista de un análisis completo en /app/watch?v=:id.
@@ -39,6 +40,15 @@ const Avatar = ({ initials, hue, className = "" }: { initials: string; hue: numb
 )
 
 const initialsOf = (c: Comment) => c.initials ?? c.user.slice(0, 2).toUpperCase()
+
+// Iniciales de quien está escribiendo (mismo criterio que el backend, ContentMapper.Initials).
+const myInitials = (email: string, displayName?: string | null) => {
+  const name = displayName?.trim() || email.split("@")[0]
+  const parts = name.split(" ").filter(Boolean)
+  if (parts.length === 0) return "?"
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[1][0]).toUpperCase()
+}
 
 // ---------------------------------------------------------------------------
 // Player (placeholder hasta el bloque 6)
@@ -185,6 +195,7 @@ const KeepLearningPanel = ({ next }: { next?: ContentItem }) => {
 
 /** Acciones sociales: me gusta (optimista) + comentarios (POST). */
 const Social = ({ video }: { video: AnalysisDetail }) => {
+  const { user } = useAuth()
   const [liked, setLiked] = useState(video.likedByMe ?? false)
   const [likes, setLikes] = useState(video.likes ?? 0)
   const [comments, setComments] = useState<Comment[]>(video.comments)
@@ -224,7 +235,7 @@ const Social = ({ video }: { video: AnalysisDetail }) => {
   const commentsBody = (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <Avatar initials="MP" hue={190} className="h-9 w-9 shrink-0" />
+        <Avatar initials={user ? myInitials(user.email, user.displayName) : "?"} hue={190} className="h-9 w-9 shrink-0" />
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}

@@ -25,6 +25,7 @@ import { NextUpCard, pickNextRelated, useAutoplay } from "../../../lib/player/Ne
 import { saveProgress } from "../../../lib/api/history"
 import EditContentLink from "../components/EditContentLink"
 import WatchedBadge from "../components/WatchedBadge"
+import { useAuth } from "../../../lib/auth/store"
 
 /**
  * Clip — Vista de reproducción de un clip en /app/watch?c=:id.
@@ -46,6 +47,16 @@ const Avatar = ({ initials, hue, className = "" }: { initials: string; hue: numb
 )
 
 const initialsOf = (c: Comment) => c.initials ?? c.user.slice(0, 2).toUpperCase()
+
+// Iniciales de quien está escribiendo (mismo criterio que el backend, ContentMapper.Initials):
+// nombre y apellido si hay, si no las 2 primeras letras del nombre de usuario del email.
+const myInitials = (email: string, displayName?: string | null) => {
+  const name = displayName?.trim() || email.split("@")[0]
+  const parts = name.split(" ").filter(Boolean)
+  if (parts.length === 0) return "?"
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[1][0]).toUpperCase()
+}
 
 const ActionButton = ({ icon: Icon, label }: { icon: typeof Heart; label: string }) => (
   <button className="flex items-center gap-2 text-sm text-white/80 transition hover:text-white">
@@ -250,61 +261,64 @@ const AppearsIn = ({ clip }: { clip: ClipDetail }) => {
   )
 }
 
-const CommentList = ({ social, hideHeading = false }: { social: ClipSocial; hideHeading?: boolean }) => (
-  <section className="space-y-5">
-    {!hideHeading && (
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-white">
-          Comentarios <span className="text-white/50">({social.comments.length})</span>
-        </h2>
-      </div>
-    )}
-
-    <div className="flex items-center gap-3">
-      <Avatar initials="MP" hue={190} className="h-9 w-9 shrink-0" />
-      <div className="flex flex-1 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 focus-within:border-neon-cyan/40">
-        <input
-          value={social.text}
-          onChange={(e) => social.setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && social.onSubmit()}
-          placeholder="Añadir un comentario..."
-          className="w-full bg-transparent text-base text-white placeholder:text-white/40 focus:outline-none sm:text-sm"
-        />
-        <button
-          onClick={social.onSubmit}
-          disabled={!social.text.trim() || social.sending}
-          aria-label="Publicar comentario"
-          className="text-neon-cyan transition hover:brightness-110 disabled:cursor-not-allowed disabled:text-white/30"
-        >
-          <Send className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-
-    <div className="space-y-5">
-      {social.comments.map((c) => (
-        <div key={c.id} className="flex gap-3">
-          <Avatar initials={initialsOf(c)} hue={hueFor(c.user)} className="h-9 w-9 shrink-0" />
-          <div className="flex flex-1 items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm">
-                <span className="font-semibold text-white">{c.user}</span>{" "}
-                <span className="text-white/40">{c.ago}</span>
-              </p>
-              <p className="mt-1 text-sm leading-relaxed text-white/70">{c.text}</p>
-            </div>
-            {c.likes !== undefined && (
-              <button className="flex shrink-0 flex-col items-center gap-0.5 text-white/40 transition hover:text-neon-cyan">
-                <Heart className="h-4 w-4" />
-                <span className="text-xs">{c.likes}</span>
-              </button>
-            )}
-          </div>
+const CommentList = ({ social, hideHeading = false }: { social: ClipSocial; hideHeading?: boolean }) => {
+  const { user } = useAuth()
+  return (
+    <section className="space-y-5">
+      {!hideHeading && (
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-white">
+            Comentarios <span className="text-white/50">({social.comments.length})</span>
+          </h2>
         </div>
-      ))}
-    </div>
-  </section>
-)
+      )}
+
+      <div className="flex items-center gap-3">
+        <Avatar initials={user ? myInitials(user.email, user.displayName) : "?"} hue={190} className="h-9 w-9 shrink-0" />
+        <div className="flex flex-1 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 focus-within:border-neon-cyan/40">
+          <input
+            value={social.text}
+            onChange={(e) => social.setText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && social.onSubmit()}
+            placeholder="Añadir un comentario..."
+            className="w-full bg-transparent text-base text-white placeholder:text-white/40 focus:outline-none sm:text-sm"
+          />
+          <button
+            onClick={social.onSubmit}
+            disabled={!social.text.trim() || social.sending}
+            aria-label="Publicar comentario"
+            className="text-neon-cyan transition hover:brightness-110 disabled:cursor-not-allowed disabled:text-white/30"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-5">
+        {social.comments.map((c) => (
+          <div key={c.id} className="flex gap-3">
+            <Avatar initials={initialsOf(c)} hue={hueFor(c.user)} className="h-9 w-9 shrink-0" />
+            <div className="flex flex-1 items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm">
+                  <span className="font-semibold text-white">{c.user}</span>{" "}
+                  <span className="text-white/40">{c.ago}</span>
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-white/70">{c.text}</p>
+              </div>
+              {c.likes !== undefined && (
+                <button className="flex shrink-0 flex-col items-center gap-0.5 text-white/40 transition hover:text-neon-cyan">
+                  <Heart className="h-4 w-4" />
+                  <span className="text-xs">{c.likes}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
 
 /**
  * Comentarios responsive (§9.8): en escritorio se muestran en línea; en móvil se abren
