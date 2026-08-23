@@ -35,6 +35,8 @@ export function startOnboardingTour(navigate: NavigateFunction) {
     nextBtnText: "Siguiente",
     prevBtnText: "Atrás",
     doneBtnText: "Entendido",
+    // En móvil es fácil tocar fuera sin querer (§reporte de beta) — que solo se cierre con la "x".
+    allowClose: false,
     onCloseClick: () => {
       toggleFeedbackModal(false) // por si se cierra el tour con el modal abierto (paso 2)
       tour.destroy()
