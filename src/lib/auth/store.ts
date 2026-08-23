@@ -94,13 +94,23 @@ export function logout() {
 }
 
 /** Marca el tour de bienvenida como visto: avisa al backend (recordado por cuenta, no por
- * dispositivo) y actualiza el estado local al momento. */
+ * dispositivo) y actualiza el estado local al momento. Reintenta el aviso al backend un par
+ * de veces (con margen) antes de rendirse: un fallo puntual de red aquí no se nota en el
+ * momento (localmente ya no se repite en esta sesión) pero deja el flag desincronizado y el
+ * tour vuelve a salir en el próximo login — por eso vale la pena insistir un poco.
+ */
 export async function markOnboardingSeenAndSync() {
   if (state.user) setState({ ...state, user: { ...state.user, hasSeenOnboarding: true } }) // optimista
-  try {
-    await markOnboardingSeen()
-  } catch {
-    // no crítico: en el peor caso se vuelve a mostrar el tour la próxima vez
+
+  const delaysMs = [500, 1500]
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await markOnboardingSeen()
+      return
+    } catch {
+      if (attempt >= delaysMs.length) return // se agotaron los reintentos: no crítico
+      await new Promise((resolve) => setTimeout(resolve, delaysMs[attempt]))
+    }
   }
 }
 
