@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react"
-import { apiLogin, apiRegister, markOnboardingSeen } from "../api/auth"
+import { apiLogin, apiRegister, apiLogout, markOnboardingSeen } from "../api/auth"
 import { clearSaved } from "../saved/store"
 import { invalidateApiCache } from "../hooks/useApi"
 
@@ -88,6 +88,10 @@ export async function register(email: string, password: string, displayName?: st
 }
 
 export function logout() {
+  // Antes el cierre de sesión era puramente local: el refresh token (cookie httpOnly)
+  // seguía siendo válido 30 días aunque el usuario "cerrara sesión". Best-effort: no bloquea
+  // el cierre visual si la llamada falla (sin red, backend caído...).
+  apiLogout().catch(() => {})
   setState({ token: null, user: null })
   clearSaved() // Mi Lista es por-cuenta: se vacía al salir.
   invalidateApiCache() // no dejar datos cacheados de la cuenta anterior.
