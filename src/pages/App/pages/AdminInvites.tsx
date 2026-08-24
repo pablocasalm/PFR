@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { Ticket, Copy, Check, Trash2, Mail, Send } from "lucide-react"
+import { Ticket, Copy, Check, Trash2, Mail, Send, ChevronDown } from "lucide-react"
 import {
   generateInvites,
   listInvites,
@@ -54,6 +54,8 @@ const AdminInvites = () => {
   const [requests, setRequests] = useState<InviteRequestItem[]>([])
   const [requestsLoading, setRequestsLoading] = useState(true)
   const [invitingEmail, setInvitingEmail] = useState<string | null>(null)
+  // Plegado por defecto: esperamos que se acumulen muchas y no queremos que tapen el resto.
+  const [requestsOpen, setRequestsOpen] = useState(false)
 
   const emails = parseEmails(raw)
   const plural = emails.length === 1 ? "" : "s"
@@ -203,51 +205,57 @@ const AdminInvites = () => {
         </button>
       </div>
 
-      {/* Solicitudes pendientes: gente que ha pedido acceso (landing o "pedir otro código") */}
+      {/* Solicitudes pendientes: gente que ha pedido acceso (landing o "pedir otro código").
+          Plegado por defecto (§ esperamos que se acumulen muchas), mismo patrón que el
+          historial de reportes resueltos en AdminFeedback. */}
       <div className="mt-10 max-w-2xl">
-        <div className="mb-4 flex items-center gap-2">
-          <Mail className="h-4 w-4 text-white/50" />
-          <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">
-            Solicitudes pendientes {!requestsLoading && `(${requests.length})`}
-          </h2>
-        </div>
+        <button
+          onClick={() => setRequestsOpen((v) => !v)}
+          aria-expanded={requestsOpen}
+          className="flex w-full items-center gap-2 text-left text-sm font-bold uppercase tracking-wide text-white/70 transition hover:text-white"
+        >
+          <Mail className="h-4 w-4" />
+          Solicitudes pendientes {!requestsLoading && `(${requests.length})`}
+          <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${requestsOpen ? "rotate-180" : ""}`} />
+        </button>
 
-        {requestsLoading ? (
-          <p className="text-sm text-white/40">Cargando...</p>
-        ) : requests.length === 0 ? (
-          <p className="text-sm text-white/40">No hay solicitudes pendientes.</p>
-        ) : (
-          <ul className="space-y-2">
-            {requests.map((r) => (
-              <li
-                key={r.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm text-white/90">{r.email}</p>
-                  <p className="text-xs text-white/40">{fmt(r.createdAtUtc)}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    onClick={() => inviteFromRequest(r.email)}
-                    disabled={invitingEmail !== null}
-                    className="flex items-center gap-1.5 rounded-lg border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-1.5 text-xs font-semibold text-neon-cyan transition hover:bg-neon-cyan/20 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                    {invitingEmail === r.email ? "Invitando..." : "Invitar"}
-                  </button>
-                  <button
-                    onClick={() => removeRequest(r)}
-                    aria-label={`Descartar solicitud de ${r.email}`}
-                    className="flex items-center rounded-lg p-1.5 text-white/40 transition hover:text-red-400"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        {requestsOpen &&
+          (requestsLoading ? (
+            <p className="mt-4 text-sm text-white/40">Cargando...</p>
+          ) : requests.length === 0 ? (
+            <p className="mt-4 text-sm text-white/40">No hay solicitudes pendientes.</p>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {requests.map((r) => (
+                <li
+                  key={r.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm text-white/90">{r.email}</p>
+                    <p className="text-xs text-white/40">{fmt(r.createdAtUtc)}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      onClick={() => inviteFromRequest(r.email)}
+                      disabled={invitingEmail !== null}
+                      className="flex items-center gap-1.5 rounded-lg border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-1.5 text-xs font-semibold text-neon-cyan transition hover:bg-neon-cyan/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                      {invitingEmail === r.email ? "Invitando..." : "Invitar"}
+                    </button>
+                    <button
+                      onClick={() => removeRequest(r)}
+                      aria-label={`Descartar solicitud de ${r.email}`}
+                      className="flex items-center rounded-lg p-1.5 text-white/40 transition hover:text-red-400"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ))}
       </div>
 
       {/* Lista */}
