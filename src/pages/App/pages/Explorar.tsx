@@ -1,4 +1,4 @@
-import { SlidersHorizontal, ArrowRight, ChevronRight, MoreVertical, LayoutGrid, ArrowLeftRight, Grip, ClipboardList } from "lucide-react"
+import { SlidersHorizontal, ArrowRight, ChevronRight, MoreVertical, LayoutGrid, ArrowLeftRight, Grip, ClipboardList, Clapperboard } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
@@ -339,8 +339,10 @@ const Explorar = () => {
       {visibleAnalyses.length > 0 && (
         <section className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-3 sm:p-5">
           <div className="mb-5 flex items-center gap-3">
-            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${ACCENTS[3]}`}>
-              <ClipboardList className="h-4 w-4" />
+            {/* Icono y color propios, fuera de la paleta que ciclan los bloques (§reporte de
+                beta: costaba diferenciar análisis de conceptos por tener el mismo aspecto). */}
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neon-lime/40 bg-neon-lime/10 text-neon-lime">
+              <Clapperboard className="h-4 w-4" />
             </span>
             <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">Análisis completos</h2>
             <div className="ml-auto">
