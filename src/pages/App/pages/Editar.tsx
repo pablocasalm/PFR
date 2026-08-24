@@ -23,7 +23,6 @@ const BLOCKS = [
   "Juego en la red",
   "Uso del globo",
   "Gestión del ritmo del punto",
-  "Situaciones de presión",
   "Lectura táctica del rival",
   "Uso táctico de golpes",
   "Juego en pareja",
