@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Bell } from "lucide-react"
+import { Bell, ChevronDown, History } from "lucide-react"
 import { getNews, markAllNewsRead, type NewsItem } from "../../../lib/api/news"
 
 /** "Hace X" relativo, mismo criterio que el backend usa para comentarios (Ago en ContentMapper). */
@@ -19,12 +19,18 @@ const NewsBell = () => {
   const [unreadCount, setUnreadCount] = useState(0)
   const [loaded, setLoaded] = useState(false)
   const [open, setOpen] = useState(false)
+  const [readOpen, setReadOpen] = useState(false)
+  // Ids que ya estaban leídas ANTES de abrir la campana — se guarda aparte porque al abrir se
+  // marca todo como leído al momento, y si no, las recién leídas desaparecerían de la vista antes
+  // de que el usuario llegara a verlas.
+  const [alreadyReadIds, setAlreadyReadIds] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     getNews()
       .then((res) => {
         setItems(res.items)
         setUnreadCount(res.unreadCount)
+        setAlreadyReadIds(new Set(res.items.filter((i) => i.isRead).map((i) => i.id)))
       })
       .catch(() => {})
       .finally(() => setLoaded(true))
@@ -67,15 +73,55 @@ const NewsBell = () => {
             ) : items.length === 0 ? (
               <p className="px-3 py-6 text-center text-sm text-white/40">Todavía no hay noticias.</p>
             ) : (
-              <div className="mt-1 space-y-1">
-                {items.map((n) => (
-                  <div key={n.id} className="rounded-lg px-3 py-2.5 transition hover:bg-white/5">
-                    <p className="text-sm font-semibold text-white">{n.title}</p>
-                    <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-white/60">{n.body}</p>
-                    <p className="mt-1.5 text-[11px] text-white/35">{fmt(n.createdAtUtc)}</p>
-                  </div>
-                ))}
-              </div>
+              <>
+                {(() => {
+                  const fresh = items.filter((n) => !alreadyReadIds.has(n.id))
+                  const old = items.filter((n) => alreadyReadIds.has(n.id))
+                  return (
+                    <>
+                      {fresh.length > 0 ? (
+                        <div className="mt-1 space-y-1">
+                          {fresh.map((n) => (
+                            <div key={n.id} className="rounded-lg px-3 py-2.5 transition hover:bg-white/5">
+                              <p className="text-sm font-semibold text-white">{n.title}</p>
+                              <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-white/60">{n.body}</p>
+                              <p className="mt-1.5 text-[11px] text-white/35">{fmt(n.createdAtUtc)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="px-3 py-6 text-center text-sm text-white/40">No hay noticias nuevas.</p>
+                      )}
+
+                      {old.length > 0 && (
+                        <div className="mt-1 border-t border-white/10 pt-1">
+                          <button
+                            onClick={() => setReadOpen((v) => !v)}
+                            aria-expanded={readOpen}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-white/50 transition hover:text-white/80"
+                          >
+                            <History className="h-3.5 w-3.5" />
+                            Leídas anteriormente ({old.length})
+                            <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform ${readOpen ? "rotate-180" : ""}`} />
+                          </button>
+
+                          {readOpen && (
+                            <div className="space-y-1">
+                              {old.map((n) => (
+                                <div key={n.id} className="rounded-lg px-3 py-2.5 opacity-60 transition hover:bg-white/5 hover:opacity-100">
+                                  <p className="text-sm font-semibold text-white">{n.title}</p>
+                                  <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-white/60">{n.body}</p>
+                                  <p className="mt-1.5 text-[11px] text-white/35">{fmt(n.createdAtUtc)}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
+              </>
             )}
           </div>
         </>
