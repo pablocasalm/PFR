@@ -1,8 +1,9 @@
 import { useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
-import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox } from "lucide-react"
+import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox, Megaphone } from "lucide-react"
 import { useAuth, canPublish, isAdmin, type AuthUser } from "../../../lib/auth/store"
 import SearchOverlay from "./SearchOverlay"
+import NewsBell from "./NewsBell"
 
 /**
  * Header compartido del nuevo dashboard (/app).
@@ -107,6 +108,19 @@ const Header = () => {
             Reportes
           </NavLink>
         )}
+        {isAdmin(user) && (
+          <NavLink
+            to="/app/admin/noticias"
+            className={({ isActive }) =>
+              `flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                isActive ? "text-neon-cyan" : "text-white/60 hover:text-white"
+              }`
+            }
+          >
+            <Megaphone className="h-4 w-4" />
+            Noticias
+          </NavLink>
+        )}
       </nav>
 
       {/* Buscador (escritorio) */}
@@ -129,6 +143,9 @@ const Header = () => {
       >
         <Search className="h-5 w-5" />
       </button>
+
+      {/* Noticias */}
+      <NewsBell />
 
       {/* Sesión */}
       <SessionControl />
@@ -201,6 +218,16 @@ const SessionControl = () => {
               >
                 <Inbox className="h-4 w-4" />
                 Reportes
+              </Link>
+            )}
+            {isAdmin(user) && (
+              <Link
+                to="/app/admin/noticias"
+                onClick={() => setMenuOpen(false)}
+                className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
+              >
+                <Megaphone className="h-4 w-4" />
+                Noticias
               </Link>
             )}
             <button

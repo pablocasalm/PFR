@@ -17,6 +17,7 @@ const Publicar = lazy(() => import("../../pages/App/pages/Publicar"))
 const Editar = lazy(() => import("../../pages/App/pages/Editar"))
 const AdminInvites = lazy(() => import("../../pages/App/pages/AdminInvites"))
 const AdminFeedback = lazy(() => import("../../pages/App/pages/AdminFeedback"))
+const AdminNoticias = lazy(() => import("../../pages/App/pages/AdminNoticias"))
 
 const RequireAuth = lazy(() => import("../../lib/auth/RequireAuth"))
 const RequirePublisher = lazy(() => import("../../lib/auth/RequirePublisher"))
@@ -56,6 +57,7 @@ const router = createBrowserRouter([
       { path: "editar/:type/:id", element: withSuspense(<RequirePublisher><Editar /></RequirePublisher>) },
       { path: "admin/invitaciones", element: withSuspense(<RequireAdmin><AdminInvites /></RequireAdmin>) },
       { path: "admin/reportes", element: withSuspense(<RequireAdmin><AdminFeedback /></RequireAdmin>) },
+      { path: "admin/noticias", element: withSuspense(<RequireAdmin><AdminNoticias /></RequireAdmin>) },
     ],
   },
   { path: "*", element: <Navigate to="/app/inicio" replace /> },
