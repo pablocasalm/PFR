@@ -7,8 +7,11 @@ import { apiPost, apiGet, apiDelete } from "./client"
 export const requestInvite = (email: string) =>
   apiPost<{ ok: boolean; message?: string }>("/api/invite-requests", { email })
 
+/** Categoría de facturación (independiente del rol) — base para cuando esté Stripe conectado. */
+export type BillingPlan = "Free" | "TrialThenPaid" | "Discounted"
+
 /** Invitación generada por el admin: email al que se emitió, su código y el link de registro. */
-export type GeneratedInvite = { email: string; code: string; link: string }
+export type GeneratedInvite = { email: string; code: string; link: string; planType: BillingPlan }
 
 /** POST /api/admin/invites (Admin) → genera un código por email, lo envía y devuelve el mapeo. */
 export const generateInvites = (emails: string[]) =>
@@ -22,6 +25,7 @@ export type InviteCode = {
   used: boolean
   usedAtUtc: string | null
   createdAtUtc: string
+  planType: BillingPlan
   link: string
 }
 

@@ -8,6 +8,7 @@ import {
   deleteInviteRequest,
   type InviteCode,
   type InviteRequestItem,
+  type BillingPlan,
 } from "../../../lib/api/invites"
 
 /**
@@ -165,6 +166,14 @@ const AdminInvites = () => {
       active ? "border-neon-cyan/60 bg-neon-cyan/15 text-neon-cyan" : "border-white/15 text-white/70 hover:text-white"
     }`
 
+  // Categoría de facturación (§base para Stripe) — solo informativo por ahora.
+  const PLAN_LABEL: Record<BillingPlan, string> = { Free: "Gratis", TrialThenPaid: "Prueba 14 días", Discounted: "Descuento" }
+  const PLAN_CLS: Record<BillingPlan, string> = {
+    Free: "border-white/15 bg-white/5 text-white/60",
+    TrialThenPaid: "border-violet-400/40 bg-violet-400/10 text-violet-300",
+    Discounted: "border-neon-lime/40 bg-neon-lime/10 text-neon-lime",
+  }
+
   return (
     <main className="w-full py-8">
       <div className="mb-6 flex items-center gap-3">
@@ -279,6 +288,7 @@ const AdminInvites = () => {
                   <th className="px-4 py-3 font-semibold">Email</th>
                   <th className="px-4 py-3 font-semibold">Código</th>
                   <th className="px-4 py-3 font-semibold">Estado</th>
+                  <th className="px-4 py-3 font-semibold">Plan</th>
                   <th className="px-4 py-3 font-semibold">Creado</th>
                   <th className="px-4 py-3 font-semibold">Usado</th>
                   <th className="px-4 py-3 font-semibold">Acciones</th>
@@ -295,6 +305,11 @@ const AdminInvites = () => {
                       ) : (
                         <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">Pendiente</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${PLAN_CLS[c.planType]}`}>
+                        {PLAN_LABEL[c.planType]}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-white/60">{fmt(c.createdAtUtc)}</td>
                     <td className="px-4 py-3 text-white/60">{fmt(c.usedAtUtc)}</td>
