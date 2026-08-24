@@ -54,7 +54,7 @@ const myInitials = (email: string, displayName?: string | null) => {
 // Player (placeholder hasta el bloque 6)
 // ---------------------------------------------------------------------------
 
-const VideoPlayer = ({ video, endSlot }: { video: AnalysisDetail; endSlot?: React.ReactNode }) => (
+const VideoPlayer = ({ video, endSlot }: { video: AnalysisDetail; endSlot?: (dismiss: () => void) => React.ReactNode }) => (
   <HlsPlayer
     src={video.videoUrl}
     poster={video.thumbnailUrl}
@@ -340,9 +340,11 @@ const Video = () => {
           <VideoPlayer
             video={video}
             endSlot={
-              nextAnalysis ? (
-                <NextUpCard item={nextAnalysis} label="Siguiente análisis" autoplay={autoplay} onToggleAutoplay={setAutoplay} />
-              ) : undefined
+              nextAnalysis
+                ? (dismiss: () => void) => (
+                    <NextUpCard item={nextAnalysis} label="Siguiente análisis" autoplay={autoplay} onToggleAutoplay={setAutoplay} onCancel={dismiss} />
+                  )
+                : undefined
             }
           />
 

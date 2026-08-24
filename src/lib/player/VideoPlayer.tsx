@@ -35,8 +35,10 @@ type Props = {
   onProgress?: (positionSeconds: number, durationSeconds: number) => void
   /** Se dispara al terminar el vídeo (para autoplay / "siguiente", §9.7/§10.7). */
   onEnded?: () => void
-  /** Contenido superpuesto al terminar (tarjeta "Siguiente en 3, 2, 1…"). Se ve también en fullscreen. */
-  endSlot?: React.ReactNode
+  /** Contenido superpuesto al terminar (tarjeta "Siguiente en 3, 2, 1…"). Se ve también en
+   * fullscreen. Recibe `dismiss` para poder cerrar la tarjeta y quedarse en el vídeo actual
+   * (p. ej. al cancelar el autoplay) sin tener que ir al siguiente ni salir de la página. */
+  endSlot?: (dismiss: () => void) => React.ReactNode
 }
 
 const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosition, onProgress, onEnded, endSlot }: Props) => {
@@ -60,6 +62,7 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
   const [qualityLevel, setQualityLevel] = useState(-1) // -1 = auto (ABR)
   const [qualityOpen, setQualityOpen] = useState(false)
   const [ended, setEnded] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   // Cargar la fuente HLS (hls.js o nativo).
   useEffect(() => {
@@ -135,8 +138,13 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
   const togglePlay = () => {
     const v = videoRef.current
     if (!v) return
-    if (v.paused) v.play()
-    else v.pause()
+    if (v.paused) {
+      // Mientras el vídeo buferiza, "play" no se nota (el botón no cambia) y la gente vuelve
+      // a pulsar varias veces (§reporte de beta) — se marca "cargando" hasta que arranca de
+      // verdad (o falla), y el botón se desactiva mientras tanto para no acumular clics.
+      setLoading(true)
+      v.play().catch(() => setLoading(false))
+    } else v.pause()
   }
 
   const seekTo = (seconds: number) => {
@@ -205,9 +213,13 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
         onPlay={() => {
           setPlaying(true)
           setEnded(false)
+          setLoading(false)
         }}
+        onPlaying={() => setLoading(false)}
+        onWaiting={() => setLoading(true)}
         onPause={() => {
           setPlaying(false)
+          setLoading(false)
           report()
         }}
         onEnded={() => {
@@ -247,22 +259,29 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
         playsInline
       />
 
-      {/* Botón central de play cuando está pausado */}
+      {/* Botón central de play cuando está pausado (con spinner mientras carga) */}
       {!playing && (
         <button
           onClick={togglePlay}
+          disabled={loading}
           className="absolute inset-0 flex items-center justify-center"
-          aria-label="Reproducir"
+          aria-label={loading ? "Cargando" : "Reproducir"}
         >
           <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/80 bg-black/40 backdrop-blur-sm transition hover:bg-black/60">
-            <Play className="h-7 w-7 text-white" fill="currentColor" />
+            {loading ? (
+              <span className="h-7 w-7 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            ) : (
+              <Play className="h-7 w-7 text-white" fill="currentColor" />
+            )}
           </span>
         </button>
       )}
 
       {/* Tarjeta "Siguiente" al terminar (autoplay §9.7/§10.7). Cubre el vídeo, también en fullscreen. */}
       {ended && endSlot && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">{endSlot}</div>
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          {endSlot(() => setEnded(false))}
+        </div>
       )}
 
       {/* Barra de controles */}

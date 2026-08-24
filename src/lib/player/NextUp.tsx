@@ -48,11 +48,14 @@ export const NextUpCard = ({
   label,
   autoplay,
   onToggleAutoplay,
+  onCancel,
 }: {
   item: ContentItem
   label: string
   autoplay: boolean
   onToggleAutoplay: (value: boolean) => void
+  /** Cierra la tarjeta de verdad (no solo la cuenta atrás) para quedarse en el vídeo actual. */
+  onCancel?: () => void
 }) => {
   const navigate = useNavigate()
   const [seconds, setSeconds] = useState(autoplay ? 3 : -1) // -1 = sin cuenta atrás
@@ -99,14 +102,15 @@ export const NextUpCard = ({
         >
           <Play className="h-4 w-4" fill="currentColor" /> Reproducir ahora
         </button>
-        {counting && (
-          <button
-            onClick={() => setSeconds(-1)}
-            className="flex items-center gap-1.5 rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5"
-          >
-            <X className="h-4 w-4" /> Cancelar
-          </button>
-        )}
+        <button
+          onClick={() => {
+            setSeconds(-1)
+            onCancel?.()
+          }}
+          className="flex items-center gap-1.5 rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5"
+        >
+          <X className="h-4 w-4" /> Cancelar
+        </button>
       </div>
 
       <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 text-xs text-white/50">

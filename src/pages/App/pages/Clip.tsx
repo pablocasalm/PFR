@@ -395,7 +395,7 @@ const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; v
 // Players (placeholder hasta el bloque 6)
 // ---------------------------------------------------------------------------
 
-const VideoPlayer = ({ clip, endSlot }: { clip: ClipDetail; endSlot?: React.ReactNode }) => (
+const VideoPlayer = ({ clip, endSlot }: { clip: ClipDetail; endSlot?: (dismiss: () => void) => React.ReactNode }) => (
   <HlsPlayer
     src={clip.videoUrl}
     poster={clip.thumbnailUrl}
@@ -407,7 +407,7 @@ const VideoPlayer = ({ clip, endSlot }: { clip: ClipDetail; endSlot?: React.Reac
   />
 )
 
-const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: ClipSocial; endSlot?: React.ReactNode }) => (
+const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: ClipSocial; endSlot?: (dismiss: () => void) => React.ReactNode }) => (
   <div className="relative mx-auto w-full max-w-[420px]">
     <HlsPlayer
       src={clip.videoUrl}
@@ -443,9 +443,11 @@ const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => {
   const social = useClipSocial(clip)
   const [autoplay, setAutoplay] = useAutoplay()
   const nextClip = pickNextRelated(clip.related, clip.concepts)
-  const endSlot = nextClip ? (
-    <NextUpCard item={nextClip} label="Siguiente clip" autoplay={autoplay} onToggleAutoplay={setAutoplay} />
-  ) : undefined
+  const endSlot = nextClip
+    ? (dismiss: () => void) => (
+        <NextUpCard item={nextClip} label="Siguiente clip" autoplay={autoplay} onToggleAutoplay={setAutoplay} onCancel={dismiss} />
+      )
+    : undefined
   return (
     <main className="w-full space-y-6 py-6 pb-28 xl:pb-8">
       <VideoPlayer clip={clip} endSlot={endSlot} />
@@ -493,9 +495,11 @@ const ClipVertical = ({ clip }: { clip: ClipDetail }) => {
   const social = useClipSocial(clip)
   const [autoplay, setAutoplay] = useAutoplay()
   const nextClip = pickNextRelated(clip.related, clip.concepts)
-  const endSlot = nextClip ? (
-    <NextUpCard item={nextClip} label="Siguiente clip" autoplay={autoplay} onToggleAutoplay={setAutoplay} />
-  ) : undefined
+  const endSlot = nextClip
+    ? (dismiss: () => void) => (
+        <NextUpCard item={nextClip} label="Siguiente clip" autoplay={autoplay} onToggleAutoplay={setAutoplay} onCancel={dismiss} />
+      )
+    : undefined
   return (
     <main className="w-full py-6 pb-28 xl:pb-8">
       <div className="grid gap-8 lg:grid-cols-[420px_1fr] lg:items-start">
