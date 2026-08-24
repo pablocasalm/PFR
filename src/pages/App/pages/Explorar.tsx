@@ -164,11 +164,6 @@ const AnalisisCard = ({ item }: { item: ContentItem }) => (
         {item.tournament && item.players ? " · " : ""}
         {item.players}
       </p>
-      <div className="mt-1.5 flex flex-wrap gap-1.5">
-        {item.blocks?.map((b) => (
-          <span key={b.block} className="text-[11px] text-neon-cyan/80">{b.block}</span>
-        ))}
-      </div>
     </div>
     <span className="shrink-0 self-start" onClick={(e) => e.preventDefault()}>
       <SaveButton item={item} variant="icon" />

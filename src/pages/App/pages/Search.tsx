@@ -120,22 +120,12 @@ const ResultCard = ({ result }: { result: ContentItem }) => (
     </p>
     <h3 className="mt-1 line-clamp-2 text-base font-bold leading-snug text-white">{result.title}</h3>
     <p className="mt-1.5 text-xs text-white/50">{meta(result)}</p>
-    {result.type === "analysis" ? (
-      result.blocks && result.blocks.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {result.blocks.map((b) => (
-            <span key={b.block} className="rounded-md border border-neon-cyan/30 px-2 py-0.5 text-[11px] text-neon-cyan/80">{b.block}</span>
-          ))}
-        </div>
-      )
-    ) : (
-      result.concepts.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {result.concepts.slice(0, 3).map((t) => (
-            <span key={t} className="rounded-md border border-neon-cyan/30 px-2 py-0.5 text-[11px] text-neon-cyan/80">#{t}</span>
-          ))}
-        </div>
-      )
+    {result.type === "clip" && result.concepts.length > 0 && (
+      <div className="mt-3 flex flex-wrap gap-2">
+        {result.concepts.slice(0, 3).map((t) => (
+          <span key={t} className="rounded-md border border-neon-cyan/30 px-2 py-0.5 text-[11px] text-neon-cyan/80">#{t}</span>
+        ))}
+      </div>
     )}
   </Link>
 )
