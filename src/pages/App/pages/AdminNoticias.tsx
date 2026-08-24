@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Megaphone, Trash2 } from "lucide-react"
-import { listAllNews, createNews, deleteNews, type AdminNewsItem } from "../../../lib/api/news"
+import { listAllNews, createNews, deleteNews, type AdminNewsItem, type NewsTargetRole } from "../../../lib/api/news"
 
 /**
  * AdminNoticias — publica y gestiona las noticias que ven todos los usuarios en la campana
@@ -14,9 +14,16 @@ const fmt = (iso: string): string => {
   return d.toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
 }
 
+const TARGET_LABEL: Record<NewsTargetRole, string> = {
+  User: "Beta testers",
+  ContentCreator: "Creadores de contenido",
+  Admin: "Solo Admin",
+}
+
 const AdminNoticias = () => {
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
+  const [targetRole, setTargetRole] = useState<NewsTargetRole | "">("")
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -44,10 +51,11 @@ const AdminNoticias = () => {
     setError(null)
     setNotice(null)
     try {
-      await createNews(title.trim(), body.trim())
+      await createNews(title.trim(), body.trim(), targetRole || undefined)
       setNotice("Noticia publicada.")
       setTitle("")
       setBody("")
+      setTargetRole("")
       await refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo publicar la noticia.")
@@ -99,6 +107,19 @@ const AdminNoticias = () => {
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
           />
         </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-white">Para quién</label>
+          <select
+            value={targetRole}
+            onChange={(e) => setTargetRole(e.target.value as NewsTargetRole | "")}
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
+          >
+            <option value="" className="bg-midnight">Todos</option>
+            <option value="User" className="bg-midnight">Beta testers</option>
+            <option value="ContentCreator" className="bg-midnight">Creadores de contenido</option>
+            <option value="Admin" className="bg-midnight">Solo Admin</option>
+          </select>
+        </div>
 
         {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
         {notice && <p className="rounded-lg bg-neon-cyan/10 px-3 py-2 text-sm text-neon-cyan">{notice}</p>}
@@ -128,7 +149,14 @@ const AdminNoticias = () => {
               <li key={n.id} className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white">{n.title}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold text-white">{n.title}</p>
+                      {n.targetRole && (
+                        <span className="rounded-full border border-neon-cyan/30 bg-neon-cyan/10 px-2 py-0.5 text-[11px] font-medium text-neon-cyan">
+                          {TARGET_LABEL[n.targetRole]}
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-white/60">{n.body}</p>
                     <p className="mt-1.5 text-xs text-white/40">{fmt(n.createdAtUtc)}</p>
                   </div>
