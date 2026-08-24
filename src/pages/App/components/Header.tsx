@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
 import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox, Megaphone } from "lucide-react"
 import { useAuth, canPublish, isAdmin, type AuthUser } from "../../../lib/auth/store"
@@ -169,11 +169,25 @@ const initials = (user: AuthUser) => {
 const SessionControl = () => {
   const { user, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // El header tiene backdrop-blur, y eso convierte a `fixed` en descendientes en algo anclado al
+    // propio header (no al viewport) — un `fixed inset-0` para detectar clics fuera no cubriría el
+    // resto de la página. Por eso el cierre al clicar fuera se hace con un listener real, no con una
+    // capa superpuesta.
+    if (!menuOpen) return
+    const onPointerDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener("mousedown", onPointerDown)
+    return () => document.removeEventListener("mousedown", onPointerDown)
+  }, [menuOpen])
 
   if (!user) return null
 
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <button onClick={() => setMenuOpen((v) => !v)} className="flex items-center gap-1.5">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-neon-cyan text-sm font-bold text-midnight">
           {initials(user)}
@@ -182,9 +196,6 @@ const SessionControl = () => {
       </button>
 
       {menuOpen && (
-        <>
-          {/* Capa para cerrar al hacer clic fuera */}
-          <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
           <div className="absolute right-0 top-12 z-40 w-56 rounded-xl border border-white/10 bg-midnight p-2 shadow-2xl">
             <div className="border-b border-white/10 px-3 py-2">
               <p className="truncate text-sm font-semibold text-white">{user.displayName || "Mi cuenta"}</p>
@@ -241,7 +252,6 @@ const SessionControl = () => {
               Cerrar sesión
             </button>
           </div>
-        </>
       )}
     </div>
   )

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Bell, ChevronDown, History } from "lucide-react"
 import { getNews, markAllNewsRead, type NewsItem } from "../../../lib/api/news"
 
@@ -24,6 +24,20 @@ const NewsBell = () => {
   // marca todo como leído al momento, y si no, las recién leídas desaparecerían de la vista antes
   // de que el usuario llegara a verlas.
   const [alreadyReadIds, setAlreadyReadIds] = useState<Set<number>>(new Set())
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // El header tiene backdrop-blur, y eso convierte a `fixed` en descendientes en algo anclado al
+    // propio header (no al viewport) — un `fixed inset-0` para detectar clics fuera no cubriría el
+    // resto de la página. Por eso el cierre al clicar fuera se hace con un listener real, no con una
+    // capa superpuesta.
+    if (!open) return
+    const onPointerDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener("mousedown", onPointerDown)
+    return () => document.removeEventListener("mousedown", onPointerDown)
+  }, [open])
 
   useEffect(() => {
     getNews()
@@ -49,7 +63,7 @@ const NewsBell = () => {
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <button
         onClick={toggle}
         aria-label="Noticias"
@@ -65,7 +79,6 @@ const NewsBell = () => {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           {/* En móvil, `right-0` relativo al propio botón desborda por la izquierda porque el avatar
               queda a su derecha (el panel no está pegado al borde de la pantalla) — por eso se ancla
               al viewport con `fixed` hasta `sm`, donde ya sobra espacio para el `absolute right-0`. */}
