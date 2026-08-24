@@ -66,7 +66,10 @@ const NewsBell = () => {
       {open && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-12 z-40 max-h-[70vh] w-80 overflow-y-auto rounded-xl border border-white/10 bg-midnight p-2 shadow-2xl">
+          {/* En móvil, `right-0` relativo al propio botón desborda por la izquierda porque el avatar
+              queda a su derecha (el panel no está pegado al borde de la pantalla) — por eso se ancla
+              al viewport con `fixed` hasta `sm`, donde ya sobra espacio para el `absolute right-0`. */}
+          <div className="fixed inset-x-3 top-16 z-40 max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-midnight p-2 shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-80">
             <p className="border-b border-white/10 px-3 py-2 text-sm font-semibold text-white">Noticias</p>
             {!loaded ? (
               <p className="px-3 py-6 text-center text-sm text-white/40">Cargando...</p>
