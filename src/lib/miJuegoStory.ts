@@ -7,6 +7,15 @@ export type StoryData = { minutes: number; concepts: string[]; block: string; na
 
 const CYAN = "#28f0e0"
 
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error(`No se pudo cargar ${src}`))
+    img.src = src
+  })
+}
+
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath()
   ctx.moveTo(x + r, y)
@@ -110,37 +119,13 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
 
   ctx.textBaseline = "alphabetic"
 
-  // --- Marca (centrada, arriba) ---
-  const markWords = ["PADEL", "FILM", "ROOM"]
-  ctx.font = "700 26px 'Space Grotesk', sans-serif"
-  const markWordW = Math.max(...markWords.map((w) => ctx.measureText(w).width))
-  const iconSize = 82
-  const iconGap = 22
-  const groupW = iconSize + iconGap + markWordW
-  const iconX = cx - groupW / 2
-  const iconY = 118
-  ctx.save()
-  ctx.strokeStyle = "rgba(40,240,224,0.4)"
-  ctx.fillStyle = "rgba(40,240,224,0.1)"
-  ctx.lineWidth = 2
-  roundRect(ctx, iconX, iconY, iconSize, iconSize, 16)
-  ctx.fill()
-  ctx.stroke()
-  ctx.fillStyle = CYAN
-  ctx.beginPath()
-  ctx.moveTo(iconX + iconSize * 0.38, iconY + iconSize * 0.28)
-  ctx.lineTo(iconX + iconSize * 0.38, iconY + iconSize * 0.72)
-  ctx.lineTo(iconX + iconSize * 0.72, iconY + iconSize * 0.5)
-  ctx.closePath()
-  ctx.fill()
-  ctx.restore()
-
-  ctx.textAlign = "left"
-  ctx.fillStyle = "#fff"
-  ctx.font = "700 26px 'Space Grotesk', sans-serif"
-  const lineH = 30
-  const textStartY = iconY + iconSize / 2 - lineH + 24
-  markWords.forEach((w, i) => ctx.fillText(w, iconX + iconSize + iconGap, textStartY + i * lineH))
+  // --- Marca (logo real, centrado arriba) ---
+  const logoImg = await loadImage("/Logos/logo-pfr-story.png")
+  const logoW = 380
+  const logoH = logoW * (logoImg.naturalHeight / logoImg.naturalWidth)
+  const logoY = 100
+  ctx.drawImage(logoImg, cx - logoW / 2, logoY, logoW, logoH)
+  const logoBottom = logoY + logoH
 
   // --- Nombre (titular) ---
   ctx.textAlign = "center"
@@ -148,7 +133,7 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
   const nameSize = fitFont(ctx, displayName, 800, 118, contentW, 56)
   ctx.font = `800 ${nameSize}px 'Space Grotesk', sans-serif`
   ctx.fillStyle = "#fff"
-  const nameBaseline = 320
+  const nameBaseline = logoBottom + 118
   ctx.fillText(displayName, cx, nameBaseline)
 
   // Subrayado cian centrado bajo el nombre
@@ -164,7 +149,7 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
   const calSize = 34
   const calGap = 16
   const monthGroupW = calSize + calGap + monthW
-  const monthBaseline = 424
+  const monthBaseline = nameBaseline + 30 + 74
   const calX = cx - monthGroupW / 2
   const calY = monthBaseline - calSize + 4
   ctx.save()
@@ -190,7 +175,7 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
 
   // --- Minutos (número gigante con brillo) ---
   ctx.textAlign = "center"
-  const minutesBaseline = 700
+  const minutesBaseline = monthBaseline + 276
   ctx.save()
   ctx.fillStyle = "rgba(255,255,255,0.18)"
   ctx.filter = "blur(40px)"
@@ -203,7 +188,7 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
   ctx.fillText("MIN APRENDIENDO", cx, minutesBaseline + 62)
 
   // --- Caja: conceptos más trabajados ---
-  let y = 862
+  let y = minutesBaseline + 162
   const topList = concepts.slice(0, 3)
   if (topList.length > 0) {
     const rowH = 96

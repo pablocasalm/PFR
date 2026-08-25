@@ -1,4 +1,4 @@
-import { Clock, Clapperboard, LineChart, Medal, Info, Download, Share2, Play, Compass } from "lucide-react"
+import { Clock, Clapperboard, LineChart, Medal, Info, Download, Share2, Compass } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
@@ -103,16 +103,7 @@ const StoryCard = ({
       />
 
       <div className="relative z-10 flex h-full flex-col items-center px-2 pt-1 text-center">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan">
-            <Play className="h-4 w-4" fill="currentColor" />
-          </span>
-          <div className="text-left text-[11px] font-bold uppercase leading-tight tracking-wide text-white">
-            <p>Padel</p>
-            <p>Film</p>
-            <p>Room</p>
-          </div>
-        </div>
+        <img src="/Logos/logo-pfr-story.png" alt="Padel Film Room" className="h-10 w-auto" />
 
         {/* El nombre es ahora el titular principal (antes iba pequeño arriba a la derecha) */}
         <p className="mt-4 line-clamp-2 font-display text-2xl font-extrabold uppercase leading-tight text-white">{displayName}</p>
