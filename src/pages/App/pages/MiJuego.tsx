@@ -99,9 +99,11 @@ const StoryCard = ({
       {/* Rayas diagonales: se apagan hacia el centro (si cubrieran la tarjeta entera, el
           centro perdería contraste con los brillos del número y el marco). */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-60"
+        className="pointer-events-none absolute inset-0"
         style={{
-          background: "repeating-linear-gradient(118deg, transparent 0 13px, rgba(40,240,224,0.22) 13px 16px)",
+          // Densidad ajustada para acercarse a la proporción 3px/40px de la imagen de Canvas
+          // (en % daba un artefacto de render al combinarlo con la máscara elíptica).
+          background: "repeating-linear-gradient(118deg, transparent 0 25px, rgba(40,240,224,0.25) 25px 28px)",
           maskImage: "radial-gradient(ellipse 62% 62% at center, transparent 0%, transparent 62%, black 100%)",
           WebkitMaskImage: "radial-gradient(ellipse 62% 62% at center, transparent 0%, transparent 62%, black 100%)",
         }}
@@ -173,11 +175,10 @@ const ShareSummaryButton = ({
       const file = new File([blob], "mi-juego-pfr.png", { type: "image/png" })
       if (canShareImage && navigator.canShare?.({ files: [file] })) {
         try {
-          await navigator.share({
-            files: [file],
-            title: "Mi Juego · Padel Film Room",
-            text: "Mi resumen de aprendizaje en Padel Film Room",
-          })
+          // Solo el archivo: si además se manda `text`, algunos destinos del share sheet
+          // (p. ej. "Copiar") lo añaden como un elemento de texto aparte en el portapapeles,
+          // junto a la imagen (§reporte de beta).
+          await navigator.share({ files: [file] })
         } catch (e) {
           if ((e as Error)?.name === "AbortError") return // el usuario canceló
         }

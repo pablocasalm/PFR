@@ -102,10 +102,13 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
     sctx.clip()
     sctx.strokeStyle = "rgba(40,240,224,0.25)"
     sctx.lineWidth = 3
+    // Mismo ángulo que el "118deg" del degradado CSS de la vista previa (StoryCard),
+    // para que la dirección de las rayas coincida con la de la imagen descargable.
+    const stripeRun = H * Math.tan((118 - 90) * (Math.PI / 180))
     for (let x = -H; x < W + H; x += 40) {
       sctx.beginPath()
       sctx.moveTo(x, 0)
-      sctx.lineTo(x - H, H)
+      sctx.lineTo(x - stripeRun, H)
       sctx.stroke()
     }
     sctx.restore()
