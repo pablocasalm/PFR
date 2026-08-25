@@ -111,19 +111,19 @@ const StoryCard = ({
         <img src="/Logos/logo-pfr-story.png" alt="Padel Film Room" className="h-10 w-auto" />
 
         {/* El nombre es ahora el titular principal (antes iba pequeño arriba a la derecha) */}
-        <p className="mt-4 line-clamp-2 font-display text-2xl font-extrabold uppercase leading-tight text-white">{displayName}</p>
-        <span className="mt-2 h-[3px] w-16 shrink-0 rounded-full bg-neon-cyan" />
+        <p className="mt-4 line-clamp-2 font-display text-4xl font-extrabold uppercase leading-tight text-white">{displayName}</p>
+        <span className="mt-2.5 h-[3px] w-20 shrink-0 rounded-full bg-neon-cyan" />
 
-        <p className="mt-4 text-xs font-bold uppercase tracking-wide text-neon-cyan">{monthLabel}</p>
-        <p className="mt-1 font-display text-6xl font-bold leading-none text-white">{minutes}</p>
-        <p className="mt-1 text-xs font-bold uppercase tracking-wide text-white">Min aprendiendo</p>
+        <p className="mt-5 text-sm font-bold uppercase tracking-wide text-neon-cyan">{monthLabel}</p>
+        <p className="mt-1 font-display text-7xl font-bold leading-none text-white">{minutes}</p>
+        <p className="mt-1.5 text-sm font-bold uppercase tracking-wide text-white">Min aprendiendo</p>
 
         {topConcepts.length > 0 && (
-          <div className="mt-4 w-full rounded-xl border border-neon-cyan/40 px-3 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-neon-cyan">Conceptos más trabajados</p>
-            <div className="mt-1.5 divide-y divide-neon-cyan/20">
+          <div className="mt-5 w-full rounded-xl border border-neon-cyan/40 px-3 py-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-neon-cyan">Conceptos más trabajados</p>
+            <div className="mt-2 divide-y divide-neon-cyan/20">
               {topConcepts.map((c) => (
-                <p key={c} className="py-1.5 font-display text-sm font-bold uppercase text-white">
+                <p key={c} className="py-2 font-display text-base font-bold uppercase text-white">
                   {c}
                 </p>
               ))}
@@ -132,9 +132,9 @@ const StoryCard = ({
         )}
 
         {block && (
-          <div className="mt-3 w-full rounded-xl border border-neon-cyan/40 px-3 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-neon-cyan">Bloque principal</p>
-            <p className="mt-1 line-clamp-2 font-display text-sm font-bold uppercase leading-snug text-white">{block}</p>
+          <div className="mt-3 w-full rounded-xl border border-neon-cyan/40 px-3 py-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-neon-cyan">Bloque principal</p>
+            <p className="mt-1.5 line-clamp-2 font-display text-base font-bold uppercase leading-snug text-white">{block}</p>
           </div>
         )}
       </div>

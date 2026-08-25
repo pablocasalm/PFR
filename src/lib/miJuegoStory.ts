@@ -140,37 +140,54 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
 
   ctx.textBaseline = "alphabetic"
 
+  // Estimaciones de altura de caja/descendente en proporción al tamaño de fuente (Space
+  // Grotesk bold): permiten encadenar elementos por su tamaño real en vez de huecos fijos,
+  // así que si un texto se agranda, el espacio de después se ajusta solo.
+  const capH = (px: number) => px * 0.73
+  const descH = (px: number) => px * 0.24
+
   // --- Marca (logo real, centrado arriba) ---
   const logoImg = await loadImage("/Logos/logo-pfr-story.png")
   const logoW = 380
   const logoH = logoW * (logoImg.naturalHeight / logoImg.naturalWidth)
   const logoY = 100
   ctx.drawImage(logoImg, cx - logoW / 2, logoY, logoW, logoH)
-  const logoBottom = logoY + logoH
+
+  let y = logoY + logoH + 36
 
   // --- Nombre (titular) ---
   ctx.textAlign = "center"
-  const displayName = (name?.trim() || "TU RESUMEN").toUpperCase()
-  const nameSize = fitFont(ctx, displayName, 800, 118, contentW, 56)
+  const fullName = (name?.trim() || "TU RESUMEN").toUpperCase()
+  let displayName = fullName
+  const nameSize = fitFont(ctx, displayName, 800, 172, contentW, 40)
   ctx.font = `800 ${nameSize}px 'Space Grotesk', sans-serif`
+  // Red de seguridad: si aun al tamaño mínimo un nombre muy largo se sale de la tarjeta,
+  // se trunca con "…" en vez de desbordar el marco.
+  while (ctx.measureText(displayName).width > contentW && displayName.length > 1) {
+    displayName = displayName.slice(0, -1)
+  }
+  if (displayName !== fullName) displayName = displayName.trimEnd() + "…"
   ctx.fillStyle = "#fff"
-  const nameBaseline = logoBottom + 118
+  const nameBaseline = y + capH(nameSize)
   ctx.fillText(displayName, cx, nameBaseline)
+  y = nameBaseline + descH(nameSize) + 22
 
   // Subrayado cian centrado bajo el nombre
-  const underlineW = Math.min(340, ctx.measureText(displayName).width)
+  const underlineW = Math.min(380, ctx.measureText(displayName).width)
   ctx.fillStyle = CYAN
-  ctx.fillRect(cx - underlineW / 2, nameBaseline + 30, underlineW, 5)
+  ctx.fillRect(cx - underlineW / 2, y, underlineW, 6)
+  y += 6 + 36
 
   // --- Mes (con icono de calendario) ---
   const month = new Date().toLocaleDateString("es-ES", { month: "long", year: "numeric" })
   const monthText = (month.charAt(0).toUpperCase() + month.slice(1)).toUpperCase()
-  ctx.font = "700 44px 'Space Grotesk', sans-serif"
+  const monthSize = 52
+  ctx.font = `700 ${monthSize}px 'Space Grotesk', sans-serif`
   const monthW = ctx.measureText(monthText).width
-  const calSize = 34
-  const calGap = 16
+  const calSize = monthSize * 0.7
+  const calGap = 18
   const monthGroupW = calSize + calGap + monthW
-  const monthBaseline = nameBaseline + 30 + 74
+  const monthBaseline = y + capH(monthSize)
   const calX = cx - monthGroupW / 2
   const calY = monthBaseline - calSize + 4
   ctx.save()
@@ -193,28 +210,37 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
   ctx.textAlign = "left"
   ctx.fillStyle = CYAN
   ctx.fillText(monthText, calX + calSize + calGap, monthBaseline)
+  y = monthBaseline + descH(monthSize) + 46
 
   // --- Minutos (número gigante con brillo) ---
   ctx.textAlign = "center"
-  const minutesBaseline = monthBaseline + 276
+  const numberSize = 300
+  const minutesBaseline = y + capH(numberSize)
   ctx.save()
   ctx.fillStyle = "rgba(255,255,255,0.18)"
   ctx.filter = "blur(40px)"
+  ctx.font = `700 ${numberSize}px 'Space Grotesk', sans-serif`
   ctx.fillText(String(minutes), cx, minutesBaseline)
   ctx.restore()
   ctx.fillStyle = "#fff"
-  ctx.font = "700 280px 'Space Grotesk', sans-serif"
+  ctx.font = `700 ${numberSize}px 'Space Grotesk', sans-serif`
   ctx.fillText(String(minutes), cx, minutesBaseline)
-  ctx.font = "700 42px 'Space Grotesk', sans-serif"
-  ctx.fillText("MIN APRENDIENDO", cx, minutesBaseline + 62)
+  y = minutesBaseline + descH(numberSize) + 10
+
+  const subSize = 48
+  const subBaseline = y + capH(subSize)
+  ctx.font = `700 ${subSize}px 'Space Grotesk', sans-serif`
+  ctx.fillText("MIN APRENDIENDO", cx, subBaseline)
+  y = subBaseline + descH(subSize) + 50
 
   // --- Caja: conceptos más trabajados ---
-  let y = minutesBaseline + 162
+  const labelSize = 34
   const topList = concepts.slice(0, 3)
   if (topList.length > 0) {
-    const rowH = 96
-    const labelAreaH = 96
-    const boxPadBottom = 30
+    const itemStartSize = 60
+    const rowH = itemStartSize * 1.6
+    const labelAreaH = labelSize * 2.7
+    const boxPadBottom = 26
     const boxH = labelAreaH + topList.length * rowH + boxPadBottom
     ctx.save()
     ctx.strokeStyle = "rgba(40,240,224,0.55)"
@@ -224,8 +250,8 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
     ctx.restore()
 
     ctx.fillStyle = CYAN
-    ctx.font = "700 30px 'Space Grotesk', sans-serif"
-    ctx.fillText("CONCEPTOS MÁS TRABAJADOS", cx, y + 58)
+    ctx.font = `700 ${labelSize}px 'Space Grotesk', sans-serif`
+    ctx.fillText("CONCEPTOS MÁS TRABAJADOS", cx, y + labelSize * 1.7)
 
     let rowY = y + labelAreaH
     topList.forEach((c, i) => {
@@ -238,23 +264,24 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
         ctx.stroke()
       }
       const label = c.toUpperCase()
-      const size = fitFont(ctx, label, 700, 52, contentW - 100, 30)
+      const size = fitFont(ctx, label, 700, itemStartSize, contentW - 100, 32)
       ctx.font = `700 ${size}px 'Space Grotesk', sans-serif`
       ctx.fillStyle = "#fff"
       ctx.fillText(label, cx, rowY + rowH * 0.66)
       rowY += rowH
     })
 
-    y += boxH + 50
+    y += boxH + 34
   }
 
   // --- Caja: bloque principal ---
   if (block) {
-    ctx.font = "700 60px 'Space Grotesk', sans-serif"
-    const { lines, size } = wrapLines(ctx, block.toUpperCase(), 700, 60, contentW - 100, 2, 36)
-    const labelAreaH = 96
-    const lineH2 = size * 1.18
-    const boxPadBottom = 40
+    const blockStartSize = 68
+    ctx.font = `700 ${blockStartSize}px 'Space Grotesk', sans-serif`
+    const { lines, size } = wrapLines(ctx, block.toUpperCase(), 700, blockStartSize, contentW - 100, 2, 38)
+    const labelAreaH = labelSize * 2.7
+    const lineH2 = size * 1.15
+    const boxPadBottom = 34
     const boxH = labelAreaH + lines.length * lineH2 + boxPadBottom
 
     ctx.save()
@@ -265,8 +292,8 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
     ctx.restore()
 
     ctx.fillStyle = CYAN
-    ctx.font = "700 30px 'Space Grotesk', sans-serif"
-    ctx.fillText("BLOQUE PRINCIPAL", cx, y + 58)
+    ctx.font = `700 ${labelSize}px 'Space Grotesk', sans-serif`
+    ctx.fillText("BLOQUE PRINCIPAL", cx, y + labelSize * 1.7)
 
     ctx.font = `700 ${size}px 'Space Grotesk', sans-serif`
     ctx.fillStyle = "#fff"
