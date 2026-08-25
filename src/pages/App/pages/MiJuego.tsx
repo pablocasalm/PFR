@@ -95,11 +95,16 @@ const StoryCard = ({
   const topConcepts = concepts.slice(0, 3)
 
   return (
-    <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border-2 border-neon-cyan bg-gradient-to-b from-[#070b0d] to-[#020304] p-5 shadow-[0_0_22px_rgba(40,240,224,0.55)]">
-      {/* Rayas diagonales por toda la tarjeta (antes solo en una esquina) */}
+    <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border-2 border-neon-cyan bg-[#020304] p-5 shadow-[0_0_22px_rgba(40,240,224,0.55)]">
+      {/* Rayas diagonales: se apagan hacia el centro (si cubrieran la tarjeta entera, el
+          centro perdería contraste con los brillos del número y el marco). */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-40"
-        style={{ background: "repeating-linear-gradient(118deg, transparent 0 13px, rgba(40,240,224,0.18) 13px 16px)" }}
+        className="pointer-events-none absolute inset-0 opacity-60"
+        style={{
+          background: "repeating-linear-gradient(118deg, transparent 0 13px, rgba(40,240,224,0.22) 13px 16px)",
+          maskImage: "radial-gradient(ellipse 62% 62% at center, transparent 0%, transparent 62%, black 100%)",
+          WebkitMaskImage: "radial-gradient(ellipse 62% 62% at center, transparent 0%, transparent 62%, black 100%)",
+        }}
       />
 
       <div className="relative z-10 flex h-full flex-col items-center px-2 pt-1 text-center">

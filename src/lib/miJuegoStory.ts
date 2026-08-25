@@ -86,26 +86,47 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
   const contentW = 840 // ancho útil para texto/cajas (centrado)
   const contentX = (W - contentW) / 2
 
-  // --- Fondo ---
-  const bg = ctx.createLinearGradient(0, 0, 0, H)
-  bg.addColorStop(0, "#070b0d")
-  bg.addColorStop(1, "#020304")
-  ctx.fillStyle = bg
+  // --- Fondo (bien oscuro, para que los brillos resalten) ---
+  ctx.fillStyle = "#020304"
   ctx.fillRect(0, 0, W, H)
 
-  // --- Rayas diagonales por toda la tarjeta ---
-  ctx.save()
-  roundRect(ctx, 40, 40, W - 80, H - 80, 56)
-  ctx.clip()
-  ctx.strokeStyle = "rgba(40,240,224,0.12)"
-  ctx.lineWidth = 3
-  for (let x = -H; x < W + H; x += 40) {
-    ctx.beginPath()
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x + H, H)
-    ctx.stroke()
+  // --- Rayas diagonales: visibles cerca de los bordes, se apagan hacia el centro ---
+  // (si cubrieran toda la tarjeta por igual, el centro perdería contraste con los brillos)
+  const stripeCanvas = document.createElement("canvas")
+  stripeCanvas.width = W
+  stripeCanvas.height = H
+  const sctx = stripeCanvas.getContext("2d")
+  if (sctx) {
+    sctx.save()
+    roundRect(sctx, 40, 40, W - 80, H - 80, 56)
+    sctx.clip()
+    sctx.strokeStyle = "rgba(40,240,224,0.25)"
+    sctx.lineWidth = 3
+    for (let x = -H; x < W + H; x += 40) {
+      sctx.beginPath()
+      sctx.moveTo(x, 0)
+      sctx.lineTo(x + H, H)
+      sctx.stroke()
+    }
+    sctx.restore()
+
+    // Máscara elíptica (no circular: la tarjeta es mucho más alta que ancha) que borra
+    // las rayas en el centro y las deja intactas cerca de bordes/esquinas.
+    sctx.globalCompositeOperation = "destination-in"
+    sctx.save()
+    sctx.translate(cx, H / 2)
+    sctx.scale(1, H / W)
+    const mask = sctx.createRadialGradient(0, 0, 0, 0, 0, W * 0.62)
+    mask.addColorStop(0, "rgba(0,0,0,0)")
+    mask.addColorStop(0.62, "rgba(0,0,0,0)")
+    mask.addColorStop(1, "rgba(0,0,0,1)")
+    sctx.fillStyle = mask
+    sctx.fillRect(-W, -H, W * 2, H * 2)
+    sctx.restore()
+    sctx.globalCompositeOperation = "source-over"
+
+    ctx.drawImage(stripeCanvas, 0, 0)
   }
-  ctx.restore()
 
   // --- Marco redondeado con brillo ---
   ctx.save()
