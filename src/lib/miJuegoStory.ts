@@ -105,7 +105,7 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
     for (let x = -H; x < W + H; x += 40) {
       sctx.beginPath()
       sctx.moveTo(x, 0)
-      sctx.lineTo(x + H, H)
+      sctx.lineTo(x - H, H)
       sctx.stroke()
     }
     sctx.restore()
@@ -240,7 +240,7 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
     const itemStartSize = 60
     const rowH = itemStartSize * 1.6
     const labelAreaH = labelSize * 2.7
-    const boxPadBottom = 26
+    const boxPadBottom = 34
     const boxH = labelAreaH + topList.length * rowH + boxPadBottom
     ctx.save()
     ctx.strokeStyle = "rgba(40,240,224,0.55)"
