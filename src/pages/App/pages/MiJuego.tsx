@@ -90,54 +90,58 @@ const StoryCard = ({
   name?: string
 }) => {
   const month = new Date().toLocaleDateString("es-ES", { month: "long", year: "numeric" })
+  const monthLabel = month.charAt(0).toUpperCase() + month.slice(1)
+  const displayName = name?.trim() || "Tu resumen"
+  const topConcepts = concepts.slice(0, 3)
+
   return (
-    <div className="relative aspect-[9/16] overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-[#0a1622] via-[#070d16] to-[#04060a] p-6">
+    <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border-2 border-neon-cyan bg-gradient-to-b from-[#070b0d] to-[#020304] p-5 shadow-[0_0_22px_rgba(40,240,224,0.55)]">
+      {/* Rayas diagonales por toda la tarjeta (antes solo en una esquina) */}
       <div
-        className="pointer-events-none absolute -right-12 top-0 h-2/3 w-3/4 opacity-50"
-        style={{ background: "repeating-linear-gradient(118deg, transparent 0 13px, rgba(40,240,224,0.22) 13px 15px)" }}
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{ background: "repeating-linear-gradient(118deg, transparent 0 13px, rgba(40,240,224,0.18) 13px 16px)" }}
       />
-      <div className="pointer-events-none absolute bottom-16 left-0 h-px w-full -rotate-[8deg] bg-white/25" />
-      <div
-        className="pointer-events-none absolute bottom-12 right-7 h-14 w-14 rounded-full shadow-[0_0_25px_rgba(190,252,75,0.4)]"
-        style={{ background: "radial-gradient(circle at 35% 30%, #ecfccb, #84cc16)" }}
-      />
-      <div className="relative z-10 flex h-full flex-col">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan">
-              <Play className="h-3.5 w-3.5" fill="currentColor" />
-            </span>
-            <div className="text-[10px] font-bold uppercase leading-none tracking-wide text-white">
-              <p>Padel</p>
-              <p>Film Room</p>
-            </div>
+
+      <div className="relative z-10 flex h-full flex-col items-center px-2 pt-1 text-center">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan">
+            <Play className="h-4 w-4" fill="currentColor" />
+          </span>
+          <div className="text-left text-[11px] font-bold uppercase leading-tight tracking-wide text-white">
+            <p>Padel</p>
+            <p>Film</p>
+            <p>Room</p>
           </div>
-          {name && <p className="max-w-[40%] truncate text-right text-xs font-semibold text-white/80">{name}</p>}
         </div>
-        <p className="mt-6 w-fit border-b-2 border-neon-cyan pb-1 text-sm font-bold uppercase capitalize tracking-wide text-neon-cyan">
-          {month}
-        </p>
-        <p className="mt-4 font-display text-7xl font-bold leading-none text-white">{minutes}</p>
-        <p className="text-sm font-semibold uppercase tracking-wide text-white">Min aprendiendo</p>
-        {concepts.length > 0 && (
-          <>
-            <p className="mt-7 text-[11px] font-bold uppercase tracking-wide text-neon-cyan">Conceptos más trabajados</p>
-            <div className="mt-1 space-y-0.5">
-              {concepts.map((c) => (
-                <p key={c} className="font-display text-xl font-bold uppercase text-white">#{c}</p>
+
+        {/* El nombre es ahora el titular principal (antes iba pequeño arriba a la derecha) */}
+        <p className="mt-4 line-clamp-2 font-display text-2xl font-extrabold uppercase leading-tight text-white">{displayName}</p>
+        <span className="mt-2 h-[3px] w-16 shrink-0 rounded-full bg-neon-cyan" />
+
+        <p className="mt-4 text-xs font-bold uppercase tracking-wide text-neon-cyan">{monthLabel}</p>
+        <p className="mt-1 font-display text-6xl font-bold leading-none text-white">{minutes}</p>
+        <p className="mt-1 text-xs font-bold uppercase tracking-wide text-white">Min aprendiendo</p>
+
+        {topConcepts.length > 0 && (
+          <div className="mt-4 w-full rounded-xl border border-neon-cyan/40 px-3 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-neon-cyan">Conceptos más trabajados</p>
+            <div className="mt-1.5 divide-y divide-neon-cyan/20">
+              {topConcepts.map((c) => (
+                <p key={c} className="py-1.5 font-display text-sm font-bold uppercase text-white">
+                  {c}
+                </p>
               ))}
             </div>
-          </>
+          </div>
+        )}
+
+        {block && (
+          <div className="mt-3 w-full rounded-xl border border-neon-cyan/40 px-3 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-neon-cyan">Bloque principal</p>
+            <p className="mt-1 line-clamp-2 font-display text-sm font-bold uppercase leading-snug text-white">{block}</p>
+          </div>
         )}
       </div>
-      {/* Posición absoluta (no mt-auto): en algunos móviles el empuje por flex terminaba
-          empujando el valor del bloque fuera del área visible de la tarjeta (§reporte de beta). */}
-      {block && (
-        <div className="absolute inset-x-6 bottom-6 z-10">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-neon-cyan">Bloque principal</p>
-          <p className="font-display text-xl font-bold uppercase leading-tight text-white">{block}</p>
-        </div>
-      )}
     </div>
   )
 }
