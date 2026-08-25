@@ -101,11 +101,17 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
     roundRect(sctx, 40, 40, W - 80, H - 80, 56)
     sctx.clip()
     sctx.strokeStyle = "rgba(40,240,224,0.25)"
-    sctx.lineWidth = 3
+    sctx.lineWidth = 2
     // Mismo ángulo que el "118deg" del degradado CSS de la vista previa (StoryCard),
     // para que la dirección de las rayas coincida con la de la imagen descargable.
     const stripeRun = H * Math.tan((118 - 90) * (Math.PI / 180))
-    for (let x = -H; x < W + H; x += 40) {
+    // El paso en X no es directamente el espacio entre rayas: al no ir a 45°, avanzar en X
+    // un valor fijo deja más (o menos) separación perpendicular real según el ángulo. Se
+    // despeja el paso en X a partir del espaciado perpendicular que sí queremos (26px).
+    const stripeGap = 26
+    const lineDirY = H / Math.sqrt(stripeRun * stripeRun + H * H)
+    const stepX = stripeGap / lineDirY
+    for (let x = -H; x < W + H; x += stepX) {
       sctx.beginPath()
       sctx.moveTo(x, 0)
       sctx.lineTo(x - stripeRun, H)

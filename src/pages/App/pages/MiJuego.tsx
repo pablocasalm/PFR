@@ -103,7 +103,7 @@ const StoryCard = ({
         style={{
           // Densidad ajustada para acercarse a la proporción 3px/40px de la imagen de Canvas
           // (en % daba un artefacto de render al combinarlo con la máscara elíptica).
-          background: "repeating-linear-gradient(118deg, transparent 0 25px, rgba(40,240,224,0.25) 25px 28px)",
+          background: "repeating-linear-gradient(118deg, transparent 0 24px, rgba(40,240,224,0.25) 24px 26px)",
           maskImage: "radial-gradient(ellipse 62% 62% at center, transparent 0%, transparent 62%, black 100%)",
           WebkitMaskImage: "radial-gradient(ellipse 62% 62% at center, transparent 0%, transparent 62%, black 100%)",
         }}
