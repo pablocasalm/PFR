@@ -4,12 +4,11 @@ import { Link } from "react-router-dom"
 /**
  * Cómo funciona — página explicativa del método de Padel Film Room.
  *
- * Portada fiel del artifact de diseño: mismo fondo, contenido y posiciones.
  * Notas de la portación a la app:
  *  - Todo el CSS va scopeado bajo `#cf` (anidamiento nativo) para no filtrarse al resto de la app.
  *  - El contenedor `#cf` es a sangre completa (full-bleed): cancela el padding del AppLayout
- *    y pinta el fondo exacto del artifact de lado a lado.
- *  - La barra superior falsa del artifact se omite: el Header real de la app ocupa ese lugar.
+ *    y pinta el fondo exacto del diseño de lado a lado.
+ *  - La barra superior falsa del diseño se omite: el Header real de la app ocupa ese lugar.
  *  - La fuente Space Grotesk ya la carga la app; aquí solo se referencia por nombre.
  */
 
@@ -26,7 +25,7 @@ const css = `
   --line: rgba(255, 255, 255, 0.1);
   --line-soft: rgba(255, 255, 255, 0.05);
   --panel-fill: rgba(255, 255, 255, 0.02);
-  --maxw: 960px;
+  --maxw: 1240px;
 
   /* Full-bleed: rompe el padding del AppLayout y ocupa todo el ancho de la ventana */
   position: relative;
@@ -71,18 +70,33 @@ const css = `
   }
   h1, h2 { text-wrap: balance; margin: 0; font-weight: 700; letter-spacing: -0.01em; }
   h2 { font-size: clamp(1.5rem, 3.6vw, 2.15rem); }
-  .lead { color: var(--muted); }
+  .lead {
+    max-width: 58ch;
+    margin: 0.9rem auto 0;
+    color: var(--muted);
+    text-align: center;
+    font-size: 1.08rem;
+    line-height: 1.6;
+  }
 
   /* --- Hero --- */
   .hero { text-align: center; padding-block: clamp(3.5rem, 10vw, 6.5rem); }
   .hero h1 { font-size: clamp(2.3rem, 7vw, 4.2rem); line-height: 1.03; }
   .hero .accent { color: var(--cyan); }
-  .hero p {
-    max-width: 40ch;
+  .hero p.lead {
+    max-width: 46ch;
     margin: 1.4rem auto 0;
-    font-size: clamp(1rem, 2.2vw, 1.18rem);
-    color: var(--muted);
+    font-size: clamp(1.05rem, 2.2vw, 1.22rem);
   }
+  .hero .tagline {
+    margin: 2.2rem auto 0;
+    max-width: 34ch;
+    font-size: clamp(1.15rem, 2.8vw, 1.5rem);
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text);
+  }
+  .hero .tagline .accent { color: var(--lime); }
   .hero .scroll-cue {
     margin-top: 2.4rem;
     display: inline-flex;
@@ -101,37 +115,31 @@ const css = `
   }
   .hero .scroll-cue svg { animation: cf-bob 1.8s ease-in-out infinite; }
 
-  .section-head { margin-bottom: clamp(1.8rem, 4vw, 2.6rem); }
+  .section-head { margin-bottom: clamp(1.8rem, 4vw, 2.6rem); text-align: center; }
   .section-head .accent { color: var(--cyan); }
 
-  .panel {
-    border: 1px solid var(--line);
-    background: var(--panel-fill);
-    border-radius: 18px;
-  }
+  .panel { border: 1px solid var(--line); background: var(--panel-fill); border-radius: 18px; }
 
-  /* --- Sección 2: situación real → ramas --- */
-  .s2-grid { display: grid; gap: clamp(1.4rem, 4vw, 2.4rem); }
-  @media (min-width: 860px) { .s2-grid { grid-template-columns: 1fr 1fr; align-items: center; } }
+  /* --- 01 Situaciones reales --- */
+  .s-grid { display: grid; gap: clamp(1.4rem, 4vw, 2.4rem); align-items: center; justify-items: center; }
+  @media (min-width: 720px) { .s-grid { grid-template-columns: 1fr 1fr; } }
 
   .clip-media {
     position: relative;
-    aspect-ratio: 16 / 9;
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+    aspect-ratio: 4 / 3;
     border: 1px solid var(--line);
     border-radius: 16px;
     overflow: hidden;
     background: linear-gradient(150deg, #0a1a2b, #05070c);
   }
   .clip-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .clip-badge {
-    position: absolute; left: 12px; top: 12px;
-    background: var(--cyan); color: #05070c;
-    font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    padding: 3px 8px; border-radius: 6px;
-  }
 
-  .branch-intro { margin: 0 0 1rem; font-size: 0.82rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.14em; font-weight: 600; }
-  .branches { display: flex; flex-direction: column; gap: 0.8rem; }
+  .branch-intro { margin: 0 0 1rem; text-align: center; font-size: 0.82rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.14em; font-weight: 600; }
+  .branches { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; width: 100%; max-width: 26rem; margin: 0 auto; }
+  .branches .branch { width: 100%; }
   .branch {
     display: flex;
     align-items: center;
@@ -144,7 +152,7 @@ const css = `
     padding: 0.8rem 1rem;
   }
   .branch .block { font-weight: 600; font-size: 0.95rem; }
-  .branch .arrow { color: var(--c); display: inline-flex; flex-shrink: 0; }
+  .branch .arrow { color: var(--c); flex-shrink: 0; }
   .branch .concept {
     font-size: 0.9rem; font-weight: 500;
     color: var(--c);
@@ -152,92 +160,127 @@ const css = `
     padding: 3px 10px; border-radius: 999px;
     white-space: nowrap;
   }
-  .caption { margin-top: 1.6rem; text-align: center; color: var(--muted); font-size: 0.95rem; }
+  .caption { max-width: 56ch; margin: 1.6rem auto 0; text-align: center; color: var(--muted); font-size: 1.02rem; line-height: 1.6; }
 
-  /* --- Placeholder de imagen (para reemplazar por foto/gráfico real) --- */
-  .img-placeholder {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;
-    border: 1px dashed rgba(255,255,255,0.18); border-radius: 14px;
-    background: repeating-linear-gradient(135deg, rgba(255,255,255,0.02) 0 12px, transparent 12px 24px);
+  /* --- 02 Bloques: texto + captura lado a lado --- */
+  .bloques-grid { display: grid; gap: clamp(1.8rem, 4vw, 3rem); align-items: center; justify-items: center; }
+  @media (min-width: 860px) {
+    .bloques-grid { grid-template-columns: 1.15fr 0.85fr; }
+    .bloques-grid .shot-panel { margin: 0; justify-self: center; }
+    .bloques-grid .shot-panel img { max-width: 280px; }
   }
-  .img-placeholder .ph-icon { color: var(--cyan); opacity: 0.85; }
-  .img-placeholder .ph-t { font-weight: 600; font-size: 1rem; color: var(--muted); }
-  .img-placeholder .ph-s { font-size: 0.8rem; color: var(--faint); font-family: ui-monospace, monospace; letter-spacing: 0.02em; }
 
-  /* --- Sección 3: grafo / imagen --- */
-  .graph-panel { padding: clamp(1rem, 3vw, 1.8rem); }
-  .graph-panel .graph-img { width: 100%; height: auto; display: block; border-radius: 12px; }
-  /* Sección 5: la comparativa flota sobre el fondo (sin marco de panel). */
-  .diff-media img { width: 100%; height: auto; display: block; border-radius: 16px; }
+  /* --- 02 Bloques / 03 Conceptos: chip grid --- */
+  .chip-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.7rem; margin: 1.6rem 0; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    border: 1px solid var(--line);
+    background: var(--panel-fill);
+    border-radius: 11px;
+    padding: 0.7rem 1.1rem;
+    font-size: 0.92rem; font-weight: 500;
+  }
+  .chip-tag {
+    font-size: 0.88rem; font-weight: 600; color: var(--cyan);
+    background: rgba(40, 240, 224, 0.1);
+    border: 1px solid rgba(40, 240, 224, 0.25);
+    padding: 0.45rem 0.9rem; border-radius: 999px;
+  }
+  .shot-panel { width: fit-content; max-width: 100%; margin: 2rem auto 0; padding: clamp(0.6rem, 2vw, 0.9rem); }
+  .shot-panel img { display: block; width: auto; max-width: 100%; height: auto; max-height: 640px; border-radius: 11px; margin: 0 auto; }
+
+  /* --- 03 Conceptos: cadena de ejemplo --- */
+  /* Una sola frase encadenada con flechas, no una lista con viñetas: así se lee como una
+     secuencia de causa-efecto de un vistazo. */
+  .chain {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+    gap: 0.6rem 0.6rem;
+    max-width: 68rem; margin: 1.8rem auto;
+  }
+  .chain-item {
+    font-size: 0.98rem; font-weight: 600; color: var(--text);
+    white-space: nowrap;
+    background: var(--panel-fill);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0.55rem 0.9rem;
+  }
+  .chain-arrow { color: var(--cyan); font-size: 1.2rem; flex-shrink: 0; }
+  .chain-tags { display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.3rem; }
+  .chain-tags .tagline-item { font-size: 0.85rem; color: var(--faint); }
+  .chain-tags .tagline-item b { color: var(--muted); font-weight: 600; }
+
   .bigline {
     margin: clamp(1.8rem, 4vw, 2.4rem) auto 0;
-    max-width: 24ch;
+    max-width: 30ch;
     text-align: center;
-    font-size: clamp(1.3rem, 3.2vw, 2rem);
+    font-size: clamp(1.2rem, 3vw, 1.7rem);
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.25;
     text-wrap: balance;
   }
   .bigline .accent { color: var(--cyan); }
   .bigline .accent-lime { color: var(--lime); }
 
-  /* --- Sección 4: recorrido / timeline --- */
-  .timeline { display: flex; flex-direction: column; }
-  .step { display: grid; grid-template-columns: 40px 1fr; gap: 1rem; }
-  .step-rail { display: flex; flex-direction: column; align-items: center; }
-  .step-num {
-    width: 40px; height: 40px; flex-shrink: 0;
-    display: grid; place-items: center;
-    border-radius: 999px;
-    border: 1px solid rgba(40, 240, 224, 0.4);
-    background: rgba(40, 240, 224, 0.1);
-    color: var(--cyan);
-    font-weight: 700; font-size: 0.9rem;
-  }
-  .step-line { width: 2px; flex: 1; min-height: 14px; background: linear-gradient(to bottom, rgba(40,240,224,0.4), rgba(255,255,255,0.08)); }
-  .step-card {
-    display: flex; align-items: center; gap: 0.9rem;
-    border: 1px solid var(--line);
-    background: var(--panel-fill);
-    border-radius: 14px;
-    padding: 0.85rem 1.1rem;
-    margin-bottom: 0.9rem;
-  }
-  .step-card .ico { color: var(--cyan); flex-shrink: 0; }
-  .step-card .t { font-weight: 600; font-size: 0.95rem; }
-  .step-card .s { font-size: 0.8rem; color: var(--faint); margin-top: 2px; }
-
-  .cycle-note {
-    display: flex; align-items: center; gap: 0.8rem;
-    border: 1px solid rgba(190, 252, 75, 0.3);
-    background: rgba(190, 252, 75, 0.06);
-    border-radius: 14px;
-    padding: 0.9rem 1.1rem;
-    margin-top: 0.3rem;
-    font-size: 0.9rem;
-    color: rgba(241, 245, 249, 0.82);
-  }
-  .cycle-note .ico { color: var(--lime); flex-shrink: 0; }
-  .cycle-note b { color: var(--lime); font-weight: 600; }
-
-  .mantra {
-    margin-top: clamp(2rem, 5vw, 2.8rem);
-    text-align: center;
-    font-size: clamp(1.25rem, 3.4vw, 2rem);
+  /* --- 04 Método: el camino (Ver → Reconocer → Jugar → Repetir) --- */
+  .method-path { display: flex; flex-direction: column; align-items: center; margin-top: 0.6rem; }
+  .path-step { padding: 1.1rem 0; text-align: center; }
+  .path-word {
+    margin: 0;
+    font-size: clamp(1.35rem, 3.4vw, 1.9rem);
     font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text);
   }
+  .path-step.is-last .path-word { color: var(--cyan); }
+  .path-desc { margin: 0.35rem auto 0; font-size: 1rem; color: var(--muted); max-width: 30ch; }
+  .path-connector {
+    display: flex; align-items: center; gap: 0.7rem;
+    color: var(--faint);
+  }
+  .path-connector .ln { width: 2px; height: 1.6rem; background: linear-gradient(to bottom, rgba(40,240,224,0.4), rgba(255,255,255,0.08)); }
+
+  @media (min-width: 860px) {
+    .method-path { flex-direction: row; align-items: flex-start; gap: 0; }
+    .path-step { flex: 1; padding: 0; }
+    .path-connector { flex: 0 0 auto; flex-direction: column; align-items: center; padding: 0.5rem 1.4rem 0; }
+    .path-connector .ln { width: 2.4rem; height: 2px; background: linear-gradient(to right, rgba(40,240,224,0.4), rgba(255,255,255,0.08)); }
+  }
+
+  .method-shot { margin-top: 2.2rem; }
+  .method-shot img { display: block; width: 100%; height: auto; border-radius: 14px; }
+  .method-shot-caption { text-align: center; font-size: 0.82rem; color: var(--faint); margin-top: 0.9rem; }
+
+  /* --- 05/06: paneles anchos de captura --- */
+  .wide-shot { margin-top: 2.2rem; }
+  .wide-shot .panel { padding: clamp(0.5rem, 1.6vw, 0.8rem); }
+  .wide-shot img { display: block; width: 100%; height: auto; border-radius: 10px; }
+
+  .stat-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin: 1.6rem 0; }
+  .stat-row .chip { color: var(--muted); }
+  .stat-row .chip::before { content: "—"; color: var(--faint); margin-right: 0.1rem; }
+
+  /* --- 07 checklist --- */
+  .checklist { max-width: 36rem; margin: 0 auto; padding: clamp(1.4rem, 4vw, 2rem); }
+  .checklist ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1.15rem; }
+  .checklist li { display: flex; gap: 0.9rem; }
+  .checklist .box {
+    width: 24px; height: 24px; flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.25); border-radius: 7px;
+    display: grid; place-items: center;
+    font-size: 0.7rem; font-weight: 700; color: rgba(255,255,255,0.35);
+    font-family: ui-monospace, monospace;
+    margin-top: 1px;
+  }
+  .checklist .item-t { font-size: 0.98rem; font-weight: 600; color: var(--text); }
+  .checklist .item-s { font-size: 0.86rem; color: var(--faint); margin-top: 2px; }
+
+  .mantra { margin-top: clamp(2rem, 5vw, 2.8rem); text-align: center; font-size: clamp(1.25rem, 3.4vw, 2rem); font-weight: 700; }
   .mantra .sep { color: rgba(255, 255, 255, 0.25); margin: 0 0.15em; }
   .mantra .last { color: var(--cyan); }
+  .mantra-pre { text-align: center; color: var(--muted); font-size: 1rem; margin-bottom: 0.6rem; }
 
-  /* --- Sección 6: checklist --- */
-  .checklist { max-width: 34rem; margin: 0 auto; padding: clamp(1.4rem, 4vw, 2rem); }
-  .checklist ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1rem; }
-  .checklist li { display: flex; align-items: center; gap: 0.8rem; }
-  .checklist .box { width: 20px; height: 20px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.25); border-radius: 6px; }
-  .checklist .n { font-size: 0.72rem; font-weight: 700; color: rgba(255,255,255,0.3); margin-right: 0.5rem; }
-  .checklist .item { font-size: 0.95rem; color: rgba(241,245,249,0.88); }
-
-  .cta-final { text-align: center; margin-top: 2rem; }
+  .cta-final { text-align: center; margin-top: 2.2rem; }
   .cta-final a {
     display: inline-flex; align-items: center; gap: 0.5rem;
     background: var(--cyan); color: #05070c;
@@ -276,7 +319,7 @@ const ComoFunciona = () => {
     next.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" })
   }
 
-  // Reveal por scroll (mismo comportamiento que el artifact). Respeta prefers-reduced-motion.
+  // Reveal por scroll. Respeta prefers-reduced-motion.
   useEffect(() => {
     const root = rootRef.current
     if (!root) return
@@ -305,51 +348,29 @@ const ComoFunciona = () => {
     <div id="cf" ref={rootRef}>
       <style>{css}</style>
 
-      {/* Iconos reutilizables */}
       <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
-        <symbol id="i-play" viewBox="0 0 24 24">
-          <path d="M8 5v14l11-7z" fill="currentColor" />
-        </symbol>
-        <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M5 12h14M13 6l6 6-6 6" />
-        </symbol>
         <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 5v14M6 13l6 6 6-6" />
-        </symbol>
-        <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="12" r="9" />
-          <circle cx="12" cy="12" r="4" />
-          <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
-        </symbol>
-        <symbol id="i-film" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
-          <rect x="3" y="5" width="18" height="14" rx="2" />
-          <path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none" />
-        </symbol>
-        <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
-          <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
-          <circle cx="12" cy="12" r="3" />
-        </symbol>
-        <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
-          <path d="M13 2L4 14h7l-1 8 9-12h-7z" />
-        </symbol>
-        <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 11.5V12a10 10 0 1 1-5.9-9.1" />
-          <path d="M22 4L12 14.5l-3-3" />
-        </symbol>
-        <symbol id="i-cycle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 12a9 9 0 1 1-2.6-6.4" />
-          <path d="M21 3v4h-4" />
         </symbol>
       </svg>
 
       <main>
-        {/* 1 · Hero */}
+        {/* Hero */}
         <section className="hero" ref={heroRef}>
           <div className="wrap">
             <h1>
               Cómo usar <span className="accent">Padel Film Room</span>
             </h1>
-            <p>Aprende a reconocer situaciones reales de partido, entender el juego y tomar mejores decisiones cuando vuelvas a la pista.</p>
+            <p className="lead">
+              Te ayuda a entender mejor lo que ocurre durante un partido y a aprender de las decisiones que toman los jugadores profesionales en
+              situaciones reales. Porque jugar mejor no depende solo de cómo ejecutas un golpe — también importa qué haces, cuándo lo haces y por
+              qué.
+            </p>
+            <p className="tagline">
+              No se trata de ver más pádel.
+              <br />
+              Se trata de <span className="accent">aprender a leerlo</span>.
+            </p>
             <button type="button" className="scroll-cue" onClick={scrollToNextSection}>
               Desliza
               <svg width="18" height="18">
@@ -359,281 +380,303 @@ const ComoFunciona = () => {
           </div>
         </section>
 
-        {/* 2 · Situación real */}
+        {/* 01 · Situaciones reales */}
         <section>
           <div className="wrap">
             <div className="section-head reveal">
-              <p className="eyebrow">El punto de partida</p>
-              <h2>Aprende a través de situaciones reales</h2>
+              <p className="eyebrow">01 · Situaciones reales</p>
+              <h2>Aprende de las decisiones que ocurren en pista</h2>
+              <p className="lead">
+                En Padel Film Room analizamos partidos y seleccionamos situaciones que merece la pena entender. Cada clip parte de una situación
+                real y te ayuda a ver qué está pasando, qué decisiones se están tomando y por qué pueden marcar la diferencia en el punto.
+              </p>
             </div>
-            <div className="s2-grid reveal">
+            <div className="s-grid reveal">
               <div className="clip-media">
-                <img src="/metodo/situacion.png" alt="Situación real de partido" />
-                <span className="clip-badge">Clip</span>
+                <img src="/metodo/situacion-reset.png" alt="Clip: El globo como reset" />
               </div>
               <div>
                 <p className="branch-intro">Este clip enseña, a la vez:</p>
                 <div className="branches">
                   <div className="branch" style={{ "--c": "#28f0e0" } as React.CSSProperties}>
-                    <span className="block">Juego en la red</span>
-                    <span className="arrow">
-                      <svg width="18" height="18">
-                        <use href="#i-arrow" />
-                      </svg>
-                    </span>
-                    <span className="concept">#Presión</span>
+                    <span className="block">Uso del globo</span>
+                    <span className="arrow">→</span>
+                    <span className="concept">#Globo</span>
                   </div>
                   <div className="branch" style={{ "--c": "#5b8cff" } as React.CSSProperties}>
-                    <span className="block">Lectura táctica del rival</span>
-                    <span className="arrow">
-                      <svg width="18" height="18">
-                        <use href="#i-arrow" />
-                      </svg>
-                    </span>
-                    <span className="concept">#Insistencia</span>
-                  </div>
-                  <div className="branch" style={{ "--c": "#befc4b" } as React.CSSProperties}>
                     <span className="block">Gestión del ritmo del punto</span>
-                    <span className="arrow">
-                      <svg width="18" height="18">
-                        <use href="#i-arrow" />
-                      </svg>
-                    </span>
-                    <span className="concept">#Cambio de ritmo</span>
+                    <span className="arrow">→</span>
+                    <span className="concept">#BajarRitmo</span>
                   </div>
                 </div>
+                <p className="caption">
+                  A veces el aprendizaje estará en qué golpe elegir. Otras, en cuándo avanzar, dónde colocarte, cuándo esperar, cómo jugar con tu
+                  compañero o qué está haciendo el rival — porque durante un punto, todo está conectado.
+                </p>
               </div>
             </div>
-            <p className="caption reveal">Una sola situación de partido puede enseñarte varias cosas a la vez.</p>
           </div>
         </section>
 
-        {/* 3 · Estructura / imagen */}
+        {/* 02 · Los bloques */}
         <section>
           <div className="wrap">
-            <div className="section-head reveal">
-              <p className="eyebrow">La estructura</p>
-              <h2>Cómo organizamos el aprendizaje</h2>
+            <div className="bloques-grid reveal">
+              <div>
+                <div className="section-head">
+                  <p className="eyebrow">02 · Los bloques</p>
+                  <h2>Empieza por una parte del juego</h2>
+                  <p className="lead">
+                    El pádel está lleno de situaciones y decisiones diferentes. Para ayudarte a entenderlas, hemos organizado el juego en grandes
+                    bloques.
+                  </p>
+                </div>
+                <div className="chip-grid">
+                  <span className="chip">Juego desde el fondo</span>
+                  <span className="chip">Transición defensa-ataque</span>
+                  <span className="chip">Juego en la red</span>
+                  <span className="chip">Uso del globo</span>
+                  <span className="chip">Gestión del ritmo del punto</span>
+                  <span className="chip">Lectura táctica del rival</span>
+                  <span className="chip">Uso táctico de golpes</span>
+                  <span className="chip">Juego en pareja</span>
+                </div>
+                <p className="caption" style={{ marginTop: "0.4rem" }}>
+                  No necesitas saber exactamente qué buscar. Empieza por una parte del juego que te interese y observa qué decisiones aparecen una
+                  y otra vez.
+                </p>
+              </div>
+              <div className="shot-panel panel">
+                <img src="/metodo/bloques.png" alt="Explorar: bloques con sus clips" />
+              </div>
             </div>
-            <div className="panel graph-panel reveal">
-              <img className="graph-img" src="/metodo/aprendizaje.jpg" alt="Cómo se organiza el aprendizaje en Padel Film Room" />
-            </div>
-            <p className="bigline reveal">
-              No organizamos vídeos. <span className="accent">Organizamos aprendizajes tácticos.</span>
-            </p>
           </div>
         </section>
 
-        {/* 4 · Método / recorrido */}
+        {/* 03 · Los conceptos */}
         <section>
           <div className="wrap">
             <div className="section-head reveal">
-              <p className="eyebrow">El método</p>
-              <h2>Cómo recomendamos aprender</h2>
+              <p className="eyebrow">03 · Los conceptos</p>
+              <h2>Pon nombre a lo que empiezas a reconocer</h2>
+              <p className="lead">Detrás de situaciones diferentes hay ideas que se repiten. Las llamamos conceptos.</p>
             </div>
-            <div className="timeline reveal">
-              <div className="step">
-                <div className="step-rail">
-                  <span className="step-num">1</span>
-                  <span className="step-line" />
-                </div>
-                <div className="step-card">
-                  <span className="ico">
-                    <svg width="22" height="22">
-                      <use href="#i-target" />
-                    </svg>
-                  </span>
-                  <div>
-                    <div className="t">Elige un concepto</div>
-                    <div className="s">Ej. #Subir a la red</div>
-                  </div>
-                </div>
-              </div>
-              <div className="step">
-                <div className="step-rail">
-                  <span className="step-num">2</span>
-                  <span className="step-line" />
-                </div>
-                <div className="step-card">
-                  <span className="ico">
-                    <svg width="22" height="22">
-                      <use href="#i-film" />
-                    </svg>
-                  </span>
-                  <div>
-                    <div className="t">Mira varias situaciones reales</div>
-                    <div className="s">Ejemplos del mismo patrón</div>
-                  </div>
-                </div>
-              </div>
-              <div className="step">
-                <div className="step-rail">
-                  <span className="step-num">3</span>
-                  <span className="step-line" />
-                </div>
-                <div className="step-card">
-                  <span className="ico">
-                    <svg width="22" height="22">
-                      <use href="#i-eye" />
-                    </svg>
-                  </span>
-                  <div>
-                    <div className="t">Empieza a reconocer el patrón</div>
-                    <div className="s">Ves lo que se repite</div>
-                  </div>
-                </div>
-              </div>
-              <div className="step">
-                <div className="step-rail">
-                  <span className="step-num">4</span>
-                  <span className="step-line" />
-                </div>
-                <div className="step-card">
-                  <span className="ico">
-                    <svg width="22" height="22">
-                      <use href="#i-bolt" />
-                    </svg>
-                  </span>
-                  <div>
-                    <div className="t">Ve a jugar</div>
-                    <div className="s">Llévatelo a la pista</div>
-                  </div>
-                </div>
-              </div>
-              <div className="step">
-                <div className="step-rail">
-                  <span className="step-num">5</span>
-                  <span className="step-line" />
-                </div>
-                <div className="step-card">
-                  <span className="ico">
-                    <svg width="22" height="22">
-                      <use href="#i-check" />
-                    </svg>
-                  </span>
-                  <div>
-                    <div className="t">Identifícalo durante tus partidos</div>
-                    <div className="s">Lo reconoces en tiempo real</div>
-                  </div>
-                </div>
-              </div>
-              <div className="step">
-                <div className="step-rail">
-                  <span className="step-num">6</span>
-                </div>
-                <div className="step-card">
-                  <span className="ico">
-                    <svg width="22" height="22">
-                      <use href="#i-cycle" />
-                    </svg>
-                  </span>
-                  <div>
-                    <div className="t">Vuelve a PFR a reforzarlo</div>
-                    <div className="s">…o cambia de concepto</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="cycle-note reveal">
-              <span className="ico">
-                <svg width="20" height="20">
-                  <use href="#i-cycle" />
-                </svg>
-              </span>
-              <span>
-                El aprendizaje es un <b>ciclo</b>: vuelve al principio y sigue sumando patrones. Añadimos nuevos clips y conceptos continuamente.
+            <div className="chip-grid reveal">
+              <span className="chip-tag">#Timing</span>
+              <span className="chip-tag">#Decisiones</span>
+              <span className="chip-tag">#Lectura</span>
+              <span className="chip-tag">#Presión</span>
+              <span className="chip-tag">#Sincronía</span>
+              <span className="chip-tag" style={{ opacity: 0.5 }}>
+                …
               </span>
             </div>
-            <p className="mantra reveal">
-              Ver <span className="sep">→</span> Reconocer <span className="sep">→</span> Jugar <span className="sep">→</span> <span className="last">Repetir</span>
+            <p className="lead reveal">
+              Nos ayudan a conectar situaciones que, aunque a simple vista puedan parecer distintas, comparten una misma idea detrás de la
+              decisión. Y una misma situación puede contener varias. Por ejemplo:
+            </p>
+            <div className="chain reveal">
+              <span className="chain-item">Te están presionando mucho en defensa</span>
+              <span className="chain-arrow">→</span>
+              <span className="chain-item">estás incómodo</span>
+              <span className="chain-arrow">→</span>
+              <span className="chain-item">globo alto para quitarte la presión</span>
+            </div>
+            <div className="chain-tags reveal">
+              <span className="tagline-item">
+                <b>Uso del globo</b> · #Globo
+              </span>
+              <span className="tagline-item">
+                <b>Gestión del ritmo del punto</b> · #BajarRitmo
+              </span>
+            </div>
+            <p className="caption reveal">
+              No tienes que aprenderte una lista de conceptos. Son una forma de ayudarte a reconocer qué hay detrás de las decisiones que ves en
+              pista.
             </p>
           </div>
         </section>
 
-        {/* 5 · La diferencia */}
+        {/* 04 · El método */}
         <section>
           <div className="wrap">
             <div className="section-head reveal">
-              <p className="eyebrow">La diferencia</p>
-              <h2>
-                Aprende a reconocer <span className="accent">patrones</span>.<br />
-                No a consumir <span className="accent">vídeos</span>.
-              </h2>
+              <p className="eyebrow">04 · El método</p>
+              <h2>Repetimos el aprendizaje. No el vídeo.</h2>
+              <p className="lead">
+                Ver una decisión en una situación concreta te ayuda a entenderla. Pero el pádel nunca te devuelve exactamente el mismo punto:
+                cambian la bola, la posición, los jugadores, el marcador, el rival… La idea, sin embargo, puede ser la misma. Por eso no repetimos
+                una y otra vez el mismo ejemplo — buscamos la misma idea en situaciones, puntos, jugadores y partidos diferentes.
+              </p>
             </div>
-            <div className="diff-media reveal">
-              <img src="/metodo/mismoconcepto.png" alt="Comparativa: contenido aislado frente a un mismo concepto en varias situaciones de partido" />
+            <div className="method-path reveal">
+              <div className="path-step">
+                <p className="path-word">Ver</p>
+                <p className="path-desc">Observa situaciones reales y entiende las decisiones que hay detrás.</p>
+              </div>
+              <div className="path-connector">
+                <span className="ln" />
+              </div>
+              <div className="path-step">
+                <p className="path-word">Reconocer</p>
+                <p className="path-desc">Encuentra esas mismas ideas en situaciones diferentes.</p>
+              </div>
+              <div className="path-connector">
+                <span className="ln" />
+              </div>
+              <div className="path-step">
+                <p className="path-word">Jugar</p>
+                <p className="path-desc">Empieza a detectarlas cuando aparecen durante tus propios partidos.</p>
+              </div>
+              <div className="path-connector">
+                <span className="ln" />
+              </div>
+              <div className="path-step is-last">
+                <p className="path-word">Repetir</p>
+                <p className="path-desc">Vuelve, descubre nuevos ejemplos y sigue ampliando tu forma de leer el juego.</p>
+              </div>
+            </div>
+            <div className="method-shot reveal">
+              <img src="/metodo/reconocer.png" alt="Aprender a reconocer: una misma idea en tres situaciones distintas" />
+              <p className="method-shot-caption">Así se ve "reconocer" dentro de la app: el mismo concepto, en situaciones distintas.</p>
             </div>
             <p className="bigline reveal">
-              No importa cuántos vídeos veas. Importa cuántas veces reconoces el <span className="accent">mismo concepto</span> jugando.
+              El objetivo no es darte una respuesta para cada punto. Es darte <span className="accent">más herramientas</span> para entender el
+              punto que tienes delante.
             </p>
           </div>
         </section>
 
-        {/* 6 · Primer entrenamiento */}
+        {/* 05 · Los análisis */}
         <section>
           <div className="wrap">
             <div className="section-head reveal">
-              <p className="eyebrow">Empieza ahora</p>
-              <h2>Tu primer entrenamiento</h2>
+              <p className="eyebrow">05 · Los análisis</p>
+              <h2>Cuando quieras ir más allá</h2>
+              <p className="lead">
+                Además de clips cortos, en Padel Film Room encontrarás análisis completos de partidos. Los dividimos en capítulos para que puedas
+                seguir el partido mientras entiendes las situaciones y decisiones tácticas que van apareciendo. Puedes ver el análisis completo de
+                principio a fin o ir directamente a los momentos que más te interesen.
+              </p>
+            </div>
+            <div className="wide-shot reveal">
+              <div className="panel">
+                <img src="/metodo/analisis.png" alt="Análisis completo dividido en capítulos" />
+              </div>
+            </div>
+            <p className="bigline reveal">
+              <span className="accent">Clips</span> para reconocer situaciones. <span className="accent-lime">Análisis</span> para entender cómo se
+              conectan dentro de un partido.
+            </p>
+          </div>
+        </section>
+
+        {/* 06 · Mi Juego */}
+        <section>
+          <div className="wrap">
+            <div className="section-head reveal">
+              <p className="eyebrow">06 · Mi Juego</p>
+              <h2>Mira hacia dónde estás llevando tu aprendizaje</h2>
+              <p className="lead">
+                A medida que utilizas Padel Film Room, Mi Juego recoge lo que estás viendo y qué partes del juego aparecen más en tu aprendizaje.
+              </p>
+            </div>
+            <div className="stat-row reveal">
+              <span className="chip">El tiempo que has dedicado a aprender</span>
+              <span className="chip">Los clips y análisis que has visto</span>
+              <span className="chip">Los conceptos que más aparecen</span>
+              <span className="chip">Los bloques que más estás trabajando</span>
+            </div>
+            <div className="wide-shot reveal">
+              <div className="panel">
+                <img src="/metodo/mijuego.png" alt="Mi Juego: resumen de aprendizaje" />
+              </div>
+            </div>
+            <p className="caption reveal">
+              No pretende decirte cuánto has mejorado. Te ayuda a ver dónde estás poniendo tu atención. Y puedes compartir tu progreso con tu
+              propia <b style={{ color: "var(--text)" }}>Film Room Story</b>.
+            </p>
+          </div>
+        </section>
+
+        {/* 07 · Tu primer ciclo */}
+        <section>
+          <div className="wrap">
+            <div className="section-head reveal">
+              <p className="eyebrow">07 · Tu primer ciclo</p>
+              <h2>Ahora pruébalo tú</h2>
+              <p className="lead">No necesitas entender todo Padel Film Room antes de empezar. De hecho, la mejor forma de entenderlo es usarlo.</p>
             </div>
             <div className="panel checklist reveal">
               <ul>
                 <li>
-                  <span className="box" />
-                  <span className="item">
-                    <span className="n">1</span>Entra en Explorar
+                  <span className="box">1</span>
+                  <span>
+                    <div className="item-t">Entra en Explorar</div>
+                    <div className="item-s">Mira los diferentes bloques del juego.</div>
                   </span>
                 </li>
                 <li>
-                  <span className="box" />
-                  <span className="item">
-                    <span className="n">2</span>Escoge un bloque
+                  <span className="box">2</span>
+                  <span>
+                    <div className="item-t">Escoge uno</div>
+                    <div className="item-s">Empieza por una parte del juego que te interese o quieras mejorar.</div>
                   </span>
                 </li>
                 <li>
-                  <span className="box" />
-                  <span className="item">
-                    <span className="n">3</span>Elige un concepto
+                  <span className="box">3</span>
+                  <span>
+                    <div className="item-t">Mira varias situaciones</div>
+                    <div className="item-s">No te quedes solo con un ejemplo.</div>
                   </span>
                 </li>
                 <li>
-                  <span className="box" />
-                  <span className="item">
-                    <span className="n">4</span>Mira varias situaciones relacionadas
+                  <span className="box">4</span>
+                  <span>
+                    <div className="item-t">Fíjate en lo que se repite</div>
+                    <div className="item-s">Empieza a reconocer ideas y conceptos en situaciones diferentes.</div>
                   </span>
                 </li>
                 <li>
-                  <span className="box" />
-                  <span className="item">
-                    <span className="n">5</span>Guarda las que más te ayuden en Mi Lista
+                  <span className="box">5</span>
+                  <span>
+                    <div className="item-t">Guarda lo que te interese</div>
+                    <div className="item-s">Añádelo a Mi Lista para volver cuando quieras.</div>
                   </span>
                 </li>
                 <li>
-                  <span className="box" />
-                  <span className="item">
-                    <span className="n">6</span>Ve a jugar
+                  <span className="box">6</span>
+                  <span>
+                    <div className="item-t">Llévate una idea a pista</div>
+                    <div className="item-s">No intentes recordarlo todo. Simplemente presta atención cuando aparezca una situación parecida.</div>
                   </span>
                 </li>
                 <li>
-                  <span className="box" />
-                  <span className="item">
-                    <span className="n">7</span>Vuelve para seguir aprendiendo
+                  <span className="box">7</span>
+                  <span>
+                    <div className="item-t">Vuelve y repite</div>
+                    <div className="item-s">Descubre nuevas situaciones y sigue construyendo tu lectura del juego.</div>
                   </span>
                 </li>
               </ul>
             </div>
+
+            <p className="mantra-pre reveal">No queremos que recuerdes vídeos. Queremos que reconozcas situaciones.</p>
+            <p className="mantra reveal">
+              Ver <span className="sep">→</span> Reconocer <span className="sep">→</span> Jugar <span className="sep">→</span>{" "}
+              <span className="last">Repetir</span>
+            </p>
+
             <div className="cta-final reveal">
-              <Link to="/app/explorar">
-                Ir a Explorar
-                <svg width="18" height="18">
-                  <use href="#i-arrow" />
-                </svg>
-              </Link>
+              <Link to="/app/explorar">Ir a Explorar →</Link>
             </div>
+            <p className="bigline reveal" style={{ marginTop: "2.8rem" }}>
+              Deja de copiar golpes. <span className="accent">Empieza a copiar decisiones.</span>
+            </p>
           </div>
         </section>
 
-        <footer>Padel Film Room · Aprende a leer el juego</footer>
+        <footer>Padel Film Room · Nos vemos en la pista.</footer>
       </main>
     </div>
   )
