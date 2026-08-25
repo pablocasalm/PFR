@@ -101,9 +101,15 @@ const StoryCard = ({
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          // Densidad ajustada para acercarse a la proporción 3px/40px de la imagen de Canvas
-          // (en % daba un artefacto de render al combinarlo con la máscara elíptica).
-          background: "repeating-linear-gradient(118deg, transparent 0 24px, rgba(40,240,224,0.25) 24px 26px)",
+          // En % (no px): la tarjeta del preview es mucho más pequeña que el canvas de
+          // 1080×1920, así que un valor en px fijo no guardaba la misma proporción visual.
+          // Al ser % relativos al propio eje del degradado, escalan igual sea cual sea el
+          // tamaño real de la tarjeta. (El primer intento con % usaba 100% como periodo, lo
+          // que pintaba una sola rampa en vez de repetir — el periodo real tiene que ser un
+          // % pequeño: aquí, el equivalente a los 26px/2px del canvas sobre su línea de
+          // degradado de ~1855px de largo a 118deg.)
+          background:
+            "repeating-linear-gradient(118deg, rgba(40,240,224,0.25) 0%, rgba(40,240,224,0.25) 0.1078%, transparent 0.1078%, transparent 1.4016%)",
           maskImage: "radial-gradient(ellipse 62% 62% at center, transparent 0%, transparent 62%, black 100%)",
           WebkitMaskImage: "radial-gradient(ellipse 62% 62% at center, transparent 0%, transparent 62%, black 100%)",
         }}
