@@ -163,7 +163,7 @@ const ContentCard = ({ item, rank }: { item: ContentItem; rank?: number }) => (
       <span className="absolute right-2 top-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white">
         {formatDuration(item.durationSeconds)}
       </span>
-      <span className="absolute bottom-2 right-2 opacity-0 transition group-hover:opacity-100">
+      <span className="absolute bottom-2 right-2">
         <SaveButton item={item} variant="icon" />
       </span>
     </div>
