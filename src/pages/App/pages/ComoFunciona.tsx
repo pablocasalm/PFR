@@ -129,7 +129,7 @@ const css = `
     width: 100%;
     max-width: 460px;
     margin: 0 auto;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 742 / 654;
     border: 1px solid var(--line);
     border-radius: 16px;
     overflow: hidden;
