@@ -21,6 +21,7 @@ export type ContentItem = {
   durationSeconds: number
   concepts: string[] // unión plana (para contextos sin bloque: Inicio, Mi Lista, Resultados)
   blocks?: BlockConcepts[] // conceptos por bloque (para el coloreado en Explorar)
+  description?: string // solo en clips (Resultados: se prefiere a "tournament")
   // Metadatos opcionales (sobre todo en análisis)
   players?: string // "Chingotto, Galán, Lebrón, Stupa"
   tournament?: string // texto compuesto: "Premier Padel P2 · Génova 2024 · Cuartos de final"

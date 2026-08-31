@@ -101,21 +101,29 @@ const Thumb = ({ src, hue, progress, completed }: { src?: string; hue: number; p
   </div>
 )
 
-const meta = (r: ContentItem) =>
-  [r.tournament ?? (r.type === "analysis" ? "Análisis" : "Clip"), r.players].filter(Boolean).join(" • ")
+const meta = (r: ContentItem) => {
+  // Clips: la descripción propia dice más que el torneo (§reporte de beta #41).
+  // Análisis: no tienen descripción a priori, se queda el torneo.
+  if (r.type === "clip" && r.description) return r.description
+  return [r.tournament ?? (r.type === "analysis" ? "Análisis" : "Clip"), r.players].filter(Boolean).join(" • ")
+}
 
 const ResultCard = ({ result }: { result: ContentItem }) => (
   <Link to={watchHref(result)} className="group block">
     <div className="relative overflow-hidden rounded-lg border border-white/10">
       <Thumb src={result.thumbnailUrl} hue={hueFor(result.id)} progress={result.progress} completed={result.completed} />
-      <span className="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100" onClick={(e) => e.preventDefault()}>
+      <span className="absolute right-2 top-2" onClick={(e) => e.preventDefault()}>
         <SaveButton item={result} variant="icon" />
       </span>
       <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
         {formatDuration(result.durationSeconds)}
       </span>
     </div>
-    <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-neon-cyan">
+    <p
+      className={`mt-3 text-[11px] font-bold uppercase tracking-wider ${
+        result.type === "analysis" ? "text-violet-300" : "text-neon-cyan"
+      }`}
+    >
       {result.type === "analysis" ? "Análisis" : "Clip"}
     </p>
     <h3 className="mt-1 line-clamp-2 text-base font-bold leading-snug text-white">{result.title}</h3>
