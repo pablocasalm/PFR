@@ -7,6 +7,7 @@ const Inicio = lazy(() => import("../../pages/App/pages/Inicio"))
 const Explorar = lazy(() => import("../../pages/App/pages/Explorar"))
 const MiLista = lazy(() => import("../../pages/App/pages/MiLista"))
 const MiJuego = lazy(() => import("../../pages/App/pages/MiJuego"))
+const MiCuenta = lazy(() => import("../../pages/App/pages/MiCuenta"))
 const ComoFunciona = lazy(() => import("../../pages/App/pages/ComoFunciona"))
 const Watch = lazy(() => import("../../pages/App/pages/Watch"))
 const Search = lazy(() => import("../../pages/App/pages/Search"))
@@ -50,6 +51,7 @@ const router = createBrowserRouter([
       { path: "explorar", element: withSuspense(<Explorar />) },
       { path: "mi-lista", element: withSuspense(<MiLista />) },
       { path: "mi-juego", element: withSuspense(<MiJuego />) },
+      { path: "mi-cuenta", element: withSuspense(<MiCuenta />) },
       { path: "como-funciona", element: withSuspense(<ComoFunciona />) },
       { path: "watch", element: withSuspense(<Watch />) },
       { path: "search", element: withSuspense(<Search />) },

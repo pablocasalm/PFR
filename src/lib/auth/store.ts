@@ -118,6 +118,12 @@ export async function markOnboardingSeenAndSync() {
   }
 }
 
+/** Actualiza el nombre visible en el estado local (tras guardarlo en el backend), sin
+ * necesidad de recargar ni re-loguear — así el header y demás sitios lo reflejan al momento. */
+export function setLocalDisplayName(displayName: string) {
+  if (state.user) setState({ ...state, user: { ...state.user, displayName } })
+}
+
 /** Hook de sesión: { token, user, isAuthenticated } + acciones. */
 export function useAuth() {
   const s = useSyncExternalStore(subscribe, getAuth, getAuth)

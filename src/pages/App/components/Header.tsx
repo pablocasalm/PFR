@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
-import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox, Megaphone } from "lucide-react"
+import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox, Megaphone, UserCircle } from "lucide-react"
 import { useAuth, canPublish, isAdmin, type AuthUser } from "../../../lib/auth/store"
 import SearchOverlay from "./SearchOverlay"
 import NewsBell from "./NewsBell"
@@ -201,6 +201,14 @@ const SessionControl = () => {
               <p className="truncate text-sm font-semibold text-white">{user.displayName || "Mi cuenta"}</p>
               <p className="truncate text-xs text-white/50">{user.email}</p>
             </div>
+            <Link
+              to="/app/mi-cuenta"
+              onClick={() => setMenuOpen(false)}
+              className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
+            >
+              <UserCircle className="h-4 w-4" />
+              Mi cuenta
+            </Link>
             {canPublish(user) && (
               <Link
                 to="/app/publicar"
