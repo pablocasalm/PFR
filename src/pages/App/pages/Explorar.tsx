@@ -1,6 +1,6 @@
-import { SlidersHorizontal, ArrowRight, ChevronRight, MoreVertical, LayoutGrid, ArrowLeftRight, Grip, ClipboardList, Clapperboard } from "lucide-react"
+import { SlidersHorizontal, ArrowRight, ChevronRight, ChevronLeft, MoreVertical, LayoutGrid, ArrowLeftRight, Grip, ClipboardList, Clapperboard, X } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getExplore } from "../../../lib/api/explore"
@@ -61,18 +61,121 @@ const Chip = ({ children, active = false, onClick }: { children: React.ReactNode
   </button>
 )
 
+// Desplegable con autosugerencia sobre los jugadores ya presentes en el catálogo (§reporte de
+// beta #21): al enfocar sin texto se ve la lista completa (orden alfabético); al escribir, se
+// filtra por coincidencia.
+const PlayerFilter = ({
+  players,
+  selected,
+  onSelect,
+}: {
+  players: string[]
+  selected: string
+  onSelect: (player: string) => void
+}) => {
+  const [query, setQuery] = useState(selected)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => setQuery(selected), [selected])
+
+  const options = query.trim()
+    ? players.filter((p) => p.toLowerCase().includes(query.trim().toLowerCase()))
+    : players
+
+  return (
+    <div className="space-y-2">
+      <span className="text-xs font-semibold uppercase tracking-wide text-white/50">Jugador</span>
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            if (selected) onSelect("")
+            setOpen(true)
+          }}
+          onFocus={() => {
+            setOpen(true)
+            if (selected) setQuery("")
+          }}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder="Buscar jugador..."
+          className="w-full rounded-lg border border-white/15 bg-midnight px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none"
+        />
+        {selected && (
+          <button
+            type="button"
+            aria-label="Quitar filtro de jugador"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onSelect("")}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 transition hover:text-white"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+        {open && options.length > 0 && (
+          <div className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-white/15 bg-midnight shadow-lg">
+            {options.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onSelect(p)
+                  setOpen(false)
+                }}
+                className="block w-full px-3 py-2 text-left text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 const VerTodo = ({ to }: { to: string }) => (
   <Link to={to} className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110">
     Ver todo <ArrowRight className="h-4 w-4" />
   </Link>
 )
 
-// Solo escritorio: en móvil el carrusel ya se navega con scroll táctil (CardRow).
-const CarouselArrow = () => (
-  <button className="absolute -right-2 top-[38%] z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white backdrop-blur transition hover:bg-black/90 md:flex">
-    <ChevronRight className="h-5 w-5" />
+// Solo escritorio: en móvil el carrusel ya se navega con scroll táctil.
+const CarouselArrow = ({ direction, onClick }: { direction: "left" | "right"; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    aria-label={direction === "left" ? "Ver clips anteriores" : "Ver más clips"}
+    className={`absolute top-[38%] z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white backdrop-blur transition hover:bg-black/90 md:flex ${
+      direction === "left" ? "-left-2" : "-right-2"
+    }`}
+  >
+    {direction === "left" ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
   </button>
 )
+
+// Fila de clips de un bloque: scroll horizontal en TODAS las resoluciones (a diferencia de
+// CardRow, que en escritorio pasa a rejilla) para que las flechas tengan algo que desplazar.
+const ClipCarouselRow = ({ clips, block }: { clips: ContentItem[]; block: string }) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const scrollByPage = (direction: 1 | -1) => {
+    ref.current?.scrollBy({ left: direction * ref.current.clientWidth * 0.9, behavior: "smooth" })
+  }
+  return (
+    <div className="relative">
+      <div ref={ref} className="flex snap-x snap-mandatory gap-4 overflow-x-auto scrollbar-hide pb-1">
+        {clips.map((clip) => (
+          <div key={clip.id} className="w-[40vw] shrink-0 snap-start sm:w-56 lg:w-64">
+            <ClipCard clip={clip} currentBlock={block} />
+          </div>
+        ))}
+      </div>
+      <CarouselArrow direction="left" onClick={() => scrollByPage(-1)} />
+      <CarouselArrow direction="right" onClick={() => scrollByPage(1)} />
+    </div>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Tarjetas
@@ -89,13 +192,13 @@ const ClipCard = ({ clip, currentBlock }: { clip: ContentItem; currentBlock: str
         <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
           {formatDuration(clip.durationSeconds)}
         </span>
-        <span className="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100">
+        <span className="absolute right-2 top-2">
           <SaveButton item={clip} variant="icon" />
         </span>
       </div>
       <div className="mt-2.5 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-white">{clip.title}</p>
+          <p className="text-sm font-medium leading-snug text-white">{clip.title}</p>
           <div className="mt-1 flex flex-wrap gap-x-2 text-xs leading-relaxed">
             {clip.concepts.slice(0, 4).map((c) => (
               <span key={c} className={blockConcepts.has(c) ? "text-neon-cyan/90" : "text-white/35"}>
@@ -142,14 +245,7 @@ const ConceptSection = ({
         </div>
       </div>
 
-      <div className="relative">
-        <CardRow>
-          {section.clips.map((clip) => (
-            <ClipCard key={clip.id} clip={clip} currentBlock={section.block} />
-          ))}
-        </CardRow>
-        <CarouselArrow />
-      </div>
+      <ClipCarouselRow clips={section.clips} block={section.block} />
     </section>
   )
 }
@@ -203,6 +299,7 @@ const Explorar = () => {
   const [type, setType] = useState<ContentType>("all")
   const [selectedBlock, setSelectedBlock] = useState("")
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [selectedPlayer, setSelectedPlayer] = useState("")
 
   const toggleConcept = (concept: string) =>
     setSelected((prev) => {
@@ -214,6 +311,7 @@ const Explorar = () => {
     setSelected(new Set())
     setType("all")
     setSelectedBlock("")
+    setSelectedPlayer("")
   }
 
   // Lista global de conceptos para el panel (bloques + análisis), ordenada y sin repetir.
@@ -224,8 +322,19 @@ const Explorar = () => {
     return Array.from(s).sort((a, b) => a.localeCompare(b))
   }, [data])
 
+  // Jugadores únicos (campo "players" es un CSV: "Agus Tapia, Arturo Coello, ..."), alfabético.
+  const allPlayers = useMemo(() => {
+    const s = new Set<string>()
+    const addFrom = (csv?: string) => csv?.split(",").forEach((p) => p.trim() && s.add(p.trim()))
+    data?.sections.forEach((sec) => sec.clips.forEach((c) => addFrom(c.players)))
+    data?.analyses.forEach((a) => addFrom(a.players))
+    return Array.from(s).sort((a, b) => a.localeCompare(b))
+  }, [data])
+
   const conceptActive = selected.size > 0
   const matches = (concepts: string[]) => !conceptActive || concepts.some((c) => selected.has(c))
+  const matchesPlayer = (players?: string) =>
+    !selectedPlayer || (players ?? "").split(",").map((p) => p.trim()).includes(selectedPlayer)
 
   // Un clip puede tener el mismo concepto en distintos bloques (raro, pero posible) o aparecer
   // en varias secciones porque tiene otros bloques propios: el filtro de un concepto debe mirar
@@ -238,21 +347,24 @@ const Explorar = () => {
     return scoped.some((c) => selected.has(c))
   }
 
-  // Clips: filtra por bloque + concepto y descarta las secciones vacías.
+  // Clips: filtra por bloque + concepto + jugador y descarta las secciones vacías.
   const visibleSections = useMemo(() => {
     if (type === "analyses" || !data) return []
     return data.sections
       .filter((sec) => !selectedBlock || sec.block === selectedBlock)
-      .map((sec) => ({ ...sec, clips: sec.clips.filter((cl) => matchesInBlock(cl, sec.block)) }))
+      .map((sec) => ({
+        ...sec,
+        clips: sec.clips.filter((cl) => matchesInBlock(cl, sec.block) && matchesPlayer(cl.players)),
+      }))
       .filter((sec) => sec.clips.length > 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, type, selectedBlock, selected])
+  }, [data, type, selectedBlock, selected, selectedPlayer])
 
   const visibleAnalyses = useMemo(() => {
     if (type === "clips" || !data) return []
-    return data.analyses.filter((a) => matches(a.concepts))
+    return data.analyses.filter((a) => matches(a.concepts) && matchesPlayer(a.players))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, type, selected])
+  }, [data, type, selected, selectedPlayer])
 
   // Secciones del panel de filtros compartido (mismo componente que Search/Resultados).
   const filterSections: FilterSection[] = [
@@ -276,7 +388,8 @@ const Explorar = () => {
     },
   ]
 
-  const activeCount = selected.size + (type !== "all" ? 1 : 0) + (selectedBlock ? 1 : 0)
+  const activeCount =
+    selected.size + (type !== "all" ? 1 : 0) + (selectedBlock ? 1 : 0) + (selectedPlayer ? 1 : 0)
   const noResults = !!data && !loading && visibleSections.length === 0 && visibleAnalyses.length === 0
 
   return (
@@ -309,13 +422,21 @@ const Explorar = () => {
 
       {/* Filtros: en escritorio en línea; en móvil, hoja inferior (mismo patrón que Comentarios en Video). */}
       {showFilters && (
-        <div className="hidden lg:block">
+        <div className="hidden space-y-4 lg:block">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+            <PlayerFilter players={allPlayers} selected={selectedPlayer} onSelect={setSelectedPlayer} />
+          </div>
           <FilterPanel sections={filterSections} onClear={clear} showClear={activeCount > 0} />
         </div>
       )}
 
       <BottomSheet open={showFilters} onClose={() => setShowFilters(false)} title="Filtros">
-        <FilterPanel sections={filterSections} onClear={clear} showClear={activeCount > 0} />
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+            <PlayerFilter players={allPlayers} selected={selectedPlayer} onSelect={setSelectedPlayer} />
+          </div>
+          <FilterPanel sections={filterSections} onClear={clear} showClear={activeCount > 0} />
+        </div>
       </BottomSheet>
 
       {loading && <ExplorarSkeleton />}
