@@ -4,6 +4,7 @@ import Fuse from "fuse.js"
 import { SlidersHorizontal, X, Compass } from "lucide-react"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getSearch } from "../../../lib/api/search"
+import { getBlocks } from "../../../lib/api/blocks"
 import type { ContentItem } from "../../../lib/api/types"
 import SaveButton from "../../../lib/saved/SaveButton"
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
@@ -44,16 +45,6 @@ const FUSE_OPTIONS: ConstructorParameters<typeof Fuse<ContentItem>>[1] = {
 }
 
 // Taxonomía oficial de bloques (§5). Mismos campos que el panel de filtros de Explorar.
-const BLOCKS = [
-  "Juego desde el fondo",
-  "Transición defensa-ataque",
-  "Juego en la red",
-  "Uso del globo",
-  "Gestión del ritmo del punto",
-  "Lectura táctica del rival",
-  "Uso táctico de golpes",
-  "Juego en pareja",
-]
 const SORTS = [
   { v: "relevance", l: "Más relevantes" },
   { v: "recent", l: "Más recientes" },
@@ -170,6 +161,8 @@ const Search = () => {
     setParams(next)
   }
 
+  const { data: blocks } = useApi(getBlocks, [], "blocks")
+
   const { data, loading, error } = useApi(
     () => getSearch({ sort: filters.sort, feed: filters.feed }),
     [filters.sort, filters.feed],
@@ -237,7 +230,7 @@ const Search = () => {
     },
     {
       title: "Bloque",
-      options: BLOCKS.map((b) => ({ value: b, label: b })),
+      options: (blocks ?? []).map((b) => ({ value: b, label: b })),
       isActive: (v) => filters.block === v,
       onToggle: (v) => setFilter({ block: filters.block === v ? "" : v }),
     },

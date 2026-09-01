@@ -8,6 +8,8 @@ import {
   patchAnalysis,
   type BlockConceptsInput,
 } from "../../../lib/api/admin"
+import { getBlocks } from "../../../lib/api/blocks"
+import { useApi } from "../../../lib/hooks/useApi"
 import CatalogPicker from "../components/CatalogPicker"
 
 /**
@@ -16,17 +18,6 @@ import CatalogPicker from "../components/CatalogPicker"
  * un clip ni tocar el vídeo — eso queda para la fase de "Estudio" (ver memoria del
  * proyecto). Reutiliza los mismos campos/patrones que Publicar.tsx.
  */
-
-const BLOCKS = [
-  "Juego desde el fondo",
-  "Transición defensa-ataque",
-  "Juego en la red",
-  "Uso del globo",
-  "Gestión del ritmo del punto",
-  "Lectura táctica del rival",
-  "Uso táctico de golpes",
-  "Juego en pareja",
-]
 
 const ROUNDS = [
   "Treintaidosavos de final",
@@ -46,6 +37,8 @@ const Editar = () => {
   const { type, id } = useParams<{ type: string; id: string }>()
   const navigate = useNavigate()
   const isClip = type === "clip"
+  const { data: blocksData } = useApi(getBlocks, [], "blocks")
+  const blocks = blocksData ?? []
 
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -54,7 +47,7 @@ const Editar = () => {
   const [description, setDescription] = useState("")
   const [players, setPlayers] = useState<string[]>([])
   // Solo clips
-  const [groups, setGroups] = useState<Group[]>([{ block: BLOCKS[0], concepts: [] }])
+  const [groups, setGroups] = useState<Group[]>([{ block: "", concepts: [] }])
   // Solo análisis
   const [venue, setVenue] = useState("")
   const [category, setCategory] = useState("")
@@ -76,7 +69,7 @@ const Editar = () => {
           setTitle(data.title)
           setDescription(data.description)
           setPlayers(data.players)
-          setGroups(data.blocks.length > 0 ? data.blocks.map((b) => ({ block: b.block, concepts: b.concepts })) : [{ block: BLOCKS[0], concepts: [] }])
+          setGroups(data.blocks.length > 0 ? data.blocks.map((b) => ({ block: b.block, concepts: b.concepts })) : [{ block: blocks[0] ?? "", concepts: [] }])
         } else {
           const data = await getAnalysisForEdit(id)
           if (!active) return
@@ -101,7 +94,7 @@ const Editar = () => {
 
   const updateGroup = (gi: number, patch: Partial<Group>) =>
     setGroups((gs) => gs.map((g, j) => (j === gi ? { ...g, ...patch } : g)))
-  const addGroup = () => setGroups((gs) => [...gs, { block: BLOCKS[0], concepts: [] }])
+  const addGroup = () => setGroups((gs) => [...gs, { block: blocks[0] ?? "", concepts: [] }])
   const removeGroup = (gi: number) => setGroups((gs) => gs.filter((_, j) => j !== gi))
 
   // Mismo motivo que en Publicar.tsx: sugerir en el picker los conceptos ya escritos en
@@ -204,7 +197,7 @@ const Editar = () => {
                     onChange={(e) => updateGroup(gi, { block: e.target.value })}
                     className={`${inputCls} flex-1`}
                   >
-                    {BLOCKS.map((b) => (
+                    {blocks.map((b) => (
                       <option key={b} value={b} className="bg-midnight">{b}</option>
                     ))}
                   </select>

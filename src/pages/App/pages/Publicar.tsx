@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { UploadCloud, Film, Plus, Trash2, X, CheckCircle2 } from "lucide-react"
 import { createDirectUpload, uploadToCloudflare, readVideoDuration, publish, type PublishChapterInput } from "../../../lib/api/admin"
+import { getBlocks } from "../../../lib/api/blocks"
+import { useApi } from "../../../lib/hooks/useApi"
 import CatalogPicker from "../components/CatalogPicker"
 
 /**
@@ -8,17 +10,6 @@ import CatalogPicker from "../components/CatalogPicker"
  * Paso 1: análisis (vídeo largo + torneo + jugadores). Paso 2: clips (cada uno con su vídeo y
  * grupos bloque→conceptos). Torneo/jugadores se heredan del análisis en los clips.
  */
-
-const BLOCKS = [
-  "Juego desde el fondo",
-  "Transición defensa-ataque",
-  "Juego en la red",
-  "Uso del globo",
-  "Gestión del ritmo del punto",
-  "Lectura táctica del rival",
-  "Uso táctico de golpes",
-  "Juego en pareja",
-]
 
 const ROUNDS = [
   "Treintaidosavos de final",
@@ -33,7 +24,7 @@ type Group = { block: string; concepts: string[] }
 type ClipDraft = { file: File | null; title: string; description: string; groups: Group[] }
 type ChapterDraft = { time: string; title: string; concept: string }
 
-const emptyClip = (): ClipDraft => ({ file: null, title: "", description: "", groups: [{ block: BLOCKS[0], concepts: [] }] })
+const emptyClip = (defaultBlock: string): ClipDraft => ({ file: null, title: "", description: "", groups: [{ block: defaultBlock, concepts: [] }] })
 const emptyChapter = (): ChapterDraft => ({ time: "", title: "", concept: "" })
 
 /** "mm:ss" o "hh:mm:ss" (solo dígitos y ":") → segundos. null si el formato no es válido. */
@@ -79,6 +70,9 @@ const StepDot = ({ n, label, active }: { n: number; label: string; active: boole
 )
 
 const Publicar = () => {
+  const { data: blocksData } = useApi(getBlocks, [], "blocks")
+  const blocks = blocksData ?? []
+
   const [step, setStep] = useState<1 | 2>(1)
 
   // Análisis
@@ -93,7 +87,7 @@ const Publicar = () => {
   const [chapters, setChapters] = useState<ChapterDraft[]>([])
 
   // Clips
-  const [clips, setClips] = useState<ClipDraft[]>([emptyClip()])
+  const [clips, setClips] = useState<ClipDraft[]>([emptyClip(blocks[0] ?? "")])
 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -111,7 +105,7 @@ const Publicar = () => {
     )
 
   const addGroup = (ci: number) =>
-    setClips((cs) => cs.map((c, idx) => (idx === ci ? { ...c, groups: [...c.groups, { block: BLOCKS[0], concepts: [] }] } : c)))
+    setClips((cs) => cs.map((c, idx) => (idx === ci ? { ...c, groups: [...c.groups, { block: blocks[0] ?? "", concepts: [] }] } : c)))
 
   const removeGroup = (ci: number, gi: number) =>
     setClips((cs) => cs.map((c, idx) => (idx === ci ? { ...c, groups: c.groups.filter((_, j) => j !== gi) } : c)))
@@ -211,7 +205,7 @@ const Publicar = () => {
       setRound("")
       setYear("")
       setChapters([])
-      setClips([emptyClip()])
+      setClips([emptyClip(blocks[0] ?? "")])
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo publicar el contenido.")
     } finally {
@@ -349,7 +343,7 @@ const Publicar = () => {
                         onChange={(e) => updateGroup(ci, gi, { block: e.target.value })}
                         className={`${inputCls} flex-1`}
                       >
-                        {BLOCKS.map((b) => (
+                        {blocks.map((b) => (
                           <option key={b} value={b} className="bg-midnight">{b}</option>
                         ))}
                       </select>
@@ -378,7 +372,7 @@ const Publicar = () => {
           ))}
 
           <button
-            onClick={() => setClips((cs) => [...cs, emptyClip()])}
+            onClick={() => setClips((cs) => [...cs, emptyClip(blocks[0] ?? "")])}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-white/20 py-3 text-sm font-medium text-white/70 transition hover:border-neon-cyan/40 hover:text-white"
           >
             <Plus className="h-4 w-4" /> Añadir otro clip
