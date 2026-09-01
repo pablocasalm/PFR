@@ -45,6 +45,22 @@ const NewsBell = () => {
         setItems(res.items)
         setUnreadCount(res.unreadCount)
         setAlreadyReadIds(new Set(res.items.filter((i) => i.isRead).map((i) => i.id)))
+
+        // El link del email de aviso llega con ?news=open: abre la campana sola, sin depender de
+        // que el usuario la encuentre y la clique. Se limpia el parámetro para que no reabra al
+        // navegar dentro de la SPA con esa misma URL en el historial.
+        const params = new URLSearchParams(window.location.search)
+        if (params.has("news")) {
+          params.delete("news")
+          const query = params.toString()
+          window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`)
+          setOpen(true)
+          if (res.unreadCount > 0) {
+            setUnreadCount(0)
+            setItems((prev) => prev.map((i) => ({ ...i, isRead: true })))
+            markAllNewsRead().catch(() => {})
+          }
+        }
       })
       .catch(() => {})
       .finally(() => setLoaded(true))
