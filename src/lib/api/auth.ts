@@ -9,6 +9,11 @@ export type AuthResponse = {
   displayName?: string | null
   role?: string // "User" | "Admin" | "ContentCreator"
   hasSeenOnboarding?: boolean
+  planType?: string // "Free" | "TrialThenPaid" | "Discounted"
+  trialEndsAtUtc?: string | null
+  subscriptionTier?: string | null // "Standard" | "Global"
+  subscriptionStatus?: string // "None" | "Trialing" | "Active" | "PastDue" | "Canceled"
+  subscriptionCurrentPeriodEndUtc?: string | null
 }
 
 /**

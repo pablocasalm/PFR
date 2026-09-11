@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react"
-import { Outlet, useNavigate } from "react-router-dom"
+import { Outlet, useNavigate, useSearchParams } from "react-router-dom"
 import Header from "./components/Header"
 import MobileNav from "./components/MobileNav"
 import FeedbackButton from "./components/FeedbackButton"
 import ScrollToTop from "../../lib/ui/ScrollToTop"
 import { hydrateSaved } from "../../lib/saved/store"
-import { useAuth } from "../../lib/auth/store"
+import { useAuth, refreshSubscriptionState } from "../../lib/auth/store"
 import { startOnboardingTour } from "../../lib/onboarding/tour"
 
 /**
@@ -15,11 +15,25 @@ import { startOnboardingTour } from "../../lib/onboarding/tour"
 const AppLayout = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   // Al entrar en la zona con sesión, sincroniza Mi Lista con la cuenta (/api/saved).
   useEffect(() => {
     hydrateSaved()
   }, [])
+
+  // Vuelta de Stripe Checkout (ver Precios.tsx, successUrl=/app/inicio?checkout=success):
+  // refresca los datos de suscripción sin esperar al próximo refresh natural del token, y
+  // limpia el parámetro de la URL para que no se repita en un F5.
+  useEffect(() => {
+    if (searchParams.get("checkout") !== "success") return
+    refreshSubscriptionState()
+    setSearchParams((prev) => {
+      prev.delete("checkout")
+      return prev
+    }, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   // Tour de bienvenida (beta): lo recuerda el backend (User.HasSeenOnboarding), no el
   // dispositivo — así que sale igual la primera vez que la cuenta entra, venga de donde venga.

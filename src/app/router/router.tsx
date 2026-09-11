@@ -11,6 +11,7 @@ const MiCuenta = lazy(() => import("../../pages/App/pages/MiCuenta"))
 const ComoFunciona = lazy(() => import("../../pages/App/pages/ComoFunciona"))
 const Watch = lazy(() => import("../../pages/App/pages/Watch"))
 const Search = lazy(() => import("../../pages/App/pages/Search"))
+const Precios = lazy(() => import("../../pages/App/pages/Precios"))
 const LoginPage = lazy(() => import("../../lib/auth/LoginPage"))
 const ResetPasswordPage = lazy(() => import("../../lib/auth/ResetPasswordPage"))
 const PlayerTestPage = lazy(() => import("../../lib/player/PlayerTestPage"))
@@ -23,6 +24,7 @@ const AdminNoticias = lazy(() => import("../../pages/App/pages/AdminNoticias"))
 const RequireAuth = lazy(() => import("../../lib/auth/RequireAuth"))
 const RequirePublisher = lazy(() => import("../../lib/auth/RequirePublisher"))
 const RequireAdmin = lazy(() => import("../../lib/auth/RequireAdmin"))
+const RequireSubscription = lazy(() => import("../../lib/auth/RequireSubscription"))
 
 const loadingFallback = <LoadingScreen />
 
@@ -47,14 +49,16 @@ const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <Navigate to="/app/inicio" replace /> },
-      { path: "inicio", element: withSuspense(<Inicio />) },
-      { path: "explorar", element: withSuspense(<Explorar />) },
-      { path: "mi-lista", element: withSuspense(<MiLista />) },
-      { path: "mi-juego", element: withSuspense(<MiJuego />) },
+      // Paywall: requiere sesión (ya la exige /app entero) + suscripción activa (o exención).
+      { path: "inicio", element: withSuspense(<RequireSubscription><Inicio /></RequireSubscription>) },
+      { path: "explorar", element: withSuspense(<RequireSubscription><Explorar /></RequireSubscription>) },
+      { path: "mi-lista", element: withSuspense(<RequireSubscription><MiLista /></RequireSubscription>) },
+      { path: "mi-juego", element: withSuspense(<RequireSubscription><MiJuego /></RequireSubscription>) },
       { path: "mi-cuenta", element: withSuspense(<MiCuenta />) },
       { path: "como-funciona", element: withSuspense(<ComoFunciona />) },
-      { path: "watch", element: withSuspense(<Watch />) },
-      { path: "search", element: withSuspense(<Search />) },
+      { path: "precios", element: withSuspense(<Precios />) },
+      { path: "watch", element: withSuspense(<RequireSubscription><Watch /></RequireSubscription>) },
+      { path: "search", element: withSuspense(<RequireSubscription><Search /></RequireSubscription>) },
       { path: "publicar", element: withSuspense(<RequirePublisher><Publicar /></RequirePublisher>) },
       { path: "editar/:type/:id", element: withSuspense(<RequirePublisher><Editar /></RequirePublisher>) },
       { path: "admin/invitaciones", element: withSuspense(<RequireAdmin><AdminInvites /></RequireAdmin>) },

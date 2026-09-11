@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import { UserCircle } from "lucide-react"
 import { useAuth, setLocalDisplayName } from "../../../lib/auth/store"
 import { getMyProfile, updateProfile, changePassword, type ProfileResponse } from "../../../lib/api/profile"
+import { createPortalSession } from "../../../lib/api/billing"
 
 /**
  * Mi cuenta — autogestión básica del perfil (§MVP): ver email/plan/rol, cambiar nombre visible
@@ -15,6 +17,22 @@ const PLAN_CLS: Record<string, string> = {
   Free: "border-white/15 bg-white/5 text-white/60",
   TrialThenPaid: "border-violet-400/40 bg-violet-400/10 text-violet-300",
   Discounted: "border-neon-lime/40 bg-neon-lime/10 text-neon-lime",
+}
+
+const TIER_LABEL: Record<string, string> = { Standard: "Estándar", Global: "Global (con traducción)" }
+const SUB_STATUS_LABEL: Record<string, string> = {
+  None: "Sin suscripción de pago",
+  Trialing: "En prueba",
+  Active: "Activa",
+  PastDue: "Pago pendiente",
+  Canceled: "Cancelada",
+}
+const SUB_STATUS_CLS: Record<string, string> = {
+  None: "border-white/15 bg-white/5 text-white/60",
+  Trialing: "border-violet-400/40 bg-violet-400/10 text-violet-300",
+  Active: "border-neon-lime/40 bg-neon-lime/10 text-neon-lime",
+  PastDue: "border-amber-400/40 bg-amber-400/10 text-amber-300",
+  Canceled: "border-red-400/40 bg-red-400/10 text-red-300",
 }
 
 const inputCls =
@@ -37,6 +55,22 @@ const MiCuenta = () => {
   const [pwSaving, setPwSaving] = useState(false)
   const [pwError, setPwError] = useState<string | null>(null)
   const [pwSaved, setPwSaved] = useState(false)
+
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [portalError, setPortalError] = useState<string | null>(null)
+
+  const openPortal = async () => {
+    if (portalLoading) return
+    setPortalLoading(true)
+    setPortalError(null)
+    try {
+      const { url } = await createPortalSession()
+      window.location.href = url
+    } catch (err) {
+      setPortalError(err instanceof Error ? err.message : "No se pudo abrir la gestión de la suscripción.")
+      setPortalLoading(false)
+    }
+  }
 
   useEffect(() => {
     getMyProfile()
@@ -131,6 +165,57 @@ const MiCuenta = () => {
             </dd>
           </div>
         </dl>
+      </section>
+
+      {/* Mi suscripción */}
+      <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/70">Mi suscripción</h2>
+        <dl className="mb-4 space-y-3 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-white/50">Estado</dt>
+            <dd>
+              <span
+                className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                  SUB_STATUS_CLS[profile?.subscriptionStatus ?? "None"] ?? SUB_STATUS_CLS.None
+                }`}
+              >
+                {SUB_STATUS_LABEL[profile?.subscriptionStatus ?? "None"] ?? profile?.subscriptionStatus ?? "—"}
+              </span>
+            </dd>
+          </div>
+          {profile?.subscriptionTier && (
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-white/50">Tier</dt>
+              <dd className="text-white">{TIER_LABEL[profile.subscriptionTier] ?? profile.subscriptionTier}</dd>
+            </div>
+          )}
+          {profile?.subscriptionCurrentPeriodEndUtc && (
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-white/50">Renueva el</dt>
+              <dd className="text-white">{new Date(profile.subscriptionCurrentPeriodEndUtc).toLocaleDateString("es-ES")}</dd>
+            </div>
+          )}
+        </dl>
+
+        {portalError && <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{portalError}</p>}
+
+        {profile?.subscriptionStatus && profile.subscriptionStatus !== "None" ? (
+          <button
+            type="button"
+            onClick={openPortal}
+            disabled={portalLoading}
+            className="rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {portalLoading ? "Abriendo..." : "Gestionar suscripción"}
+          </button>
+        ) : (
+          <Link
+            to="/app/precios"
+            className="inline-block rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
+          >
+            Ver planes
+          </Link>
+        )}
       </section>
 
       {/* Nombre visible */}

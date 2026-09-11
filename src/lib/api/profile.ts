@@ -7,6 +7,9 @@ export type ProfileResponse = {
   role: string // "User" | "Admin" | "ContentCreator"
   planType: string // "Free" | "TrialThenPaid" | "Discounted"
   trialEndsAtUtc?: string | null
+  subscriptionTier?: string | null // "Standard" | "Global"
+  subscriptionStatus: string // "None" | "Trialing" | "Active" | "PastDue" | "Canceled"
+  subscriptionCurrentPeriodEndUtc?: string | null
 }
 
 /** GET /api/users/me → datos del propio perfil (email, nombre, rol, plan). */

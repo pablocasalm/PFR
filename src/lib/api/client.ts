@@ -39,7 +39,7 @@ const isAuthEndpoint = (endpoint: string) => NO_REFRESH_ENDPOINTS.some((e) => en
  */
 let refreshPromise: Promise<boolean> | null = null
 
-function refreshAccessToken(): Promise<boolean> {
+export function refreshAccessToken(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
@@ -55,6 +55,11 @@ function refreshAccessToken(): Promise<boolean> {
             displayName: data.displayName,
             role: data.role,
             hasSeenOnboarding: data.hasSeenOnboarding,
+            planType: data.planType,
+            trialEndsAtUtc: data.trialEndsAtUtc,
+            subscriptionTier: data.subscriptionTier,
+            subscriptionStatus: data.subscriptionStatus,
+            subscriptionCurrentPeriodEndUtc: data.subscriptionCurrentPeriodEndUtc,
           }),
         )
         return true

@@ -181,3 +181,19 @@ Botón flotante de feedback (`FeedbackButton`) en toda la app: tipo (fallo/idea/
 mensaje, **captura de pantalla opcional** (dropzone, máx. 5 MB, guardada en SQL — se borra
 sola 1 día después de que el reporte se marque resuelto). Panel de gestión en
 `/app/admin/reportes` con historial, notas internas y miniatura/lightbox de la captura.
+
+### 11. Suscripciones de pago (Stripe) 🚧
+Checkout hospedado de Stripe (2 tiers: Estándar / Global con traducción), precio propio por
+país (`PricingPlan` + geolocalización por IP con MaxMind GeoLite2, no conversión automática de
+divisa), Customer Portal para cancelar/gestionar, paywall (`RequireActiveSubscriptionAttribute`
+backend + `RequireSubscription` frontend) que respeta a los beta testers actuales
+(`BillingPlan.Free`, exentos indefinidamente) y a quien sigue dentro de su prueba de 14 días.
+Código escrito, **pendiente antes de activarlo de verdad**:
+- Migración EF de los campos nuevos de `User` + tablas `PricingPlan`/`StripeWebhookEvent`
+  (`dotnet ef migrations add AddStripeSubscription`, la corre el usuario).
+- Crear Products/Prices/Customer Portal/webhook en el dashboard de Stripe (modo test primero)
+  y rellenar la tabla `PricingPlan` con los importes reales por país.
+- Cuenta gratuita de MaxMind + descargar `GeoLite2-Country.mmdb` al servidor del backend.
+- Variables de entorno en producción: `Stripe__SecretKey`, `Stripe__WebhookSecret`,
+  `GeoIp__DatabasePath`.
+- Probar de extremo a extremo en modo test antes de pasar a live (ver plan de implementación).

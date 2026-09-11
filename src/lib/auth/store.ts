@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react"
 import { apiLogin, apiRegister, apiLogout, markOnboardingSeen } from "../api/auth"
+import { refreshAccessToken } from "../api/client"
 import { clearSaved } from "../saved/store"
 import { invalidateApiCache } from "../hooks/useApi"
 
@@ -10,7 +11,20 @@ import { invalidateApiCache } from "../hooks/useApi"
  */
 
 export type UserRole = "User" | "Admin" | "ContentCreator"
-export type AuthUser = { email: string; displayName?: string | null; role?: UserRole; hasSeenOnboarding?: boolean }
+export type BillingPlan = "Free" | "TrialThenPaid" | "Discounted"
+export type SubscriptionTier = "Standard" | "Global"
+export type SubscriptionStatus = "None" | "Trialing" | "Active" | "PastDue" | "Canceled"
+export type AuthUser = {
+  email: string
+  displayName?: string | null
+  role?: UserRole
+  hasSeenOnboarding?: boolean
+  planType?: BillingPlan
+  trialEndsAtUtc?: string | null
+  subscriptionTier?: SubscriptionTier | null
+  subscriptionStatus?: SubscriptionStatus
+  subscriptionCurrentPeriodEndUtc?: string | null
+}
 type AuthState = { token: string | null; user: AuthUser | null }
 
 /** Pueden publicar contenido los ContentCreator y los Admin. El resto solo consume. */
@@ -21,6 +35,15 @@ export function canPublish(user: AuthUser | null): boolean {
 /** Solo los Admin acceden a la gestión (invitaciones, etc.). */
 export function isAdmin(user: AuthUser | null): boolean {
   return user?.role === "Admin"
+}
+
+/** Espejo de la regla de RequireActiveSubscriptionAttribute del backend: exento si es Free (beta
+ * invitada directamente) o sigue dentro de su TrialEndsAtUtc, si no hace falta suscripción real. */
+export function hasActiveSubscription(user: AuthUser | null): boolean {
+  if (!user) return false
+  if (user.planType === "Free") return true
+  if (user.trialEndsAtUtc && new Date(user.trialEndsAtUtc) > new Date()) return true
+  return user.subscriptionStatus === "Trialing" || user.subscriptionStatus === "Active"
 }
 
 const TOKEN_KEY = "token"
@@ -61,30 +84,38 @@ function subscribe(l: () => void) {
   return () => listeners.delete(l)
 }
 
+function toAuthUser(res: Awaited<ReturnType<typeof apiLogin>>, fallbackEmail: string): AuthUser {
+  return {
+    email: res.email ?? fallbackEmail,
+    displayName: res.displayName,
+    role: res.role as UserRole | undefined,
+    hasSeenOnboarding: res.hasSeenOnboarding,
+    planType: res.planType as BillingPlan | undefined,
+    trialEndsAtUtc: res.trialEndsAtUtc,
+    subscriptionTier: res.subscriptionTier as SubscriptionTier | null | undefined,
+    subscriptionStatus: res.subscriptionStatus as SubscriptionStatus | undefined,
+    subscriptionCurrentPeriodEndUtc: res.subscriptionCurrentPeriodEndUtc,
+  }
+}
+
 export async function login(email: string, password: string) {
   const res = await apiLogin(email, password)
-  setState({
-    token: res.token ?? null,
-    user: {
-      email: res.email ?? email,
-      displayName: res.displayName,
-      role: res.role as UserRole | undefined,
-      hasSeenOnboarding: res.hasSeenOnboarding,
-    },
-  })
+  setState({ token: res.token ?? null, user: toAuthUser(res, email) })
 }
 
 export async function register(email: string, password: string, displayName?: string, inviteCode?: string) {
   const res = await apiRegister(email, password, displayName, inviteCode)
-  setState({
-    token: res.token ?? null,
-    user: {
-      email: res.email ?? email,
-      displayName: res.displayName,
-      role: res.role as UserRole | undefined,
-      hasSeenOnboarding: res.hasSeenOnboarding,
-    },
-  })
+  setState({ token: res.token ?? null, user: toAuthUser(res, email) })
+}
+
+/** Refresca los datos de suscripción del usuario tras volver de Stripe Checkout, sin esperar al
+ * próximo refresh natural del token (ver Precios.tsx, `?checkout=success`). `refreshAccessToken`
+ * ya deja el localStorage al día; aquí se vuelve a leer y se republica para que los componentes
+ * suscritos con useAuth() se enteren al momento (si no, solo lo verían tras recargar). */
+export async function refreshSubscriptionState() {
+  const ok = await refreshAccessToken()
+  if (ok) setState(read())
+  return ok
 }
 
 export function logout() {
