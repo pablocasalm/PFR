@@ -57,7 +57,6 @@ export function refreshAccessToken(): Promise<boolean> {
             hasSeenOnboarding: data.hasSeenOnboarding,
             planType: data.planType,
             trialEndsAtUtc: data.trialEndsAtUtc,
-            subscriptionTier: data.subscriptionTier,
             subscriptionStatus: data.subscriptionStatus,
             subscriptionCurrentPeriodEndUtc: data.subscriptionCurrentPeriodEndUtc,
           }),

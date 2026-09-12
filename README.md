@@ -183,17 +183,38 @@ sola 1 día después de que el reporte se marque resuelto). Panel de gestión en
 `/app/admin/reportes` con historial, notas internas y miniatura/lightbox de la captura.
 
 ### 11. Suscripciones de pago (Stripe) 🚧
-Checkout hospedado de Stripe (2 tiers: Estándar / Global con traducción), precio propio por
-país (`PricingPlan` + geolocalización por IP con MaxMind GeoLite2, no conversión automática de
-divisa), Customer Portal para cancelar/gestionar, paywall (`RequireActiveSubscriptionAttribute`
-backend + `RequireSubscription` frontend) que respeta a los beta testers actuales
-(`BillingPlan.Free`, exentos indefinidamente) y a quien sigue dentro de su prueba de 14 días.
-Código escrito, **pendiente antes de activarlo de verdad**:
-- Migración EF de los campos nuevos de `User` + tablas `PricingPlan`/`StripeWebhookEvent`
-  (`dotnet ef migrations add AddStripeSubscription`, la corre el usuario).
-- Crear Products/Prices/Customer Portal/webhook en el dashboard de Stripe (modo test primero)
-  y rellenar la tabla `PricingPlan` con los importes reales por país.
-- Cuenta gratuita de MaxMind + descargar `GeoLite2-Country.mmdb` al servidor del backend.
-- Variables de entorno en producción: `Stripe__SecretKey`, `Stripe__WebhookSecret`,
-  `GeoIp__DatabasePath`.
-- Probar de extremo a extremo en modo test antes de pasar a live (ver plan de implementación).
+Checkout hospedado de Stripe, **un único plan** (sin tiers — las traducciones al inglés van
+incluidas para todo el mundo), precio propio por país (`PricingPlan` + geolocalización por IP
+con MaxMind GeoLite2, no conversión automática de divisa), Customer Portal para
+cancelar/gestionar, paywall (`RequireActiveSubscriptionAttribute` backend +
+`RequireSubscription` frontend) que respeta a los beta testers actuales (`BillingPlan.Free`,
+exentos indefinidamente) y a quien sigue dentro de su prueba de 14 días. `GET
+/api/billing/plans` es público (sin sesión) — pensado para mostrarlo también desde
+PFR_Landing (`padelfilmroom.com/precios`), pendiente de montar esa página (solo falta añadir
+su dominio a `Cors__Origins` en producción).
+
+Probado en local end-to-end (checkout, webhook, portal). **Pendiente antes de activarlo en
+real**:
+- Migración EF ya generada y aplicada en dev (`AddStripeSubscription`, `AddStreamUidEn`);
+  falta aplicarla en producción (mismo comando, connection string de producción).
+- Crear Products/Prices/Customer Portal/webhook en el dashboard de Stripe en **modo live**
+  (hoy están en test) y rellenar `PricingPlan` con los importes reales por país (ES, CH, FR,
+  DE...).
+- Variables de entorno en producción: `Stripe__SecretKey` (live), `Stripe__WebhookSecret`
+  (live), `GeoIp__DatabasePath`, `CloudflareStream__CustomerSubdomain`.
+
+### 12. Traducción del catálogo al inglés (HeyGen) 🚧
+Cada Clip/Analysis puede tener una versión en inglés (`StreamUidEn`, vídeo doblado con
+lip-sync vía HeyGen "Hyperrealistic Translation") y subtítulos (`.srt` de HeyGen, convertidos
+solos a `.vtt` y subidos a la API nativa de captions de Cloudflare Stream). Se suben desde
+`Editar.tsx` (caso principal: traducir el catálogo ya publicado) o de forma opcional desde
+`Publicar.tsx` para contenido nuevo que ya llegue traducido — mismo endpoint por uid
+(`POST /api/admin/videos/{uid}/captions`) en los dos sitios. El reproductor tiene selector de
+idioma real (sustituye el placeholder "Audio con IA · Próximamente") que cambia de fuente
+preservando el punto de reproducción, y selector de subtítulos poblado desde
+`hls.subtitleTracks`. Descubribilidad básica: badge "EN" + filtro "Con inglés" en
+Inicio/Explorar/Search (sin tocar títulos/descripciones ni el resto de la interfaz, todavía en
+español).
+
+**Pendiente**: probar con vídeos/subtítulos reales de HeyGen (por ahora solo verificado el
+conversor `.srt`→`.vtt` contra un archivo de ejemplo, sin subir de verdad a Cloudflare).

@@ -19,7 +19,6 @@ const PLAN_CLS: Record<string, string> = {
   Discounted: "border-neon-lime/40 bg-neon-lime/10 text-neon-lime",
 }
 
-const TIER_LABEL: Record<string, string> = { Standard: "Estándar", Global: "Global (con traducción)" }
 const SUB_STATUS_LABEL: Record<string, string> = {
   None: "Sin suscripción de pago",
   Trialing: "En prueba",
@@ -183,12 +182,6 @@ const MiCuenta = () => {
               </span>
             </dd>
           </div>
-          {profile?.subscriptionTier && (
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-white/50">Tier</dt>
-              <dd className="text-white">{TIER_LABEL[profile.subscriptionTier] ?? profile.subscriptionTier}</dd>
-            </div>
-          )}
           {profile?.subscriptionCurrentPeriodEndUtc && (
             <div className="flex items-center justify-between gap-3">
               <dt className="text-white/50">Renueva el</dt>

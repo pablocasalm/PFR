@@ -12,7 +12,6 @@ import { invalidateApiCache } from "../hooks/useApi"
 
 export type UserRole = "User" | "Admin" | "ContentCreator"
 export type BillingPlan = "Free" | "TrialThenPaid" | "Discounted"
-export type SubscriptionTier = "Standard" | "Global"
 export type SubscriptionStatus = "None" | "Trialing" | "Active" | "PastDue" | "Canceled"
 export type AuthUser = {
   email: string
@@ -21,7 +20,6 @@ export type AuthUser = {
   hasSeenOnboarding?: boolean
   planType?: BillingPlan
   trialEndsAtUtc?: string | null
-  subscriptionTier?: SubscriptionTier | null
   subscriptionStatus?: SubscriptionStatus
   subscriptionCurrentPeriodEndUtc?: string | null
 }
@@ -92,7 +90,6 @@ function toAuthUser(res: Awaited<ReturnType<typeof apiLogin>>, fallbackEmail: st
     hasSeenOnboarding: res.hasSeenOnboarding,
     planType: res.planType as BillingPlan | undefined,
     trialEndsAtUtc: res.trialEndsAtUtc,
-    subscriptionTier: res.subscriptionTier as SubscriptionTier | null | undefined,
     subscriptionStatus: res.subscriptionStatus as SubscriptionStatus | undefined,
     subscriptionCurrentPeriodEndUtc: res.subscriptionCurrentPeriodEndUtc,
   }
