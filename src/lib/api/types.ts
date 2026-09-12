@@ -29,6 +29,7 @@ export type ContentItem = {
   level?: string // "intermedio" | "avanzado" (filtro §8.2; opcional, no siempre visible)
   progress?: number // 0-100, para "continúa viendo" / "vistos recientemente"
   completed?: boolean // solo en items de historial: si ya se marcó como visto
+  hasEnglishVersion?: boolean // true si tiene vídeo doblado al inglés (HeyGen)
 }
 
 /** Concepto popular (chip con contador), para Inicio y Explorar. */
@@ -72,6 +73,7 @@ export type ClipDetail = {
   durationSeconds: number
   thumbnailUrl: string
   videoUrl: string
+  videoUrlEn?: string | null // vídeo doblado al inglés (HeyGen); null/undefined si no existe
   concepts: string[] // todos los conceptos del clip (§9.3: se muestran todos)
   blocks: string[] // bloques del clip (chips clicables §9.2)
   resumeSeconds?: number // punto donde retomar (§7.2)
@@ -91,6 +93,7 @@ export type AnalysisDetail = {
   durationSeconds: number
   thumbnailUrl: string
   videoUrl: string
+  videoUrlEn?: string | null // vídeo doblado al inglés (HeyGen); null/undefined si no existe
   players?: string
   tournament?: string
   concepts: string[]

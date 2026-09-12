@@ -11,6 +11,7 @@ import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/form
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import FilterPanel, { type FilterSection } from "../components/FilterPanel"
 import WatchedBadge from "../components/WatchedBadge"
+import EnglishBadge from "../components/EnglishBadge"
 
 /**
  * Search — Pantalla de Resultados (§11). Destino común de búsqueda, "Ver todo",
@@ -52,7 +53,7 @@ const SORTS = [
   { v: "duration", l: "Duración" },
 ]
 
-type Filters = { q: string; block: string; concept: string; type: string; sort: string; feed: string }
+type Filters = { q: string; block: string; concept: string; type: string; sort: string; feed: string; hasEnglish: string }
 
 // Cabecera adaptada al origen desde el que llega el usuario (§11.1).
 const headerTitle = (f: Filters): string => {
@@ -73,6 +74,7 @@ const appliedChips = (f: Filters): { key: keyof Filters; label: string }[] => {
   if (f.block) chips.push({ key: "block", label: f.block })
   if (f.concept) chips.push({ key: "concept", label: `#${f.concept}` })
   if (f.type) chips.push({ key: "type", label: f.type === "analysis" ? "Análisis" : "Clips" })
+  if (f.hasEnglish) chips.push({ key: "hasEnglish", label: "Con inglés" })
   return chips
 }
 
@@ -80,10 +82,23 @@ const appliedChips = (f: Filters): { key: keyof Filters; label: string }[] => {
 // Helpers visuales
 // ---------------------------------------------------------------------------
 
-const Thumb = ({ src, hue, progress, completed }: { src?: string; hue: number; progress?: number; completed?: boolean }) => (
+const Thumb = ({
+  src,
+  hue,
+  progress,
+  completed,
+  hasEnglishVersion,
+}: {
+  src?: string
+  hue: number
+  progress?: number
+  completed?: boolean
+  hasEnglishVersion?: boolean
+}) => (
   <div className="relative aspect-video w-full overflow-hidden rounded-lg" style={thumbStyle(hue)}>
     {src && <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />}
     {completed && <WatchedBadge />}
+    {hasEnglishVersion && <EnglishBadge />}
     {progress !== undefined && progress > 0 && (
       <span className="absolute inset-x-0 bottom-0 h-1 bg-white/20">
         <span className="block h-full bg-neon-cyan" style={{ width: `${Math.min(progress, 100)}%` }} />
@@ -102,7 +117,7 @@ const meta = (r: ContentItem) => {
 const ResultCard = ({ result }: { result: ContentItem }) => (
   <Link to={watchHref(result)} className="group block">
     <div className="relative overflow-hidden rounded-lg border border-white/10">
-      <Thumb src={result.thumbnailUrl} hue={hueFor(result.id)} progress={result.progress} completed={result.completed} />
+      <Thumb src={result.thumbnailUrl} hue={hueFor(result.id)} progress={result.progress} completed={result.completed} hasEnglishVersion={result.hasEnglishVersion} />
       <span className="absolute right-2 top-2" onClick={(e) => e.preventDefault()}>
         <SaveButton item={result} variant="icon" />
       </span>
@@ -144,6 +159,7 @@ const Search = () => {
     type: params.get("type") ?? "",
     sort: params.get("sort") ?? "",
     feed: params.get("feed") ?? "",
+    hasEnglish: params.get("hasEnglish") ?? "",
   }
 
   const setFilter = (patch: Partial<Filters>) => {
@@ -194,9 +210,10 @@ const Search = () => {
     let items = searched
     if (filters.concept) items = items.filter((i) => (i.concepts ?? []).includes(filters.concept))
     if (filters.block) items = items.filter((i) => i.block === filters.block || (i.blocks ?? []).some((b) => b.block === filters.block))
+    if (filters.hasEnglish) items = items.filter((i) => i.hasEnglishVersion)
     return items
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searched, filters.concept, filters.block])
+  }, [searched, filters.concept, filters.block, filters.hasEnglish])
 
   const counts = {
     all: base.length,
@@ -239,6 +256,12 @@ const Search = () => {
       options: allConcepts.map((c) => ({ value: c, label: `#${c}` })),
       isActive: (v) => filters.concept === v,
       onToggle: (v) => setFilter({ concept: filters.concept === v ? "" : v }),
+    },
+    {
+      title: "Idioma",
+      options: [{ value: "1", label: "Con inglés" }],
+      isActive: (v) => filters.hasEnglish === v,
+      onToggle: (v) => setFilter({ hasEnglish: filters.hasEnglish === v ? "" : v }),
     },
   ]
 

@@ -25,6 +25,9 @@ type IOSVideoElement = HTMLVideoElement & {
 
 type Props = {
   src: string
+  /** URL del vídeo doblado al inglés (HeyGen), si existe. Sin ella, el selector de idioma
+   * se queda en el placeholder "Próximamente". */
+  srcEn?: string
   poster?: string
   chapters?: PlayerChapter[]
   /** "16:9" (horizontal, por defecto) o "9:16" (experiencia vertical móvil). */
@@ -41,7 +44,7 @@ type Props = {
   endSlot?: (dismiss: () => void) => React.ReactNode
 }
 
-const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosition, onProgress, onEnded, endSlot }: Props) => {
+const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initialPosition, onProgress, onEnded, endSlot }: Props) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hlsRef = useRef<Hls | null>(null)
@@ -51,6 +54,10 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
   const durationRef = useRef(0)
   const lastReportRef = useRef(0)
   const resumedRef = useRef(false)
+  // Al cambiar de idioma (§HeyGen), se guarda aquí el punto/estado de reproducción justo antes
+  // de recargar la fuente, para restaurarlo cuando el nuevo manifiesto esté listo — si no, cambiar
+  // de idioma volvería siempre al minuto 0.
+  const switchStateRef = useRef<{ time: number; wasPlaying: boolean } | null>(null)
 
   const [playing, setPlaying] = useState(false)
   const [current, setCurrent] = useState(0)
@@ -63,11 +70,37 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
   const [qualityOpen, setQualityOpen] = useState(false)
   const [ended, setEnded] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [lang, setLang] = useState<"es" | "en">("es")
+  const [subtitleTracks, setSubtitleTracks] = useState<{ index: number; label: string }[]>([])
+  const [subtitleTrack, setSubtitleTrack] = useState(-1) // -1 = desactivados
+
+  const activeSrc = lang === "en" && srcEn ? srcEn : src
+
+  // Cambia de idioma preservando el punto de reproducción y si estaba sonando — es un cambio de
+  // fuente completo (el vídeo EN es un uid de Cloudflare distinto, no una pista alternativa
+  // dentro del mismo manifiesto), así que hay que recargar y luego restaurar el estado.
+  const switchLanguage = (next: "es" | "en") => {
+    if (next === lang) return
+    switchStateRef.current = { time: currentRef.current, wasPlaying: playing }
+    setLang(next)
+    setQualityOpen(false)
+  }
 
   // Cargar la fuente HLS (hls.js o nativo).
   useEffect(() => {
     const video = videoRef.current
-    if (!video || !src) return
+    if (!video || !activeSrc) return
+
+    setSubtitleTracks([])
+    setSubtitleTrack(-1)
+
+    const restoreAfterSwitch = () => {
+      const pending = switchStateRef.current
+      if (!pending) return
+      switchStateRef.current = null
+      video.currentTime = pending.time
+      if (pending.wasPlaying) video.play().catch(() => {})
+    }
 
     // hls.js primero (Chrome/Firefox y Safari con MSE): habilita el selector de calidad y una
     // reproducción mejor. Chrome devuelve "maybe" en canPlayType HLS pero NO lo reproduce bien
@@ -75,7 +108,7 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
     if (Hls.isSupported()) {
       const hls = new Hls()
       hlsRef.current = hls
-      hls.loadSource(src)
+      hls.loadSource(activeSrc)
       hls.attachMedia(video)
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setLevels(
@@ -83,6 +116,8 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
             .map((l, i) => ({ height: l.height, index: i }))
             .sort((a, b) => b.height - a.height),
         )
+        setSubtitleTracks(hls.subtitleTracks.map((t, i) => ({ index: i, label: t.name || `Subtítulos ${i + 1}` })))
+        restoreAfterSwitch()
       })
       return () => {
         hls.destroy()
@@ -91,9 +126,10 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
     }
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = src
+      video.src = activeSrc
+      video.addEventListener("loadedmetadata", restoreAfterSwitch, { once: true })
     }
-  }, [src])
+  }, [activeSrc])
 
   // Sincronizar el estado de pantalla completa con el evento del navegador.
   useEffect(() => {
@@ -195,6 +231,15 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
     if (hls) hls.currentLevel = index // -1 = auto (ABR)
     setQualityLevel(index)
     setQualityOpen(false)
+  }
+
+  const selectSubtitle = (index: number) => {
+    const hls = hlsRef.current
+    if (hls) {
+      hls.subtitleTrack = index
+      hls.subtitleDisplay = index !== -1 // hls.js no pinta las cues por defecto
+    }
+    setSubtitleTrack(index)
   }
 
   const pct = duration > 0 ? (current / duration) * 100 : 0
@@ -342,17 +387,60 @@ const VideoPlayer = ({ src, poster, chapters = [], aspect = "16:9", initialPosit
                   {/* Capa para cerrar al hacer clic fuera */}
                   <div className="fixed inset-0 z-10" onClick={() => setQualityOpen(false)} />
                   <div className="absolute bottom-9 right-0 z-20 min-w-[190px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl">
-                    {/* Audio (§9.1/§10.1): pista con IA, aún no disponible */}
-                    <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Audio</p>
-                    <button
-                      disabled
-                      className="flex w-full cursor-not-allowed items-center justify-between gap-4 px-3 py-1.5 text-left text-xs text-white/50"
-                    >
-                      Audio con IA
-                      <span className="rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-neon-cyan">
-                        Próximamente
-                      </span>
-                    </button>
+                    {/* Idioma (§9.1/§10.1): vídeo doblado al inglés (HeyGen), si existe. */}
+                    <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Idioma</p>
+                    {srcEn ? (
+                      <>
+                        <button
+                          onClick={() => switchLanguage("es")}
+                          className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${lang === "es" ? "text-neon-cyan" : "text-white"}`}
+                        >
+                          Español
+                          {lang === "es" && <span>✓</span>}
+                        </button>
+                        <button
+                          onClick={() => switchLanguage("en")}
+                          className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${lang === "en" ? "text-neon-cyan" : "text-white"}`}
+                        >
+                          English (AI dub)
+                          {lang === "en" && <span>✓</span>}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        disabled
+                        className="flex w-full cursor-not-allowed items-center justify-between gap-4 px-3 py-1.5 text-left text-xs text-white/50"
+                      >
+                        Audio con IA
+                        <span className="rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-neon-cyan">
+                          Próximamente
+                        </span>
+                      </button>
+                    )}
+
+                    {subtitleTracks.length > 0 && (
+                      <>
+                        <div className="my-1 border-t border-white/10" />
+                        <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Subtítulos</p>
+                        <button
+                          onClick={() => selectSubtitle(-1)}
+                          className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === -1 ? "text-neon-cyan" : "text-white"}`}
+                        >
+                          Desactivados
+                          {subtitleTrack === -1 && <span>✓</span>}
+                        </button>
+                        {subtitleTracks.map((t) => (
+                          <button
+                            key={t.index}
+                            onClick={() => selectSubtitle(t.index)}
+                            className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === t.index ? "text-neon-cyan" : "text-white"}`}
+                          >
+                            {t.label}
+                            {subtitleTrack === t.index && <span>✓</span>}
+                          </button>
+                        ))}
+                      </>
+                    )}
 
                     {levels.length > 0 && (
                       <>

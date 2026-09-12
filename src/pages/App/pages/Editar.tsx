@@ -6,11 +6,17 @@ import {
   getAnalysisForEdit,
   patchClip,
   patchAnalysis,
+  createDirectUpload,
+  uploadToCloudflare,
+  setClipVideoEn,
+  setAnalysisVideoEn,
+  uploadCaptions,
   type BlockConceptsInput,
 } from "../../../lib/api/admin"
 import { getBlocks } from "../../../lib/api/blocks"
 import { useApi } from "../../../lib/hooks/useApi"
 import CatalogPicker from "../components/CatalogPicker"
+import FileDrop from "../components/FileDrop"
 
 /**
  * Editar — v1 básica de edición de contenido ya publicado (título, descripción, jugadores,
@@ -58,6 +64,16 @@ const Editar = () => {
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
 
+  // Versión en inglés (HeyGen): vídeo doblado + subtítulos, independiente del guardado de metadatos.
+  const [streamUidEn, setStreamUidEn] = useState<string | null>(null)
+  const hasVideoEn = streamUidEn != null
+  const [enFile, setEnFile] = useState<File | null>(null)
+  const [enCaptionsFile, setEnCaptionsFile] = useState<File | null>(null)
+  const [enBusy, setEnBusy] = useState(false)
+  const [enProgress, setEnProgress] = useState<{ label: string; percent: number } | null>(null)
+  const [enError, setEnError] = useState<string | null>(null)
+  const [enDone, setEnDone] = useState<string | null>(null)
+
   useEffect(() => {
     if (!id) return
     let active = true
@@ -70,6 +86,7 @@ const Editar = () => {
           setDescription(data.description)
           setPlayers(data.players)
           setGroups(data.blocks.length > 0 ? data.blocks.map((b) => ({ block: b.block, concepts: b.concepts })) : [{ block: blocks[0] ?? "", concepts: [] }])
+          setStreamUidEn(data.streamUidEn)
         } else {
           const data = await getAnalysisForEdit(id)
           if (!active) return
@@ -80,6 +97,7 @@ const Editar = () => {
           setCategory(data.category ?? "")
           setRound(data.round ?? "")
           setYear(data.year != null ? String(data.year) : "")
+          setStreamUidEn(data.streamUidEn)
         }
       } catch (e) {
         if (active) setLoadError(e instanceof Error ? e.message : "No se pudo cargar el contenido.")
@@ -133,6 +151,45 @@ const Editar = () => {
       setError(e instanceof Error ? e.message : "No se pudo guardar.")
     } finally {
       setSaving(false)
+    }
+  }
+
+  const saveEnglish = async () => {
+    setEnError(null)
+    setEnDone(null)
+    if (!id) return
+    if (!enFile && !enCaptionsFile) return setEnError("Sube un vídeo o unos subtítulos primero.")
+    if (!enFile && enCaptionsFile && !hasVideoEn) return setEnError("Sube antes el vídeo en inglés.")
+
+    setEnBusy(true)
+    try {
+      // El uid para los subtítulos sale del vídeo recién subido en esta misma acción si lo hay;
+      // si no, del que ya existiera de antes — en ningún caso hace falta releer nada del backend.
+      let uidForCaptions = streamUidEn
+
+      if (enFile) {
+        setEnProgress({ label: "Subiendo vídeo en inglés…", percent: 0 })
+        const up = await createDirectUpload(`${title || "video"} (EN)`, enFile.size)
+        await uploadToCloudflare(up.uploadURL, enFile, (p) => setEnProgress({ label: "Subiendo vídeo en inglés…", percent: p }))
+        if (isClip) await setClipVideoEn(id, up.uid)
+        else await setAnalysisVideoEn(id, up.uid)
+        setStreamUidEn(up.uid)
+        uidForCaptions = up.uid
+      }
+
+      if (enCaptionsFile && uidForCaptions) {
+        setEnProgress({ label: "Subiendo subtítulos…", percent: 100 })
+        await uploadCaptions(uidForCaptions, enCaptionsFile)
+      }
+
+      setEnDone("Versión en inglés actualizada. Cloudflare tarda unos minutos en procesar el vídeo nuevo.")
+      setEnFile(null)
+      setEnCaptionsFile(null)
+    } catch (e) {
+      setEnError(e instanceof Error ? e.message : "No se pudo subir la versión en inglés.")
+    } finally {
+      setEnBusy(false)
+      setEnProgress(null)
     }
   }
 
@@ -268,6 +325,47 @@ const Editar = () => {
             {saving ? "Guardando…" : "Guardar cambios"}
           </button>
         </div>
+      </div>
+
+      {/* Versión en inglés (HeyGen) — guardado independiente del de metadatos. */}
+      <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Versión en inglés (HeyGen)</h2>
+          <p className="mt-1 text-xs text-white/50">
+            Sube aquí el MP4 que descargas de HeyGen (Hyperrealistic Translation) para este {isClip ? "clip" : "análisis"}.
+          </p>
+        </div>
+
+        <FileDrop file={enFile} onFile={setEnFile} label={hasVideoEn ? "Reemplazar vídeo en inglés" : "Subir vídeo en inglés"} hint="MP4, MOV…" />
+
+        <div>
+          <FileDrop
+            file={enCaptionsFile}
+            onFile={setEnCaptionsFile}
+            label="Subtítulos en inglés (.srt o .vtt)"
+            accept=".srt,.vtt,text/vtt,application/x-subrip"
+            hint={hasVideoEn || enFile ? "Opcional" : "Sube antes el vídeo en inglés"}
+          />
+        </div>
+
+        {enError && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{enError}</p>}
+        {enDone && <p className="rounded-lg bg-emerald-400/10 px-3 py-2 text-sm text-emerald-300">{enDone}</p>}
+        {enProgress && (
+          <div>
+            <p className="mb-1 text-xs text-white/50">{enProgress.label}</p>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div className="h-full rounded-full bg-neon-cyan transition-all" style={{ width: `${enProgress.percent}%` }} />
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={saveEnglish}
+          disabled={enBusy || (!enFile && !enCaptionsFile)}
+          className="rounded-lg border border-neon-cyan/40 bg-neon-cyan/10 px-5 py-2.5 text-sm font-bold text-neon-cyan transition hover:bg-neon-cyan/20 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {enBusy ? "Subiendo…" : "Guardar versión en inglés"}
+        </button>
       </div>
     </main>
   )

@@ -1,5 +1,5 @@
 import * as tus from "tus-js-client"
-import { apiGet, apiPost, apiPatch } from "./client"
+import { apiGet, apiPost, apiPatch, apiPostForm } from "./client"
 
 /**
  * Publicación de contenido (solo Admin/ContentCreator). Flujo Direct Creator Upload:
@@ -18,6 +18,7 @@ export type BlockConceptsInput = { block: string; concepts: string[] }
 
 export type PublishClipInput = {
   uid: string
+  uidEn?: string // uid del vídeo doblado al inglés (HeyGen), opcional
   title: string
   description?: string
   durationSeconds?: number
@@ -29,6 +30,7 @@ export type PublishChapterInput = { startSeconds: number; title: string; concept
 export type PublishInput = {
   analysis: {
     uid: string
+    uidEn?: string // uid del vídeo doblado al inglés (HeyGen), opcional
     title: string
     description?: string
     durationSeconds?: number
@@ -73,7 +75,7 @@ export const patchAnalysis = (id: string, input: PatchAnalysisInput) =>
 
 // Datos en bruto para precargar el formulario de edición (distinto del GET público, que
 // devuelve todo ya compuesto/aplanado para mostrar, no para editar).
-export type ClipForEdit = { title: string; description: string; players: string[]; blocks: BlockConceptsInput[] }
+export type ClipForEdit = { title: string; description: string; players: string[]; blocks: BlockConceptsInput[]; streamUidEn: string | null }
 export const getClipForEdit = (id: string) => apiGet<ClipForEdit>(`/api/admin/clips/${id}`)
 
 export type AnalysisForEdit = {
@@ -84,8 +86,25 @@ export type AnalysisForEdit = {
   category: string | null
   round: string | null
   year: number | null
+  streamUidEn: string | null
 }
 export const getAnalysisForEdit = (id: string) => apiGet<AnalysisForEdit>(`/api/admin/analyses/${id}`)
+
+// --- Versión en inglés (HeyGen): vídeo doblado + subtítulos. El vídeo se sube igual que el
+// original (direct-upload + tus). Los subtítulos se asocian directamente al uid de Cloudflare
+// del vídeo en inglés — ese uid ya existe desde el direct-upload, antes incluso de que el
+// clip/análisis se haya creado/guardado, así que sirve igual desde Publicar que desde Editar. ---
+
+export const setClipVideoEn = (id: string, uid: string) =>
+  apiPatch<{ ok: boolean }>(`/api/admin/clips/${id}/video-en`, { uid })
+export const setAnalysisVideoEn = (id: string, uid: string) =>
+  apiPatch<{ ok: boolean }>(`/api/admin/analyses/${id}/video-en`, { uid })
+
+export const uploadCaptions = (uid: string, file: File) => {
+  const fd = new FormData()
+  fd.append("file", file)
+  return apiPostForm<{ ok: boolean }>(`/api/admin/videos/${uid}/captions`, fd)
+}
 
 // --- Catálogo reutilizable (autocompletado): un solo endpoint, el front manda el `type` ---
 

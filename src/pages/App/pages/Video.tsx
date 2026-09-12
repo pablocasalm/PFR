@@ -57,6 +57,7 @@ const myInitials = (email: string, displayName?: string | null) => {
 const VideoPlayer = ({ video, endSlot }: { video: AnalysisDetail; endSlot?: (dismiss: () => void) => React.ReactNode }) => (
   <HlsPlayer
     src={video.videoUrl}
+    srcEn={video.videoUrlEn ?? undefined}
     poster={video.thumbnailUrl}
     chapters={video.chapters}
     initialPosition={video.resumeSeconds}

@@ -12,6 +12,7 @@ import CardRow from "../../../lib/ui/CardRow"
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import FilterPanel, { type FilterSection } from "../components/FilterPanel"
 import WatchedBadge from "../components/WatchedBadge"
+import EnglishBadge from "../components/EnglishBadge"
 
 /**
  * Explorar — Biblioteca táctica. Consume GET /api/explore (bloques + análisis).
@@ -38,10 +39,23 @@ const ICONS: LucideIcon[] = [LayoutGrid, ArrowLeftRight, Grip, ClipboardList]
 // Helpers visuales
 // ---------------------------------------------------------------------------
 
-const Thumb = ({ src, hue, className = "", completed = false }: { src?: string; hue: number; className?: string; completed?: boolean }) => (
+const Thumb = ({
+  src,
+  hue,
+  className = "",
+  completed = false,
+  hasEnglishVersion = false,
+}: {
+  src?: string
+  hue: number
+  className?: string
+  completed?: boolean
+  hasEnglishVersion?: boolean
+}) => (
   <div className={`relative overflow-hidden ${className}`} style={thumbStyle(hue)}>
     {src && <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />}
     {completed && <WatchedBadge />}
+    {hasEnglishVersion && <EnglishBadge />}
   </div>
 )
 
@@ -188,7 +202,7 @@ const ClipCard = ({ clip, currentBlock }: { clip: ContentItem; currentBlock: str
   return (
     <Link to={watchHref(clip)} className="group block cursor-pointer">
       <div className="relative overflow-hidden rounded-lg border border-white/10">
-        <Thumb src={clip.thumbnailUrl} hue={hueFor(clip.id)} className="aspect-video w-full" completed={clip.completed} />
+        <Thumb src={clip.thumbnailUrl} hue={hueFor(clip.id)} className="aspect-video w-full" completed={clip.completed} hasEnglishVersion={clip.hasEnglishVersion} />
         <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
           {formatDuration(clip.durationSeconds)}
         </span>
@@ -252,7 +266,7 @@ const ConceptSection = ({
 
 const AnalisisCard = ({ item }: { item: ContentItem }) => (
   <Link to={watchHref(item)} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-3 transition hover:border-white/20">
-    <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-28 shrink-0 rounded-lg" completed={item.completed} />
+    <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-28 shrink-0 rounded-lg" completed={item.completed} hasEnglishVersion={item.hasEnglishVersion} />
     <div className="min-w-0 flex-1">
       <p className="text-sm font-semibold text-white">{item.title}</p>
       <p className="mt-1 text-xs leading-relaxed text-white/50">
@@ -300,6 +314,7 @@ const Explorar = () => {
   const [selectedBlock, setSelectedBlock] = useState("")
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [selectedPlayer, setSelectedPlayer] = useState("")
+  const [hasEnglishOnly, setHasEnglishOnly] = useState(false)
 
   const toggleConcept = (concept: string) =>
     setSelected((prev) => {
@@ -312,6 +327,7 @@ const Explorar = () => {
     setType("all")
     setSelectedBlock("")
     setSelectedPlayer("")
+    setHasEnglishOnly(false)
   }
 
   // Lista global de conceptos para el panel (bloques + análisis), ordenada y sin repetir.
@@ -335,6 +351,7 @@ const Explorar = () => {
   const matches = (concepts: string[]) => !conceptActive || concepts.some((c) => selected.has(c))
   const matchesPlayer = (players?: string) =>
     !selectedPlayer || (players ?? "").split(",").map((p) => p.trim()).includes(selectedPlayer)
+  const matchesEnglish = (item: ContentItem) => !hasEnglishOnly || item.hasEnglishVersion
 
   // Un clip puede tener el mismo concepto en distintos bloques (raro, pero posible) o aparecer
   // en varias secciones porque tiene otros bloques propios: el filtro de un concepto debe mirar
@@ -354,17 +371,17 @@ const Explorar = () => {
       .filter((sec) => !selectedBlock || sec.block === selectedBlock)
       .map((sec) => ({
         ...sec,
-        clips: sec.clips.filter((cl) => matchesInBlock(cl, sec.block) && matchesPlayer(cl.players)),
+        clips: sec.clips.filter((cl) => matchesInBlock(cl, sec.block) && matchesPlayer(cl.players) && matchesEnglish(cl)),
       }))
       .filter((sec) => sec.clips.length > 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, type, selectedBlock, selected, selectedPlayer])
+  }, [data, type, selectedBlock, selected, selectedPlayer, hasEnglishOnly])
 
   const visibleAnalyses = useMemo(() => {
     if (type === "clips" || !data) return []
-    return data.analyses.filter((a) => matches(a.concepts) && matchesPlayer(a.players))
+    return data.analyses.filter((a) => matches(a.concepts) && matchesPlayer(a.players) && matchesEnglish(a))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, type, selected, selectedPlayer])
+  }, [data, type, selected, selectedPlayer, hasEnglishOnly])
 
   // Secciones del panel de filtros compartido (mismo componente que Search/Resultados).
   const filterSections: FilterSection[] = [
@@ -386,10 +403,16 @@ const Explorar = () => {
       isActive: (v) => selected.has(v),
       onToggle: toggleConcept,
     },
+    {
+      title: "Idioma",
+      options: [{ value: "1", label: "Con inglés" }],
+      isActive: () => hasEnglishOnly,
+      onToggle: () => setHasEnglishOnly((v) => !v),
+    },
   ]
 
   const activeCount =
-    selected.size + (type !== "all" ? 1 : 0) + (selectedBlock ? 1 : 0) + (selectedPlayer ? 1 : 0)
+    selected.size + (type !== "all" ? 1 : 0) + (selectedBlock ? 1 : 0) + (selectedPlayer ? 1 : 0) + (hasEnglishOnly ? 1 : 0)
   const noResults = !!data && !loading && visibleSections.length === 0 && visibleAnalyses.length === 0
 
   return (

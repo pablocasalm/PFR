@@ -1,9 +1,10 @@
 import { useState } from "react"
-import { UploadCloud, Film, Plus, Trash2, X, CheckCircle2 } from "lucide-react"
-import { createDirectUpload, uploadToCloudflare, readVideoDuration, publish, type PublishChapterInput } from "../../../lib/api/admin"
+import { Plus, Trash2, X, CheckCircle2 } from "lucide-react"
+import { createDirectUpload, uploadToCloudflare, uploadCaptions, readVideoDuration, publish, type PublishChapterInput } from "../../../lib/api/admin"
 import { getBlocks } from "../../../lib/api/blocks"
 import { useApi } from "../../../lib/hooks/useApi"
 import CatalogPicker from "../components/CatalogPicker"
+import FileDrop from "../components/FileDrop"
 
 /**
  * Publicar — Wizard de creación de contenido (§ proceso de publicación). Solo ContentCreator/Admin.
@@ -21,10 +22,17 @@ const ROUNDS = [
 ]
 
 type Group = { block: string; concepts: string[] }
-type ClipDraft = { file: File | null; title: string; description: string; groups: Group[] }
+type ClipDraft = { file: File | null; fileEn: File | null; captionsEn: File | null; title: string; description: string; groups: Group[] }
 type ChapterDraft = { time: string; title: string; concept: string }
 
-const emptyClip = (defaultBlock: string): ClipDraft => ({ file: null, title: "", description: "", groups: [{ block: defaultBlock, concepts: [] }] })
+const emptyClip = (defaultBlock: string): ClipDraft => ({
+  file: null,
+  fileEn: null,
+  captionsEn: null,
+  title: "",
+  description: "",
+  groups: [{ block: defaultBlock, concepts: [] }],
+})
 const emptyChapter = (): ChapterDraft => ({ time: "", title: "", concept: "" })
 
 /** "mm:ss" o "hh:mm:ss" (solo dígitos y ":") → segundos. null si el formato no es válido. */
@@ -36,25 +44,6 @@ const parseTimeToSeconds = (text: string): number | null => {
 
 const inputCls =
   "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/50 focus:outline-none sm:text-sm"
-
-const FileDrop = ({ file, onFile, label }: { file: File | null; onFile: (f: File | null) => void; label: string }) => (
-  <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 bg-white/[0.02] px-4 py-8 text-center transition hover:border-neon-cyan/40">
-    {file ? (
-      <>
-        <Film className="h-6 w-6 text-neon-cyan" />
-        <span className="text-sm font-medium text-white">{file.name}</span>
-        <span className="text-xs text-white/40">{(file.size / 1_000_000).toFixed(1)} MB</span>
-      </>
-    ) : (
-      <>
-        <UploadCloud className="h-6 w-6 text-white/50" />
-        <span className="text-sm font-medium text-white/80">{label}</span>
-        <span className="text-xs text-white/40">MP4, MOV…</span>
-      </>
-    )}
-    <input type="file" accept="video/*" className="hidden" onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
-  </label>
-)
 
 const StepDot = ({ n, label, active }: { n: number; label: string; active: boolean }) => (
   <div className="flex items-center gap-2">
@@ -77,6 +66,8 @@ const Publicar = () => {
 
   // Análisis
   const [aFile, setAFile] = useState<File | null>(null)
+  const [aFileEn, setAFileEn] = useState<File | null>(null)
+  const [aCaptionsEn, setACaptionsEn] = useState<File | null>(null)
   const [aTitle, setATitle] = useState("")
   const [aDesc, setADesc] = useState("")
   const [players, setPlayers] = useState<string[]>([])
@@ -155,6 +146,15 @@ const Publicar = () => {
       const aUp = await createDirectUpload(aTitle || aFile!.name, aFile!.size)
       await uploadToCloudflare(aUp.uploadURL, aFile!, (p) => setProgress({ label: "Subiendo análisis…", percent: p }))
 
+      let aUidEn: string | undefined
+      if (aFileEn) {
+        setProgress({ label: "Subiendo vídeo en inglés del análisis…", percent: 0 })
+        const aUpEn = await createDirectUpload(`${aTitle || aFile!.name} (EN)`, aFileEn.size)
+        await uploadToCloudflare(aUpEn.uploadURL, aFileEn, (p) => setProgress({ label: "Subiendo vídeo en inglés del análisis…", percent: p }))
+        aUidEn = aUpEn.uid
+        if (aCaptionsEn) await uploadCaptions(aUidEn, aCaptionsEn)
+      }
+
       // 2) Subir cada clip
       const clipInputs = []
       for (let i = 0; i < validClips.length; i++) {
@@ -164,8 +164,20 @@ const Publicar = () => {
         const dur = await readVideoDuration(c.file!)
         const up = await createDirectUpload(c.title || c.file!.name, c.file!.size)
         await uploadToCloudflare(up.uploadURL, c.file!, (p) => setProgress({ label, percent: p }))
+
+        let uidEn: string | undefined
+        if (c.fileEn) {
+          const labelEn = `Subiendo vídeo en inglés del clip ${i + 1}…`
+          setProgress({ label: labelEn, percent: 0 })
+          const upEn = await createDirectUpload(`${c.title || c.file!.name} (EN)`, c.fileEn.size)
+          await uploadToCloudflare(upEn.uploadURL, c.fileEn, (p) => setProgress({ label: labelEn, percent: p }))
+          uidEn = upEn.uid
+          if (c.captionsEn) await uploadCaptions(uidEn, c.captionsEn)
+        }
+
         clipInputs.push({
           uid: up.uid,
+          uidEn,
           title: c.title,
           description: c.description,
           durationSeconds: dur,
@@ -180,6 +192,7 @@ const Publicar = () => {
       await publish({
         analysis: {
           uid: aUp.uid,
+          uidEn: aUidEn,
           title: aTitle,
           description: aDesc,
           durationSeconds: aDur,
@@ -197,6 +210,8 @@ const Publicar = () => {
       // Reset
       setStep(1)
       setAFile(null)
+      setAFileEn(null)
+      setACaptionsEn(null)
       setATitle("")
       setADesc("")
       setPlayers([])
@@ -238,6 +253,19 @@ const Publicar = () => {
       {step === 1 && (
         <div className="space-y-4">
           <FileDrop file={aFile} onFile={setAFile} label="Vídeo del análisis completo" />
+          <details className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
+            <summary className="cursor-pointer text-sm font-medium text-white/70">¿Ya tienes el doblaje de HeyGen? Añádelo aquí</summary>
+            <div className="mt-3 space-y-3">
+              <FileDrop file={aFileEn} onFile={setAFileEn} label="Vídeo en inglés (HeyGen)" hint="Opcional" />
+              <FileDrop
+                file={aCaptionsEn}
+                onFile={setACaptionsEn}
+                label="Subtítulos en inglés (.srt o .vtt)"
+                accept=".srt,.vtt,text/vtt,application/x-subrip"
+                hint={aFileEn ? "Opcional" : "Sube antes el vídeo en inglés"}
+              />
+            </div>
+          </details>
           <input value={aTitle} onChange={(e) => setATitle(e.target.value)} placeholder="Título del análisis" className={inputCls} />
           <textarea value={aDesc} onChange={(e) => setADesc(e.target.value)} placeholder="Descripción" rows={3} className={inputCls} />
           <div>
@@ -329,6 +357,19 @@ const Publicar = () => {
               </div>
 
               <FileDrop file={clip.file} onFile={(f) => updateClip(ci, { file: f })} label="Vídeo del clip" />
+              <details className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
+                <summary className="cursor-pointer text-sm font-medium text-white/70">¿Ya tienes el doblaje de HeyGen? Añádelo aquí</summary>
+                <div className="mt-3 space-y-3">
+                  <FileDrop file={clip.fileEn} onFile={(f) => updateClip(ci, { fileEn: f })} label="Vídeo en inglés (HeyGen)" hint="Opcional" />
+                  <FileDrop
+                    file={clip.captionsEn}
+                    onFile={(f) => updateClip(ci, { captionsEn: f })}
+                    label="Subtítulos en inglés (.srt o .vtt)"
+                    accept=".srt,.vtt,text/vtt,application/x-subrip"
+                    hint={clip.fileEn ? "Opcional" : "Sube antes el vídeo en inglés"}
+                  />
+                </div>
+              </details>
               <input value={clip.title} onChange={(e) => updateClip(ci, { title: e.target.value })} placeholder="Título del clip" className={inputCls} />
               <textarea value={clip.description} onChange={(e) => updateClip(ci, { description: e.target.value })} placeholder="Descripción del clip" rows={2} className={inputCls} />
 

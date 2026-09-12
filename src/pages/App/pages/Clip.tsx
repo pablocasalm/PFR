@@ -398,6 +398,7 @@ const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; v
 const VideoPlayer = ({ clip, endSlot }: { clip: ClipDetail; endSlot?: (dismiss: () => void) => React.ReactNode }) => (
   <HlsPlayer
     src={clip.videoUrl}
+    srcEn={clip.videoUrlEn ?? undefined}
     poster={clip.thumbnailUrl}
     initialPosition={clip.resumeSeconds}
     onProgress={(p, d) => {
@@ -411,6 +412,7 @@ const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: C
   <div className="relative mx-auto w-full max-w-[420px]">
     <HlsPlayer
       src={clip.videoUrl}
+    srcEn={clip.videoUrlEn ?? undefined}
       poster={clip.thumbnailUrl}
       aspect="9:16"
       initialPosition={clip.resumeSeconds}
