@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import Hls from "hls.js"
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings } from "lucide-react"
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings, Captions } from "lucide-react"
 import { formatDuration } from "../format"
 import { useI18n } from "../i18n/store"
 
@@ -75,6 +75,7 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
   const [lang, setLang] = useState<"es" | "en">("es")
   const [subtitleTracks, setSubtitleTracks] = useState<{ index: number; label: string }[]>([])
   const [subtitleTrack, setSubtitleTrack] = useState(-1) // -1 = desactivados
+  const [subtitlesMenuOpen, setSubtitlesMenuOpen] = useState(false)
 
   const activeSrc = lang === "en" && srcEn ? srcEn : src
 
@@ -118,13 +119,18 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
             .map((l, i) => ({ height: l.height, index: i }))
             .sort((a, b) => b.height - a.height),
         )
+        restoreAfterSwitch()
+      })
+      // hls.js puebla `subtitleTracks` de forma asíncrona (parsea las playlists de subtítulos
+      // aparte del manifiesto principal) — llega en este evento, no en MANIFEST_PARSED, si no
+      // el array todavía está vacío y el selector de subtítulos nunca aparece.
+      hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
         setSubtitleTracks(
           hls.subtitleTracks.map((track, i) => ({
             index: i,
             label: track.name || t("video-player.subtitle-track", "Subtítulos {n}", { n: i + 1 }),
           })),
         )
-        restoreAfterSwitch()
       })
       return () => {
         hls.destroy()
@@ -247,6 +253,17 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
       hls.subtitleDisplay = index !== -1 // hls.js no pinta las cues por defecto
     }
     setSubtitleTrack(index)
+    setSubtitlesMenuOpen(false)
+  }
+
+  // Con una sola pista (el caso normal: un idioma de subtítulos por vídeo) el botón dedicado
+  // alterna directamente on/off, sin abrir un menú — solo con varias pistas hace falta elegir.
+  const toggleSubtitles = () => {
+    if (subtitleTracks.length > 1) {
+      setSubtitlesMenuOpen((v) => !v)
+      return
+    }
+    selectSubtitle(subtitleTrack === -1 ? (subtitleTracks[0]?.index ?? 0) : -1)
   }
 
   const pct = duration > 0 ? (current / duration) * 100 : 0
@@ -381,6 +398,42 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
           </span>
 
           <div className="ml-auto flex items-center gap-3">
+            {subtitleTracks.length > 0 && (
+              <div className="relative flex items-center">
+                <button
+                  onClick={toggleSubtitles}
+                  className={`transition hover:text-neon-cyan ${subtitleTrack !== -1 ? "text-neon-cyan" : ""}`}
+                  aria-label={subtitleTrack !== -1 ? t("video-player.subtitles-off", "Desactivados") : t("video-player.subtitles-title", "Subtítulos")}
+                  aria-pressed={subtitleTrack !== -1}
+                >
+                  <Captions className="h-5 w-5" />
+                </button>
+                {subtitlesMenuOpen && subtitleTracks.length > 1 && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setSubtitlesMenuOpen(false)} />
+                    <div className="absolute bottom-9 right-0 z-20 min-w-[190px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl">
+                      <button
+                        onClick={() => selectSubtitle(-1)}
+                        className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === -1 ? "text-neon-cyan" : "text-white"}`}
+                      >
+                        {t("video-player.subtitles-off", "Desactivados")}
+                        {subtitleTrack === -1 && <span>✓</span>}
+                      </button>
+                      {subtitleTracks.map((track) => (
+                        <button
+                          key={track.index}
+                          onClick={() => selectSubtitle(track.index)}
+                          className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === track.index ? "text-neon-cyan" : "text-white"}`}
+                        >
+                          {track.label}
+                          {subtitleTrack === track.index && <span>✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             <div className="relative flex items-center">
               <button
                 onClick={() => setQualityOpen((v) => !v)}
@@ -424,30 +477,6 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
                           {t("video-player.coming-soon", "Próximamente")}
                         </span>
                       </button>
-                    )}
-
-                    {subtitleTracks.length > 0 && (
-                      <>
-                        <div className="my-1 border-t border-white/10" />
-                        <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">{t("video-player.subtitles-title", "Subtítulos")}</p>
-                        <button
-                          onClick={() => selectSubtitle(-1)}
-                          className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === -1 ? "text-neon-cyan" : "text-white"}`}
-                        >
-                          {t("video-player.subtitles-off", "Desactivados")}
-                          {subtitleTrack === -1 && <span>✓</span>}
-                        </button>
-                        {subtitleTracks.map((track) => (
-                          <button
-                            key={track.index}
-                            onClick={() => selectSubtitle(track.index)}
-                            className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === track.index ? "text-neon-cyan" : "text-white"}`}
-                          >
-                            {track.label}
-                            {subtitleTrack === track.index && <span>✓</span>}
-                          </button>
-                        ))}
-                      </>
                     )}
 
                     {levels.length > 0 && (
