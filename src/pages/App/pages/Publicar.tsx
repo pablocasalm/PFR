@@ -6,7 +6,7 @@ import { useApi } from "../../../lib/hooks/useApi"
 import CatalogPicker from "../components/CatalogPicker"
 import FileDrop from "../components/FileDrop"
 import ConceptTranslationPanel from "../components/ConceptTranslationPanel"
-import { useI18n, type TFunc } from "../../../lib/i18n/store"
+import { useI18n } from "../../../lib/i18n/store"
 
 /**
  * Publicar — Wizard de creación de contenido (§ proceso de publicación). Solo ContentCreator/Admin.
@@ -17,14 +17,9 @@ import { useI18n, type TFunc } from "../../../lib/i18n/store"
  * después desde Editar.
  */
 
-const rounds = (t: TFunc) => [
-  t("publicar.round.32", "Treintaidosavos de final"),
-  t("publicar.round.16", "Dieciseisavos de final"),
-  t("publicar.round.8", "Octavos de final"),
-  t("publicar.round.4", "Cuartos de final"),
-  t("publicar.round.semis", "Semifinales"),
-  t("publicar.round.final", "Final"),
-]
+// Códigos, no texto libre: son iguales en español e inglés, así que la ronda no necesita
+// traducción (§reporte de beta #53) y no hace falta pasarlos por t().
+const ROUND_CODES = ["R64", "R32", "R16", "QF", "SF", "Final"]
 
 type Group = { block: string; concepts: string[] }
 type ClipDraft = {
@@ -122,7 +117,6 @@ const StepDot = ({ n, label, active }: { n: number; label: string; active: boole
 
 const Publicar = () => {
   const { t } = useI18n()
-  const ROUNDS = rounds(t)
   const { data: blocksData } = useApi(getBlocks, [], "blocks")
   const blockNames = (blocksData ?? []).map((b) => b.nameEs)
   const { data: conceptCatalog } = useApi(getConcepts, [], "concepts")
@@ -500,7 +494,7 @@ const Publicar = () => {
               <span className="mb-1.5 block text-xs font-medium text-white/50">{t("publicar.field.round", "Ronda (opcional)")}</span>
               <select value={round} onChange={(e) => setRound(e.target.value)} className={inputCls}>
                 <option value="" className="bg-midnight">—</option>
-                {ROUNDS.map((r) => (
+                {ROUND_CODES.map((r) => (
                   <option key={r} value={r} className="bg-midnight">{r}</option>
                 ))}
               </select>

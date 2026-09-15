@@ -56,19 +56,26 @@ const myInitials = (email: string, displayName?: string | null) => {
 // Player (placeholder hasta el bloque 6)
 // ---------------------------------------------------------------------------
 
-const VideoPlayer = ({ video, endSlot }: { video: AnalysisDetail; endSlot?: (dismiss: () => void) => React.ReactNode }) => (
-  <HlsPlayer
-    src={video.videoUrl}
-    srcEn={video.videoUrlEn ?? undefined}
-    poster={video.thumbnailUrl}
-    chapters={video.chapters}
-    initialPosition={video.resumeSeconds}
-    onProgress={(p, d) => {
-      saveProgress("analysis", video.id, p, d).catch(() => {})
-    }}
-    endSlot={endSlot}
-  />
-)
+const VideoPlayer = ({ video, endSlot }: { video: AnalysisDetail; endSlot?: (dismiss: () => void) => React.ReactNode }) => {
+  const { lang } = useI18n()
+  // Los títulos de los marcadores de capítulo (tooltip sobre la barra de progreso) dependen del
+  // idioma de la interfaz, no del idioma del audio que se esté reproduciendo (§reporte de beta):
+  // se puede ver el vídeo en español con la interfaz en inglés, o al revés.
+  const chapters = video.chapters.map((ch) => ({ startSeconds: ch.startSeconds, title: pickText(ch.title, ch.titleEn, lang) }))
+  return (
+    <HlsPlayer
+      src={video.videoUrl}
+      srcEn={video.videoUrlEn ?? undefined}
+      poster={video.thumbnailUrl}
+      chapters={chapters}
+      initialPosition={video.resumeSeconds}
+      onProgress={(p, d) => {
+        saveProgress("analysis", video.id, p, d).catch(() => {})
+      }}
+      endSlot={endSlot}
+    />
+  )
+}
 
 /** "Compartir" real (§10.5): hoja de compartir nativa o copia el enlace con feedback. */
 const ShareButton = () => {

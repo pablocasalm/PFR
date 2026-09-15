@@ -38,14 +38,9 @@ const inputCls =
 
 const Editar = () => {
   const { t } = useI18n()
-  const ROUNDS = [
-    t("publicar.round.32", "Treintaidosavos de final"),
-    t("publicar.round.16", "Dieciseisavos de final"),
-    t("publicar.round.8", "Octavos de final"),
-    t("publicar.round.4", "Cuartos de final"),
-    t("publicar.round.semis", "Semifinales"),
-    t("publicar.round.final", "Final"),
-  ]
+  // Códigos, no texto libre: son iguales en español e inglés, así que la ronda no necesita
+  // traducción (§reporte de beta #53).
+  const ROUNDS = ["R64", "R32", "R16", "QF", "SF", "Final"]
   const { type, id } = useParams<{ type: string; id: string }>()
   const navigate = useNavigate()
   const isClip = type === "clip"

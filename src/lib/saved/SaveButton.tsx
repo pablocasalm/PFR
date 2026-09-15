@@ -1,4 +1,4 @@
-import { Plus, Check } from "lucide-react"
+import { Bookmark } from "lucide-react"
 import type { ContentItem } from "../api/types"
 import { useSavedItems, isSaved, toggleSavedItem } from "./store"
 import { useI18n } from "../i18n/store"
@@ -38,7 +38,8 @@ const SaveButton = ({ item, variant = "icon" }: { item: ContentItem; variant?: V
             saved ? "border-neon-cyan bg-neon-cyan/10" : "border-white/40"
           }`}
         >
-          {saved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          {/* Estilo Instagram: mismo icono, relleno solo cuando está guardado (nunca cambia de forma). */}
+          <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} />
         </span>
         {label}
       </button>
@@ -51,12 +52,10 @@ const SaveButton = ({ item, variant = "icon" }: { item: ContentItem; variant?: V
       aria-pressed={saved}
       title={label}
       className={`flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur transition ${
-        saved
-          ? "border-neon-cyan bg-neon-cyan text-midnight"
-          : "border-white/30 bg-black/50 text-white hover:bg-black/70"
+        saved ? "border-neon-cyan/60 bg-black/50 text-neon-cyan" : "border-white/30 bg-black/50 text-white hover:bg-black/70"
       }`}
     >
-      {saved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+      <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} />
     </button>
   )
 }

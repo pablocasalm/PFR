@@ -28,6 +28,10 @@ const Header = () => {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const { user } = useAuth()
   const { t } = useI18n()
+  // Admin tiene 4 pestañas más que un usuario normal (Publicar, Invitaciones, Reportes,
+  // Noticias) y no cabían ya en el punto de corte "xl" (1280px) pensado para las 5 base — se
+  // pasa al menú inferior (barra + avatar) más tarde, en "2xl" (§reporte de beta #52).
+  const navBp = isAdmin(user) ? "2xl" : "xl"
 
   const submitSearch = () => {
     const q = query.trim()
@@ -51,8 +55,8 @@ const Header = () => {
         </div>
       </Link>
 
-      {/* Nav (solo escritorio; en móvil/tablet se usa la barra inferior — no cabe antes de xl) */}
-      <nav className="hidden items-center gap-7 xl:flex">
+      {/* Nav (solo escritorio; en móvil/tablet se usa la barra inferior) */}
+      <nav className={`hidden items-center gap-7 ${navBp === "2xl" ? "2xl:flex" : "xl:flex"}`}>
         {NAV_ITEMS.map(({ key, label, to }) => (
           <NavLink
             key={to}
@@ -129,7 +133,9 @@ const Header = () => {
       </nav>
 
       {/* Buscador (escritorio) */}
-      <div className="ml-auto hidden max-w-xl flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 xl:flex">
+      <div
+        className={`ml-auto hidden max-w-xl flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 ${navBp === "2xl" ? "2xl:flex" : "xl:flex"}`}
+      >
         <Search className="h-4 w-4 text-white/40" />
         <input
           value={query}
@@ -143,7 +149,7 @@ const Header = () => {
       {/* Buscar (móvil/tablet): abre el overlay de búsqueda, no navega directo */}
       <button
         onClick={() => setMobileSearchOpen(true)}
-        className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:text-white xl:hidden"
+        className={`ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:text-white ${navBp === "2xl" ? "2xl:hidden" : "xl:hidden"}`}
         aria-label="Buscar"
       >
         <Search className="h-5 w-5" />

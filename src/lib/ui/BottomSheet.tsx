@@ -26,11 +26,16 @@ export const BottomSheet = ({
       if (e.key === "Escape") onClose()
     }
     document.addEventListener("keydown", onKey)
+    // El propio componente se sigue montando (aunque oculto vía `lg:hidden`) cuando `open` es
+    // true en pantallas de escritorio, donde el contenido se muestra en línea, no como hoja
+    // superpuesta — sin este chequeo, se bloqueaba el scroll de la página igualmente aunque no
+    // hubiera ningún overlay visible tapando nada (§reporte de beta).
+    const isOverlayVisible = !window.matchMedia("(min-width: 1024px)").matches
     const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
+    if (isOverlayVisible) document.body.style.overflow = "hidden"
     return () => {
       document.removeEventListener("keydown", onKey)
-      document.body.style.overflow = prevOverflow
+      if (isOverlayVisible) document.body.style.overflow = prevOverflow
     }
   }, [open, onClose])
 
