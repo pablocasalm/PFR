@@ -258,12 +258,14 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
 
   // Con una sola pista (el caso normal: un idioma de subtítulos por vídeo) el botón dedicado
   // alterna directamente on/off, sin abrir un menú — solo con varias pistas hace falta elegir.
+  // Sin pistas, el botón se ve pero no hace nada (queda en gris, ver abajo).
   const toggleSubtitles = () => {
+    if (subtitleTracks.length === 0) return
     if (subtitleTracks.length > 1) {
       setSubtitlesMenuOpen((v) => !v)
       return
     }
-    selectSubtitle(subtitleTrack === -1 ? (subtitleTracks[0]?.index ?? 0) : -1)
+    selectSubtitle(subtitleTrack === -1 ? subtitleTracks[0].index : -1)
   }
 
   const pct = duration > 0 ? (current / duration) * 100 : 0
@@ -398,42 +400,51 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
           </span>
 
           <div className="ml-auto flex items-center gap-3">
-            {subtitleTracks.length > 0 && (
-              <div className="relative flex items-center">
-                <button
-                  onClick={toggleSubtitles}
-                  className={`transition hover:text-neon-cyan ${subtitleTrack !== -1 ? "text-neon-cyan" : ""}`}
-                  aria-label={subtitleTrack !== -1 ? t("video-player.subtitles-off", "Desactivados") : t("video-player.subtitles-title", "Subtítulos")}
-                  aria-pressed={subtitleTrack !== -1}
-                >
-                  <Captions className="h-5 w-5" />
-                </button>
-                {subtitlesMenuOpen && subtitleTracks.length > 1 && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setSubtitlesMenuOpen(false)} />
-                    <div className="absolute bottom-9 right-0 z-20 min-w-[190px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl">
+            <div className="relative flex items-center">
+              <button
+                onClick={toggleSubtitles}
+                disabled={subtitleTracks.length === 0}
+                className={`transition ${
+                  subtitleTracks.length === 0
+                    ? "cursor-not-allowed text-white/25"
+                    : `hover:text-neon-cyan ${subtitleTrack !== -1 ? "text-neon-cyan" : ""}`
+                }`}
+                aria-label={
+                  subtitleTracks.length === 0
+                    ? t("video-player.subtitles-unavailable", "Subtítulos no disponibles")
+                    : subtitleTrack !== -1
+                      ? t("video-player.subtitles-off", "Desactivados")
+                      : t("video-player.subtitles-title", "Subtítulos")
+                }
+                aria-pressed={subtitleTrack !== -1}
+              >
+                <Captions className="h-5 w-5" />
+              </button>
+              {subtitlesMenuOpen && subtitleTracks.length > 1 && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setSubtitlesMenuOpen(false)} />
+                  <div className="absolute bottom-9 right-0 z-20 min-w-[190px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl">
+                    <button
+                      onClick={() => selectSubtitle(-1)}
+                      className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === -1 ? "text-neon-cyan" : "text-white"}`}
+                    >
+                      {t("video-player.subtitles-off", "Desactivados")}
+                      {subtitleTrack === -1 && <span>✓</span>}
+                    </button>
+                    {subtitleTracks.map((track) => (
                       <button
-                        onClick={() => selectSubtitle(-1)}
-                        className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === -1 ? "text-neon-cyan" : "text-white"}`}
+                        key={track.index}
+                        onClick={() => selectSubtitle(track.index)}
+                        className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === track.index ? "text-neon-cyan" : "text-white"}`}
                       >
-                        {t("video-player.subtitles-off", "Desactivados")}
-                        {subtitleTrack === -1 && <span>✓</span>}
+                        {track.label}
+                        {subtitleTrack === track.index && <span>✓</span>}
                       </button>
-                      {subtitleTracks.map((track) => (
-                        <button
-                          key={track.index}
-                          onClick={() => selectSubtitle(track.index)}
-                          className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === track.index ? "text-neon-cyan" : "text-white"}`}
-                        >
-                          {track.label}
-                          {subtitleTrack === track.index && <span>✓</span>}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <div className="relative flex items-center">
               <button
                 onClick={() => setQualityOpen((v) => !v)}
