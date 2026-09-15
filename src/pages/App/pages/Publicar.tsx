@@ -298,7 +298,14 @@ const Publicar = () => {
         const aUpEn = await createDirectUpload(`${aTitle || aFile!.name} (EN)`, aFileEn.size)
         await uploadToCloudflare(aUpEn.uploadURL, aFileEn, (p) => setProgress({ label: labelEnAnalysis, percent: p }))
         aUidEn = aUpEn.uid
-        if (aCaptionsEn) await uploadCaptions(aUidEn, aCaptionsEn)
+      }
+      // Los subtítulos no dependen del doblaje: se suben al vídeo español siempre y, si además
+      // hay vídeo en inglés, también ahí — así se puede ver con cualquiera de los dos audios.
+      if (aCaptionsEn) {
+        setProgress({ label: t("publicar.progress.captions", "Subiendo subtítulos…"), percent: 100 })
+        const targets = [uploadCaptions(aUp.uid, aCaptionsEn)]
+        if (aUidEn) targets.push(uploadCaptions(aUidEn, aCaptionsEn))
+        await Promise.all(targets)
       }
 
       // 2) Subir cada clip
@@ -318,7 +325,14 @@ const Publicar = () => {
           const upEn = await createDirectUpload(`${c.title || c.file!.name} (EN)`, c.fileEn.size)
           await uploadToCloudflare(upEn.uploadURL, c.fileEn, (p) => setProgress({ label: labelEn, percent: p }))
           uidEn = upEn.uid
-          if (c.captionsEn) await uploadCaptions(uidEn, c.captionsEn)
+        }
+        // Los subtítulos no dependen del doblaje: se suben al vídeo español siempre y, si además
+        // hay vídeo en inglés, también ahí — así se puede ver con cualquiera de los dos audios.
+        if (c.captionsEn) {
+          setProgress({ label: t("publicar.progress.captions", "Subiendo subtítulos…"), percent: 100 })
+          const targets = [uploadCaptions(up.uid, c.captionsEn)]
+          if (uidEn) targets.push(uploadCaptions(uidEn, c.captionsEn))
+          await Promise.all(targets)
         }
 
         clipInputs.push({
@@ -455,7 +469,7 @@ const Publicar = () => {
                 onFile={setACaptionsEn}
                 label={t("publicar.field.en-captions", "Subtítulos en inglés (.srt o .vtt)")}
                 accept=".srt,.vtt,text/vtt,application/x-subrip"
-                hint={aFileEn ? t("common.optional", "Opcional") : t("publicar.upload-en-video-first", "Sube antes el vídeo en inglés")}
+                hint={t("publicar.captions-hint", "Se aplican al vídeo en español y, si lo subes, también al doblado en inglés")}
               />
             </div>
           </details>
@@ -565,7 +579,7 @@ const Publicar = () => {
                     onFile={(f) => updateClip(ci, { captionsEn: f })}
                     label={t("publicar.field.en-captions", "Subtítulos en inglés (.srt o .vtt)")}
                     accept=".srt,.vtt,text/vtt,application/x-subrip"
-                    hint={clip.fileEn ? t("common.optional", "Opcional") : t("publicar.upload-en-video-first", "Sube antes el vídeo en inglés")}
+                    hint={t("publicar.captions-hint", "Se aplican al vídeo en español y, si lo subes, también al doblado en inglés")}
                   />
                 </div>
               </details>

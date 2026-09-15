@@ -10,7 +10,8 @@ import {
   uploadToCloudflare,
   setClipVideoEn,
   setAnalysisVideoEn,
-  uploadCaptions,
+  uploadClipCaptionsEn,
+  uploadAnalysisCaptionsEn,
   getConcepts,
   type BlockConceptsInput,
   type ConceptOption,
@@ -190,14 +191,9 @@ const Editar = () => {
     setEnDone(null)
     if (!id) return
     if (!enFile && !enCaptionsFile) return setEnError(t("editar.en.error.nothing", "Sube un vídeo o unos subtítulos primero."))
-    if (!enFile && enCaptionsFile && !hasVideoEn) return setEnError(t("editar.en.error.video-first", "Sube antes el vídeo en inglés."))
 
     setEnBusy(true)
     try {
-      // El uid para los subtítulos sale del vídeo recién subido en esta misma acción si lo hay;
-      // si no, del que ya existiera de antes — en ningún caso hace falta releer nada del backend.
-      let uidForCaptions = streamUidEn
-
       if (enFile) {
         const labelEn = t("editar.en.progress.video", "Subiendo vídeo en inglés…")
         setEnProgress({ label: labelEn, percent: 0 })
@@ -206,12 +202,14 @@ const Editar = () => {
         if (isClip) await setClipVideoEn(id, up.uid)
         else await setAnalysisVideoEn(id, up.uid)
         setStreamUidEn(up.uid)
-        uidForCaptions = up.uid
       }
 
-      if (enCaptionsFile && uidForCaptions) {
+      // Sube el mismo VTT al vídeo español y, si existe, también al inglés — así se puede ver
+      // con audio original y subtítulos en inglés, o con el doblaje (§ pedido explícitamente).
+      if (enCaptionsFile) {
         setEnProgress({ label: t("editar.en.progress.captions", "Subiendo subtítulos…"), percent: 100 })
-        await uploadCaptions(uidForCaptions, enCaptionsFile)
+        if (isClip) await uploadClipCaptionsEn(id, enCaptionsFile)
+        else await uploadAnalysisCaptionsEn(id, enCaptionsFile)
       }
 
       setEnDone(t("editar.en.done", "Versión en inglés actualizada. Cloudflare tarda unos minutos en procesar el vídeo nuevo."))
@@ -401,7 +399,7 @@ const Editar = () => {
             onFile={setEnCaptionsFile}
             label={t("publicar.field.en-captions", "Subtítulos en inglés (.srt o .vtt)")}
             accept=".srt,.vtt,text/vtt,application/x-subrip"
-            hint={hasVideoEn || enFile ? t("common.optional", "Opcional") : t("publicar.upload-en-video-first", "Sube antes el vídeo en inglés")}
+            hint={t("editar.en.captions-hint", "Se aplican al vídeo en español y, si existe, también al doblado en inglés")}
           />
         </div>
 

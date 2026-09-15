@@ -134,6 +134,19 @@ export const uploadCaptions = (uid: string, file: File) => {
   return apiPostForm<{ ok: boolean }>(`/api/admin/videos/${uid}/captions`, fd)
 }
 
+// Para contenido YA PUBLICADO (Editar): suben el mismo VTT al vídeo en español y, si existe,
+// también al doblado en inglés — así se puede ver con audio original y subtítulos en inglés.
+export const uploadClipCaptionsEn = (id: string, file: File) => {
+  const fd = new FormData()
+  fd.append("file", file)
+  return apiPostForm<{ ok: boolean }>(`/api/admin/clips/${id}/captions-en`, fd)
+}
+export const uploadAnalysisCaptionsEn = (id: string, file: File) => {
+  const fd = new FormData()
+  fd.append("file", file)
+  return apiPostForm<{ ok: boolean }>(`/api/admin/analyses/${id}/captions-en`, fd)
+}
+
 // --- Catálogo reutilizable (autocompletado): un solo endpoint, el front manda el `type` ---
 
 export type CatalogType = "player" | "venue" | "category" | "concept"
