@@ -9,23 +9,29 @@
 
 export type ContentType = "clip" | "analysis"
 
-/** Conceptos de un contenido agrupados por bloque (§8.3): para colorear los del bloque actual. */
-export type BlockConcepts = { block: string; concepts: string[] }
+/** Conceptos de un contenido agrupados por bloque (§8.3): para colorear los del bloque actual.
+ * `concepts`/`block` son la clave canónica (ES, se usan para filtrar/buscar); los `*En` son el
+ * mismo dato, mismo orden, solo para mostrar cuando el idioma activo es inglés. */
+export type BlockConcepts = { block: string; blockEn: string; concepts: string[]; conceptsEn: string[] }
 
 /** Tarjeta de contenido común a Inicio, Explorar, Resultados y Mi Lista. */
 export type ContentItem = {
   id: string
   type: ContentType
   title: string
+  titleEn: string // = title si aún no hay traducción (nunca vacío)
   thumbnailUrl: string
   durationSeconds: number
-  concepts: string[] // unión plana (para contextos sin bloque: Inicio, Mi Lista, Resultados)
+  concepts: string[] // unión plana (ES, clave de filtros/búsqueda)
+  conceptsEn: string[] // mismo orden/longitud que concepts, solo para mostrar
   blocks?: BlockConcepts[] // conceptos por bloque (para el coloreado en Explorar)
   description?: string // solo en clips (Resultados: se prefiere a "tournament")
+  descriptionEn?: string
   // Metadatos opcionales (sobre todo en análisis)
   players?: string // "Chingotto, Galán, Lebrón, Stupa"
   tournament?: string // texto compuesto: "Premier Padel P2 · Génova 2024 · Cuartos de final"
-  block?: string // bloque táctico principal (contexto)
+  block?: string // bloque táctico principal (ES, clave de filtros)
+  blockEn?: string // mismo bloque principal, solo para mostrar
   level?: string // "intermedio" | "avanzado" (filtro §8.2; opcional, no siempre visible)
   progress?: number // 0-100, para "continúa viendo" / "vistos recientemente"
   completed?: boolean // solo en items de historial: si ya se marcó como visto
@@ -33,7 +39,7 @@ export type ContentItem = {
 }
 
 /** Concepto popular (chip con contador), para Inicio y Explorar. */
-export type PopularConcept = { name: string; clipCount: number }
+export type PopularConcept = { name: string; nameEn: string; clipCount: number }
 
 /** Comentario (plano en el MVP). `likes` opcional según diseño. */
 export type Comment = {
@@ -49,6 +55,7 @@ export type Comment = {
 export type AppearsIn = {
   analysisId: string
   title: string // partido/equipos
+  titleEn: string
   event?: string // torneo
   thumbnailUrl?: string
 }
@@ -57,7 +64,7 @@ export type AppearsIn = {
 export type Chapter = {
   startSeconds: number
   title: string
-  concept?: string
+  titleEn?: string
   clipId?: string // si el capítulo existe también como clip independiente
 }
 
@@ -69,13 +76,17 @@ export type ClipDetail = {
   id: string
   type: "clip"
   title: string
+  titleEn: string
   description: string
+  descriptionEn: string
   durationSeconds: number
   thumbnailUrl: string
   videoUrl: string
   videoUrlEn?: string | null // vídeo doblado al inglés (HeyGen); null/undefined si no existe
   concepts: string[] // todos los conceptos del clip (§9.3: se muestran todos)
+  conceptsEn: string[] // mismo orden/longitud que concepts
   blocks: string[] // bloques del clip (chips clicables §9.2)
+  blocksEn: string[] // mismo orden/longitud que blocks
   resumeSeconds?: number // punto donde retomar (§7.2)
   appearsIn?: AppearsIn | null
   related: ContentItem[]
@@ -89,7 +100,9 @@ export type AnalysisDetail = {
   id: string
   type: "analysis"
   title: string
+  titleEn: string
   description: string
+  descriptionEn: string
   durationSeconds: number
   thumbnailUrl: string
   videoUrl: string
@@ -97,6 +110,7 @@ export type AnalysisDetail = {
   players?: string
   tournament?: string
   concepts: string[]
+  conceptsEn: string[] // mismo orden/longitud que concepts
   resumeSeconds?: number // punto donde retomar (§7.2/§10.1)
   chapters: Chapter[]
   related: ContentItem[]
@@ -122,7 +136,9 @@ export type HomeResponse = {
 /** Sección de Explorar: un bloque táctico con sus conceptos y clips. */
 export type ExploreSection = {
   block: string
+  blockEn: string
   concepts: string[]
+  conceptsEn: string[] // mismo orden/longitud que concepts
   clips: ContentItem[]
 }
 

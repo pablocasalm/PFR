@@ -13,6 +13,8 @@ import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import FilterPanel, { type FilterSection } from "../components/FilterPanel"
 import WatchedBadge from "../components/WatchedBadge"
 import EnglishBadge from "../components/EnglishBadge"
+import { useI18n, type TFunc } from "../../../lib/i18n/store"
+import { pickText, pickList } from "../../../lib/i18n/content"
 
 /**
  * Explorar — Biblioteca táctica. Consume GET /api/explore (bloques + análisis).
@@ -87,6 +89,7 @@ const PlayerFilter = ({
   selected: string
   onSelect: (player: string) => void
 }) => {
+  const { t } = useI18n()
   const [query, setQuery] = useState(selected)
   const [open, setOpen] = useState(false)
 
@@ -98,7 +101,7 @@ const PlayerFilter = ({
 
   return (
     <div className="space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-wide text-white/50">Jugador</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-white/50">{t("explorar.player-filter.label", "Jugador")}</span>
       <div className="relative">
         <input
           type="text"
@@ -113,13 +116,13 @@ const PlayerFilter = ({
             if (selected) setQuery("")
           }}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
-          placeholder="Buscar jugador..."
+          placeholder={t("explorar.player-filter.placeholder", "Buscar jugador...")}
           className="w-full rounded-lg border border-white/15 bg-midnight px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none"
         />
         {selected && (
           <button
             type="button"
-            aria-label="Quitar filtro de jugador"
+            aria-label={t("explorar.player-filter.clear", "Quitar filtro de jugador")}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onSelect("")}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 transition hover:text-white"
@@ -150,24 +153,30 @@ const PlayerFilter = ({
   )
 }
 
-const VerTodo = ({ to }: { to: string }) => (
-  <Link to={to} className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110">
-    Ver todo <ArrowRight className="h-4 w-4" />
-  </Link>
-)
+const VerTodo = ({ to }: { to: string }) => {
+  const { t } = useI18n()
+  return (
+    <Link to={to} className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110">
+      {t("common.see-all", "Ver todo")} <ArrowRight className="h-4 w-4" />
+    </Link>
+  )
+}
 
 // Solo escritorio: en móvil el carrusel ya se navega con scroll táctil.
-const CarouselArrow = ({ direction, onClick }: { direction: "left" | "right"; onClick: () => void }) => (
+const CarouselArrow = ({ direction, onClick }: { direction: "left" | "right"; onClick: () => void }) => {
+  const { t } = useI18n()
+  return (
   <button
     onClick={onClick}
-    aria-label={direction === "left" ? "Ver clips anteriores" : "Ver más clips"}
+    aria-label={direction === "left" ? t("explorar.carousel.prev", "Ver clips anteriores") : t("explorar.carousel.next", "Ver más clips")}
     className={`absolute top-[38%] z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white backdrop-blur transition hover:bg-black/90 md:flex ${
       direction === "left" ? "-left-2" : "-right-2"
     }`}
   >
     {direction === "left" ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
   </button>
-)
+  )
+}
 
 // Fila de clips de un bloque: scroll horizontal en TODAS las resoluciones (a diferencia de
 // CardRow, que en escritorio pasa a rejilla) para que las flechas tengan algo que desplazar.
@@ -198,7 +207,9 @@ const ClipCarouselRow = ({ clips, block }: { clips: ContentItem[]; block: string
 // currentBlock: bloque de la sección donde se muestra el clip. Sus conceptos van en color;
 // los de otros bloques, en gris (para que se entienda que son de otro contexto, §8.3).
 const ClipCard = ({ clip, currentBlock }: { clip: ContentItem; currentBlock: string }) => {
+  const { lang } = useI18n()
   const blockConcepts = new Set(clip.blocks?.find((b) => b.block === currentBlock)?.concepts ?? [])
+  const concepts = pickList(clip.concepts, clip.conceptsEn, lang)
   return (
     <Link to={watchHref(clip)} className="group block cursor-pointer">
       <div className="relative overflow-hidden rounded-lg border border-white/10">
@@ -212,11 +223,11 @@ const ClipCard = ({ clip, currentBlock }: { clip: ContentItem; currentBlock: str
       </div>
       <div className="mt-2.5 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-sm font-medium leading-snug text-white">{clip.title}</p>
+          <p className="text-sm font-medium leading-snug text-white">{pickText(clip.title, clip.titleEn, lang)}</p>
           <div className="mt-1 flex flex-wrap gap-x-2 text-xs leading-relaxed">
-            {clip.concepts.slice(0, 4).map((c) => (
+            {clip.concepts.slice(0, 4).map((c, i) => (
               <span key={c} className={blockConcepts.has(c) ? "text-neon-cyan/90" : "text-white/35"}>
-                #{c}
+                #{concepts[i] ?? c}
               </span>
             ))}
           </div>
@@ -238,6 +249,7 @@ const ConceptSection = ({
   selected: Set<string>
   onToggleConcept: (concept: string) => void
 }) => {
+  const { lang } = useI18n()
   const Icon = ICONS[index % ICONS.length]
   const accent = ACCENTS[index % ACCENTS.length]
   return (
@@ -247,13 +259,13 @@ const ConceptSection = ({
           <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${accent}`}>
             <Icon className="h-4 w-4" />
           </span>
-          <h2 className="min-w-0 flex-1 truncate text-sm font-bold uppercase tracking-[0.12em] text-white">{section.block}</h2>
+          <h2 className="min-w-0 flex-1 truncate text-sm font-bold uppercase tracking-[0.12em] text-white">{pickText(section.block, section.blockEn, lang)}</h2>
           <VerTodo to={`/app/search?block=${encodeURIComponent(section.block)}`} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {section.concepts.map((c) => (
+          {section.concepts.map((c, i) => (
             <Chip key={c} active={selected.has(c)} onClick={() => onToggleConcept(c)}>
-              {c}
+              {pickText(c, section.conceptsEn[i], lang)}
             </Chip>
           ))}
         </div>
@@ -264,24 +276,31 @@ const ConceptSection = ({
   )
 }
 
-const AnalisisCard = ({ item }: { item: ContentItem }) => (
-  <Link to={watchHref(item)} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-3 transition hover:border-white/20">
-    <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-28 shrink-0 rounded-lg" completed={item.completed} hasEnglishVersion={item.hasEnglishVersion} />
-    <div className="min-w-0 flex-1">
-      <p className="text-sm font-semibold text-white">{item.title}</p>
-      <p className="mt-1 text-xs leading-relaxed text-white/50">
-        {item.tournament}
-        {item.tournament && item.players ? " · " : ""}
-        {item.players}
-      </p>
-    </div>
-    <span className="shrink-0 self-start" onClick={(e) => e.preventDefault()}>
-      <SaveButton item={item} variant="icon" />
-    </span>
-  </Link>
-)
+const AnalisisCard = ({ item }: { item: ContentItem }) => {
+  const { lang } = useI18n()
+  return (
+    <Link to={watchHref(item)} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-3 transition hover:border-white/20">
+      <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-28 shrink-0 rounded-lg" completed={item.completed} hasEnglishVersion={item.hasEnglishVersion} />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-white">{pickText(item.title, item.titleEn, lang)}</p>
+        <p className="mt-1 text-xs leading-relaxed text-white/50">
+          {item.tournament}
+          {item.tournament && item.players ? " · " : ""}
+          {item.players}
+        </p>
+      </div>
+      <span className="shrink-0 self-start" onClick={(e) => e.preventDefault()}>
+        <SaveButton item={item} variant="icon" />
+      </span>
+    </Link>
+  )
+}
 
-const TYPE_LABELS: Record<ContentType, string> = { all: "Todos", clips: "Clips", analyses: "Análisis" }
+const typeLabels = (t: TFunc): Record<ContentType, string> => ({
+  all: t("explorar.type.all", "Todos"),
+  clips: t("explorar.type.clips", "Clips"),
+  analyses: t("explorar.type.analyses", "Análisis"),
+})
 
 /** Esqueleto de la biblioteca: dos secciones de concepto con su rejilla de tarjetas. */
 const ExplorarSkeleton = () => (
@@ -307,6 +326,8 @@ const ExplorarSkeleton = () => (
 // ---------------------------------------------------------------------------
 
 const Explorar = () => {
+  const { t, lang } = useI18n()
+  const TYPE_LABELS = useMemo(() => typeLabels(t), [t])
   const { data, loading, error } = useApi(getExplore, [], "explore")
 
   const [showFilters, setShowFilters] = useState(false)
@@ -336,6 +357,15 @@ const Explorar = () => {
     data?.sections.forEach((sec) => sec.concepts.forEach((c) => s.add(c)))
     data?.analyses.forEach((a) => a.concepts.forEach((c) => s.add(c)))
     return Array.from(s).sort((a, b) => a.localeCompare(b))
+  }, [data])
+
+  // Nombre en inglés de cada concepto (ES → EN) y de cada bloque, para traducir las opciones
+  // del panel de filtros sin perder el valor canónico (ES) que usa el propio filtrado.
+  const conceptLabelEn = useMemo(() => {
+    const map = new Map<string, string>()
+    data?.sections.forEach((sec) => sec.concepts.forEach((c, i) => map.set(c, sec.conceptsEn[i] ?? c)))
+    data?.analyses.forEach((a) => a.concepts.forEach((c, i) => map.set(c, a.conceptsEn[i] ?? c)))
+    return map
   }, [data])
 
   // Jugadores únicos (campo "players" es un CSV: "Agus Tapia, Arturo Coello, ..."), alfabético.
@@ -386,26 +416,26 @@ const Explorar = () => {
   // Secciones del panel de filtros compartido (mismo componente que Search/Resultados).
   const filterSections: FilterSection[] = [
     {
-      title: "Tipo",
-      options: (Object.keys(TYPE_LABELS) as ContentType[]).map((t) => ({ value: t, label: TYPE_LABELS[t] })),
+      title: t("explorar.filter.type", "Tipo"),
+      options: (Object.keys(TYPE_LABELS) as ContentType[]).map((ct) => ({ value: ct, label: TYPE_LABELS[ct] })),
       isActive: (v) => type === v,
       onToggle: (v) => setType(v as ContentType),
     },
     {
-      title: "Bloque",
-      options: (data?.sections ?? []).map((sec) => ({ value: sec.block, label: sec.block })),
+      title: t("explorar.filter.block", "Bloque"),
+      options: (data?.sections ?? []).map((sec) => ({ value: sec.block, label: pickText(sec.block, sec.blockEn, lang) })),
       isActive: (v) => selectedBlock === v,
       onToggle: (v) => setSelectedBlock((prev) => (prev === v ? "" : v)),
     },
     {
-      title: "Conceptos",
-      options: allConcepts.map((c) => ({ value: c, label: `#${c}` })),
+      title: t("explorar.filter.concepts", "Conceptos"),
+      options: allConcepts.map((c) => ({ value: c, label: `#${pickText(c, conceptLabelEn.get(c), lang)}` })),
       isActive: (v) => selected.has(v),
       onToggle: toggleConcept,
     },
     {
-      title: "Idioma",
-      options: [{ value: "1", label: "Con inglés" }],
+      title: t("explorar.filter.language", "Idioma"),
+      options: [{ value: "1", label: t("explorar.filter.has-english", "Con inglés") }],
       isActive: () => hasEnglishOnly,
       onToggle: () => setHasEnglishOnly((v) => !v),
     },
@@ -419,9 +449,9 @@ const Explorar = () => {
     <main className="w-full space-y-6 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">Explorar</h1>
+          <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">{t("explorar.title", "Explorar")}</h1>
           <p className="mt-2 text-sm text-white/60">
-            Encuentra los mejores ejemplos de pádel organizados por conceptos clave.
+            {t("explorar.subtitle", "Encuentra los mejores ejemplos de pádel organizados por conceptos clave.")}
           </p>
         </div>
         <button
@@ -434,7 +464,7 @@ const Explorar = () => {
           }`}
         >
           <SlidersHorizontal className="h-4 w-4" />
-          Filtros
+          {t("common.filters", "Filtros")}
           {activeCount > 0 && (
             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-neon-cyan px-1.5 text-[11px] font-bold text-midnight">
               {activeCount}
@@ -453,7 +483,7 @@ const Explorar = () => {
         </div>
       )}
 
-      <BottomSheet open={showFilters} onClose={() => setShowFilters(false)} title="Filtros">
+      <BottomSheet open={showFilters} onClose={() => setShowFilters(false)} title={t("common.filters", "Filtros")}>
         <div className="space-y-4">
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
             <PlayerFilter players={allPlayers} selected={selectedPlayer} onSelect={setSelectedPlayer} />
@@ -464,14 +494,16 @@ const Explorar = () => {
 
       {loading && <ExplorarSkeleton />}
       {error && (
-        <p className="text-sm text-red-400/80">No se pudo cargar Explorar ({error}). ¿Está el backend en marcha?</p>
+        <p className="text-sm text-red-400/80">
+          {t("explorar.load-error", "No se pudo cargar Explorar ({error}). ¿Está el backend en marcha?", { error })}
+        </p>
       )}
 
       {noResults && (
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center">
-          <p className="text-sm text-white/60">No hay resultados para estos filtros.</p>
+          <p className="text-sm text-white/60">{t("explorar.no-results", "No hay resultados para estos filtros.")}</p>
           <button onClick={clear} className="mt-3 text-sm font-medium text-neon-cyan transition hover:brightness-110">
-            Limpiar filtros
+            {t("filter-panel.clear", "Limpiar filtros")}
           </button>
         </div>
       )}
@@ -488,7 +520,7 @@ const Explorar = () => {
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neon-lime/40 bg-neon-lime/10 text-neon-lime">
               <Clapperboard className="h-4 w-4" />
             </span>
-            <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">Análisis completos</h2>
+            <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">{t("explorar.analyses-heading", "Análisis completos")}</h2>
             <div className="ml-auto">
               <VerTodo to="/app/search?type=analysis" />
             </div>

@@ -9,6 +9,7 @@ import {
   type FeedbackStatus,
   type FeedbackType,
 } from "../../../lib/api/feedback"
+import { useI18n, type TFunc } from "../../../lib/i18n/store"
 
 /**
  * AdminFeedback — gestión de reportes de la beta (solo Admin). Lista todos los reportes de los
@@ -16,26 +17,26 @@ import {
  * (Nuevo → En progreso → Resuelto), dejar una nota interna y borrarlos.
  */
 
-const fmt = (iso: string | null): string => {
+const fmt = (iso: string | null, lang: string): string => {
   if (!iso) return "—"
   // El backend envía UTC; si no trae marca de zona ('Z'), la forzamos para convertir a hora local.
   const hasTz = /[zZ]|[+-]\d{2}:?\d{2}$/.test(iso)
   const d = new Date(hasTz ? iso : `${iso}Z`)
   if (Number.isNaN(d.getTime())) return "—"
-  return d.toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+  return d.toLocaleString(lang === "en" ? "en-US" : "es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
 }
 
-const TYPE_META: Record<FeedbackType, { label: string; icon: typeof Bug; cls: string }> = {
-  bug: { label: "Fallo", icon: Bug, cls: "border-red-400/40 bg-red-400/10 text-red-300" },
-  idea: { label: "Idea", icon: Lightbulb, cls: "border-lime-400/40 bg-lime-400/10 text-lime-300" },
-  other: { label: "Otro", icon: MessageCircle, cls: "border-white/20 bg-white/5 text-white/70" },
-}
+const typeMetaOf = (t: TFunc): Record<FeedbackType, { label: string; icon: typeof Bug; cls: string }> => ({
+  bug: { label: t("feedback-button.type.bug", "Fallo"), icon: Bug, cls: "border-red-400/40 bg-red-400/10 text-red-300" },
+  idea: { label: t("feedback-button.type.idea", "Idea"), icon: Lightbulb, cls: "border-lime-400/40 bg-lime-400/10 text-lime-300" },
+  other: { label: t("feedback-button.type.other", "Otro"), icon: MessageCircle, cls: "border-white/20 bg-white/5 text-white/70" },
+})
 
-const STATUS_META: Record<FeedbackStatus, { label: string; cls: string }> = {
-  new: { label: "Nuevo", cls: "border-amber-400/40 bg-amber-400/10 text-amber-300" },
-  in_progress: { label: "En progreso", cls: "border-sky-400/40 bg-sky-400/10 text-sky-300" },
-  resolved: { label: "Resuelto", cls: "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" },
-}
+const statusMetaOf = (t: TFunc): Record<FeedbackStatus, { label: string; cls: string }> => ({
+  new: { label: t("admin-feedback.status.new", "Nuevo"), cls: "border-amber-400/40 bg-amber-400/10 text-amber-300" },
+  in_progress: { label: t("admin-feedback.status.in-progress", "En progreso"), cls: "border-sky-400/40 bg-sky-400/10 text-sky-300" },
+  resolved: { label: t("admin-feedback.status.resolved", "Resuelto"), cls: "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" },
+})
 
 const STATUS_ORDER: FeedbackStatus[] = ["new", "in_progress", "resolved"]
 
@@ -44,6 +45,7 @@ type TypeFilter = "all" | FeedbackType
 type StatusFilter = "all" | "new" | "in_progress"
 
 const AdminFeedback = () => {
+  const { t } = useI18n()
   const [items, setItems] = useState<FeedbackItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -57,7 +59,7 @@ const AdminFeedback = () => {
       const res = await listFeedback()
       setItems(res.items)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudieron cargar los reportes.")
+      setError(err instanceof Error ? err.message : t("admin-feedback.error.load", "No se pudieron cargar los reportes."))
     } finally {
       setLoading(false)
     }
@@ -106,7 +108,7 @@ const AdminFeedback = () => {
       patchLocal(item.id, { status: res.status, resolvedAtUtc: res.resolvedAtUtc })
     } catch (err) {
       patchLocal(item.id, { status: prev }) // revierte
-      setError(err instanceof Error ? err.message : "No se pudo cambiar el estado.")
+      setError(err instanceof Error ? err.message : t("admin-feedback.error.status", "No se pudo cambiar el estado."))
     }
   }
 
@@ -115,17 +117,17 @@ const AdminFeedback = () => {
       const res = await updateFeedback(item.id, { adminNote: note })
       patchLocal(item.id, { adminNote: res.adminNote })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar la nota.")
+      setError(err instanceof Error ? err.message : t("admin-feedback.error.note", "No se pudo guardar la nota."))
     }
   }
 
   const remove = async (item: FeedbackItem) => {
-    if (!window.confirm("¿Eliminar este reporte?")) return
+    if (!window.confirm(t("admin-feedback.confirm-delete", "¿Eliminar este reporte?"))) return
     try {
       await deleteFeedback(item.id)
       setItems((prev) => prev.filter((i) => i.id !== item.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo eliminar el reporte.")
+      setError(err instanceof Error ? err.message : t("admin-feedback.error.delete", "No se pudo eliminar el reporte."))
     }
   }
 
@@ -141,8 +143,8 @@ const AdminFeedback = () => {
           <Inbox className="h-5 w-5" />
         </span>
         <div>
-          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">Reportes</h1>
-          <p className="text-sm text-white/60">Fallos e ideas que envían los usuarios de la beta.</p>
+          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{t("admin-feedback.title", "Reportes")}</h1>
+          <p className="text-sm text-white/60">{t("admin-feedback.subtitle", "Fallos e ideas que envían los usuarios de la beta.")}</p>
         </div>
       </div>
 
@@ -150,25 +152,25 @@ const AdminFeedback = () => {
 
       {/* Filtros por estado (los resueltos no viven aquí, ver Historial más abajo) */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h2 className="mr-2 text-sm font-bold uppercase tracking-wide text-white/70">Estado</h2>
-        <button onClick={() => setStatusFilter("all")} className={tabCls(statusFilter === "all")}>Todos ({counts.new + counts.in_progress})</button>
-        <button onClick={() => setStatusFilter("new")} className={tabCls(statusFilter === "new")}>Nuevos ({counts.new})</button>
-        <button onClick={() => setStatusFilter("in_progress")} className={tabCls(statusFilter === "in_progress")}>En progreso ({counts.in_progress})</button>
+        <h2 className="mr-2 text-sm font-bold uppercase tracking-wide text-white/70">{t("mi-cuenta.status", "Estado")}</h2>
+        <button onClick={() => setStatusFilter("all")} className={tabCls(statusFilter === "all")}>{t("explorar.type.all", "Todos")} ({counts.new + counts.in_progress})</button>
+        <button onClick={() => setStatusFilter("new")} className={tabCls(statusFilter === "new")}>{t("admin-feedback.filter.new", "Nuevos")} ({counts.new})</button>
+        <button onClick={() => setStatusFilter("in_progress")} className={tabCls(statusFilter === "in_progress")}>{t("admin-feedback.status.in-progress", "En progreso")} ({counts.in_progress})</button>
       </div>
 
       {/* Filtros por tipo */}
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        <h2 className="mr-2 text-sm font-bold uppercase tracking-wide text-white/70">Tipo</h2>
-        <button onClick={() => setTypeFilter("all")} className={tabCls(typeFilter === "all")}>Todos</button>
-        <button onClick={() => setTypeFilter("bug")} className={tabCls(typeFilter === "bug")}>Fallos</button>
-        <button onClick={() => setTypeFilter("idea")} className={tabCls(typeFilter === "idea")}>Ideas</button>
-        <button onClick={() => setTypeFilter("other")} className={tabCls(typeFilter === "other")}>Otros</button>
+        <h2 className="mr-2 text-sm font-bold uppercase tracking-wide text-white/70">{t("admin-feedback.type", "Tipo")}</h2>
+        <button onClick={() => setTypeFilter("all")} className={tabCls(typeFilter === "all")}>{t("explorar.type.all", "Todos")}</button>
+        <button onClick={() => setTypeFilter("bug")} className={tabCls(typeFilter === "bug")}>{t("admin-feedback.filter.bugs", "Fallos")}</button>
+        <button onClick={() => setTypeFilter("idea")} className={tabCls(typeFilter === "idea")}>{t("admin-feedback.filter.ideas", "Ideas")}</button>
+        <button onClick={() => setTypeFilter("other")} className={tabCls(typeFilter === "other")}>{t("admin-feedback.filter.others", "Otros")}</button>
       </div>
 
       {loading ? (
-        <p className="text-sm text-white/40">Cargando...</p>
+        <p className="text-sm text-white/40">{t("common.loading", "Cargando...")}</p>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-white/40">No hay reportes activos.</p>
+        <p className="text-sm text-white/40">{t("admin-feedback.no-active", "No hay reportes activos.")}</p>
       ) : (
         <div className="space-y-4">
           {filtered.map((item) => (
@@ -192,7 +194,7 @@ const AdminFeedback = () => {
             className="flex w-full items-center gap-2 text-left text-sm font-bold uppercase tracking-wide text-white/70 transition hover:text-white"
           >
             <History className="h-4 w-4" />
-            Historial ({resolvedItems.length})
+            {t("admin-feedback.history", "Historial")} ({resolvedItems.length})
             <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${historyOpen ? "rotate-180" : ""}`} />
           </button>
 
@@ -227,6 +229,9 @@ const ReportCard = ({
   onSaveNote: (item: FeedbackItem, note: string) => void
   onRemove: (item: FeedbackItem) => void
 }) => {
+  const { t, lang } = useI18n()
+  const TYPE_META = useMemo(() => typeMetaOf(t), [t])
+  const STATUS_META = useMemo(() => statusMetaOf(t), [t])
   const [note, setNote] = useState(item.adminNote ?? "")
   const typeMeta = TYPE_META[item.type]
   const TypeIcon = typeMeta.icon
@@ -260,7 +265,7 @@ const ReportCard = ({
         <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_META[item.status].cls}`}>
           {STATUS_META[item.status].label}
         </span>
-        <span className="ml-auto text-xs text-white/40">{fmt(item.createdAtUtc)}</span>
+        <span className="ml-auto text-xs text-white/40">{fmt(item.createdAtUtc, lang)}</span>
       </div>
 
       {/* Mensaje */}
@@ -273,7 +278,7 @@ const ReportCard = ({
           className="mt-3 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 p-1.5 transition hover:border-white/20"
         >
           {imageUrl ? (
-            <img src={imageUrl} alt="Captura del reporte" className="h-16 w-16 rounded object-cover" />
+            <img src={imageUrl} alt={t("admin-feedback.image-alt", "Captura del reporte")} className="h-16 w-16 rounded object-cover" />
           ) : (
             <span className="flex h-16 w-16 items-center justify-center rounded bg-white/5 text-white/30">
               <ImageIcon className="h-5 w-5" />
@@ -290,21 +295,25 @@ const ReportCard = ({
         >
           <button
             onClick={() => setLightboxOpen(false)}
-            aria-label="Cerrar"
+            aria-label={t("common.close", "Cerrar")}
             className="absolute right-4 top-4 text-white/70 transition hover:text-white"
           >
             <X className="h-6 w-6" />
           </button>
-          <img src={imageUrl} alt="Captura del reporte" className="max-h-full max-w-full rounded-lg object-contain" />
+          <img src={imageUrl} alt={t("admin-feedback.image-alt", "Captura del reporte")} className="max-h-full max-w-full rounded-lg object-contain" />
         </div>
       )}
 
       {/* Contexto */}
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/50">
-        <span>De: <span className="text-white/70">{item.userEmail ?? item.userName ?? `#${item.userId}`}</span></span>
-        {item.page && <span>Página: <span className="font-mono text-white/70">{item.page}</span></span>}
+        <span>{t("admin-feedback.from", "De:")} <span className="text-white/70">{item.userEmail ?? item.userName ?? `#${item.userId}`}</span></span>
+        {item.page && <span>{t("admin-feedback.page", "Página:")} <span className="font-mono text-white/70">{item.page}</span></span>}
         {item.contentId && <span>{item.contentType}: <span className="font-mono text-white/70">{item.contentId}</span></span>}
-        {item.status === "resolved" && item.resolvedAtUtc && <span>Resuelto: {fmt(item.resolvedAtUtc)}</span>}
+        {item.status === "resolved" && item.resolvedAtUtc && (
+          <span>
+            {t("admin-feedback.resolved-on", "Resuelto:")} {fmt(item.resolvedAtUtc, lang)}
+          </span>
+        )}
       </div>
       {item.userAgent && (
         <p className="mt-1 truncate text-[11px] text-white/30" title={item.userAgent}>{item.userAgent}</p>
@@ -335,7 +344,7 @@ const ReportCard = ({
           className="ml-auto flex items-center gap-1.5 text-xs text-white/50 transition hover:text-red-400"
         >
           <Trash2 className="h-3.5 w-3.5" />
-          Eliminar
+          {t("common.delete", "Eliminar")}
         </button>
       </div>
 
@@ -345,7 +354,7 @@ const ReportCard = ({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={1}
-          placeholder="Nota interna (opcional)..."
+          placeholder={t("admin-feedback.note-placeholder", "Nota interna (opcional)...")}
           className="min-h-[38px] flex-1 resize-y rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-xs"
         />
         <button
@@ -354,7 +363,7 @@ const ReportCard = ({
           className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Save className="h-3.5 w-3.5" />
-          Guardar
+          {t("common.save", "Guardar")}
         </button>
       </div>
     </article>

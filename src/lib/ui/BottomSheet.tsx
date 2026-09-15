@@ -1,5 +1,6 @@
 import { useEffect } from "react"
 import { X } from "lucide-react"
+import { useI18n } from "../i18n/store"
 
 /**
  * Hoja inferior (bottom sheet) para móvil (§9.8/§10.6). Se superpone sin sacar al
@@ -18,6 +19,7 @@ export const BottomSheet = ({
   title?: string
   children: React.ReactNode
 }) => {
+  const { t } = useI18n()
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
@@ -40,7 +42,7 @@ export const BottomSheet = ({
       <div className="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col rounded-t-2xl border-t border-white/10 bg-midnight motion-safe:animate-[sheet-up_.22s_ease-out]">
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
           <h2 className="text-sm font-bold text-white">{title}</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="text-white/60 transition hover:text-white">
+          <button onClick={onClose} aria-label={t("common.close", "Cerrar")} className="text-white/60 transition hover:text-white">
             <X className="h-5 w-5" />
           </button>
         </div>

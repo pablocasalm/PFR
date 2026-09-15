@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useSearchParams, useLocation } from "react-route
 import { useAuth } from "./store"
 import { requestInvite } from "../api/invites"
 import { requestPasswordReset } from "../api/auth"
+import { useI18n } from "../i18n/store"
 
 /**
  * Pantalla de acceso (login / registro / solicitar código / recuperar contraseña). Es la puerta
@@ -14,6 +15,7 @@ import { requestPasswordReset } from "../api/auth"
 type Mode = "login" | "register" | "request" | "forgot"
 
 const LoginPage = () => {
+  const { t } = useI18n()
   const { isAuthenticated, login, register } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -57,7 +59,7 @@ const LoginPage = () => {
       }
       navigate("/app/inicio", { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo completar la operación.")
+      setError(err instanceof Error ? err.message : t("login.error.generic", "No se pudo completar la operación."))
     } finally {
       setLoading(false)
     }
@@ -71,13 +73,13 @@ const LoginPage = () => {
     try {
       if (mode === "request") {
         const res = await requestInvite(emailOnly.trim())
-        setInfo(res.message ?? "Solicitud recibida. Te enviaremos un nuevo código pronto.")
+        setInfo(res.message ?? t("login.request.sent", "Solicitud recibida. Te enviaremos un nuevo código pronto."))
       } else {
         await requestPasswordReset(emailOnly.trim())
-        setInfo("Si el email existe, te hemos enviado un enlace para restablecer tu contraseña.")
+        setInfo(t("login.forgot.sent", "Si el email existe, te hemos enviado un enlace para restablecer tu contraseña."))
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo enviar la solicitud.")
+      setError(err instanceof Error ? err.message : t("login.error.request", "No se pudo enviar la solicitud."))
     } finally {
       setLoading(false)
     }
@@ -90,15 +92,15 @@ const LoginPage = () => {
     "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/50 focus:outline-none sm:text-sm"
 
   const title =
-    mode === "login" ? "Inicia sesión"
-    : mode === "register" ? "Crea tu cuenta"
-    : mode === "request" ? "Solicitar un código"
-    : "Recuperar contraseña"
+    mode === "login" ? t("login.title.login", "Inicia sesión")
+    : mode === "register" ? t("login.title.register", "Crea tu cuenta")
+    : mode === "request" ? t("login.title.request", "Solicitar un código")
+    : t("login.title.forgot", "Recuperar contraseña")
   const subtitle =
-    mode === "login" ? "Accede a tu biblioteca táctica de Padel Film Room."
-    : mode === "register" ? "Introduce tu código de invitación para unirte a la beta."
-    : mode === "request" ? "¿Tu código ya se ha usado? Pide uno nuevo con tu email."
-    : "Te enviaremos un enlace para crear una contraseña nueva."
+    mode === "login" ? t("login.subtitle.login", "Accede a tu biblioteca táctica de Padel Film Room.")
+    : mode === "register" ? t("login.subtitle.register", "Introduce tu código de invitación para unirte a la beta.")
+    : mode === "request" ? t("login.subtitle.request", "¿Tu código ya se ha usado? Pide uno nuevo con tu email.")
+    : t("login.subtitle.forgot", "Te enviaremos un enlace para crear una contraseña nueva.")
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-midnight bg-film-room p-4 text-white">
@@ -125,7 +127,7 @@ const LoginPage = () => {
               required
               value={emailOnly}
               onChange={(e) => setEmailOnly(e.target.value)}
-              placeholder="Tu email"
+              placeholder={t("login.field.email", "Tu email")}
               className={inputCls}
               autoComplete="email"
             />
@@ -136,7 +138,11 @@ const LoginPage = () => {
               disabled={loading}
               className="w-full rounded-lg bg-neon-cyan py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-60"
             >
-              {loading ? "Un momento..." : mode === "request" ? "Solicitar código" : "Enviar enlace"}
+              {loading
+                ? t("login.wait", "Un momento...")
+                : mode === "request"
+                  ? t("login.cta.request", "Solicitar código")
+                  : t("login.cta.send-link", "Enviar enlace")}
             </button>
           </form>
         ) : (
@@ -147,7 +153,7 @@ const LoginPage = () => {
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Nombre (opcional)"
+                  placeholder={t("login.field.name", "Nombre (opcional)")}
                   className={inputCls}
                   autoComplete="name"
                 />
@@ -156,7 +162,7 @@ const LoginPage = () => {
                   required
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
-                  placeholder="Código de invitación"
+                  placeholder={t("login.field.invite-code", "Código de invitación")}
                   className={inputCls}
                   autoCapitalize="characters"
                 />
@@ -167,7 +173,7 @@ const LoginPage = () => {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
+              placeholder={t("login.field.email-short", "Email")}
               className={inputCls}
               autoComplete="email"
             />
@@ -176,7 +182,7 @@ const LoginPage = () => {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Contraseña"
+              placeholder={t("login.field.password", "Contraseña")}
               className={inputCls}
               autoComplete={mode === "login" ? "current-password" : "new-password"}
             />
@@ -188,7 +194,11 @@ const LoginPage = () => {
               disabled={loading}
               className="w-full rounded-lg bg-neon-cyan py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-60"
             >
-              {loading ? "Un momento..." : mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
+              {loading
+                ? t("login.wait", "Un momento...")
+                : mode === "login"
+                  ? t("login.cta.login", "Iniciar sesión")
+                  : t("login.cta.register", "Crear cuenta")}
             </button>
 
             {mode === "login" && (
@@ -197,7 +207,7 @@ const LoginPage = () => {
                 onClick={() => switchMode("forgot")}
                 className="w-full text-center text-xs text-white/50 transition hover:text-white"
               >
-                ¿Olvidaste tu contraseña?
+                {t("login.forgot-link", "¿Olvidaste tu contraseña?")}
               </button>
             )}
             {mode === "register" && (
@@ -206,7 +216,7 @@ const LoginPage = () => {
                 onClick={() => switchMode("request")}
                 className="w-full text-center text-xs text-white/50 transition hover:text-white"
               >
-                ¿Tu código no funciona? Solicita otro
+                {t("login.request-link", "¿Tu código no funciona? Solicita otro")}
               </button>
             )}
           </form>
@@ -215,21 +225,21 @@ const LoginPage = () => {
         <p className="mt-6 text-center text-sm text-white/60">
           {mode === "login" ? (
             <>
-              ¿No tienes cuenta?{" "}
+              {t("login.no-account", "¿No tienes cuenta?")}{" "}
               <button onClick={() => switchMode("register")} className="font-semibold text-neon-cyan hover:underline">
-                Regístrate
+                {t("login.cta.go-register", "Regístrate")}
               </button>
             </>
           ) : mode === "register" ? (
             <>
-              ¿Ya tienes cuenta?{" "}
+              {t("login.has-account", "¿Ya tienes cuenta?")}{" "}
               <button onClick={() => switchMode("login")} className="font-semibold text-neon-cyan hover:underline">
-                Inicia sesión
+                {t("login.title.login", "Inicia sesión")}
               </button>
             </>
           ) : (
             <button onClick={() => switchMode("login")} className="font-semibold text-neon-cyan hover:underline">
-              Volver a iniciar sesión
+              {t("login.back-to-login", "Volver a iniciar sesión")}
             </button>
           )}
         </p>

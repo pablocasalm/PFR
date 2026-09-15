@@ -6,6 +6,8 @@ import { useSavedItems, toggleSavedItem } from "../../../lib/saved/store"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getRecent } from "../../../lib/api/history"
 import SaveButton from "../../../lib/saved/SaveButton"
+import { useI18n } from "../../../lib/i18n/store"
+import { pickText, pickList } from "../../../lib/i18n/content"
 
 /**
  * MiLista — Biblioteca personal del usuario (§12). Tres secciones:
@@ -59,24 +61,27 @@ const SectionHeading = ({ title, count, action }: { title: string; count: number
   </div>
 )
 
-const CardMeta = ({ item }: { item: ContentItem }) => (
-  <div className="p-3">
-    <p className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-white">{item.title}</p>
-    {item.type === "analysis" && item.tournament ? (
-      <p className="mt-2 flex items-center gap-1.5 text-xs text-white/50">
-        <Trophy className="h-3.5 w-3.5 text-white/40" /> {item.tournament}
-      </p>
-    ) : (
-      <div className="mt-2 flex flex-wrap gap-2">
-        {item.concepts.slice(0, 3).map((c) => (
-          <span key={c} className="text-[11px] text-neon-cyan/80">
-            #{c}
-          </span>
-        ))}
-      </div>
-    )}
-  </div>
-)
+const CardMeta = ({ item }: { item: ContentItem }) => {
+  const { lang } = useI18n()
+  return (
+    <div className="p-3">
+      <p className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-white">{pickText(item.title, item.titleEn, lang)}</p>
+      {item.type === "analysis" && item.tournament ? (
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-white/50">
+          <Trophy className="h-3.5 w-3.5 text-white/40" /> {item.tournament}
+        </p>
+      ) : (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {pickList(item.concepts, item.conceptsEn, lang).slice(0, 3).map((c) => (
+            <span key={c} className="text-[11px] text-neon-cyan/80">
+              #{c}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Tarjetas
@@ -166,38 +171,42 @@ const RecentCard = ({ item }: { item: ContentItem }) => (
 // Estado vacío (§12.5)
 // ---------------------------------------------------------------------------
 
-const EmptyState = () => (
-  <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
-    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-neon-cyan">
-      <Bookmark className="h-6 w-6" />
+const EmptyState = () => {
+  const { t } = useI18n()
+  return (
+    <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-neon-cyan">
+        <Bookmark className="h-6 w-6" />
+      </div>
+      <h2 className="mt-5 text-xl font-bold text-white">{t("mi-lista.empty.title", "Todavía no has guardado ningún contenido")}</h2>
+      <p className="mt-2 max-w-sm text-sm text-white/60">
+        {t("mi-lista.empty.subtitle", "Guarda clips o análisis para acceder rápidamente desde aquí.")}
+      </p>
+      <div className="mt-6 flex gap-3">
+        <Link
+          to="/app/explorar"
+          className="flex items-center gap-2 rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
+        >
+          <Compass className="h-4 w-4" />
+          {t("mi-lista.empty.go-explore", "Ir a Explorar")}
+        </Link>
+        <Link
+          to="/app/inicio"
+          className="rounded-lg border border-white/15 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/5"
+        >
+          {t("mi-lista.empty.go-home", "Ir a Inicio")}
+        </Link>
+      </div>
     </div>
-    <h2 className="mt-5 text-xl font-bold text-white">Todavía no has guardado ningún contenido</h2>
-    <p className="mt-2 max-w-sm text-sm text-white/60">
-      Guarda clips o análisis para acceder rápidamente desde aquí.
-    </p>
-    <div className="mt-6 flex gap-3">
-      <Link
-        to="/app/explorar"
-        className="flex items-center gap-2 rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
-      >
-        <Compass className="h-4 w-4" />
-        Ir a Explorar
-      </Link>
-      <Link
-        to="/app/inicio"
-        className="rounded-lg border border-white/15 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/5"
-      >
-        Ir a Inicio
-      </Link>
-    </div>
-  </div>
-)
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Página
 // ---------------------------------------------------------------------------
 
 const MiLista = () => {
+  const { t } = useI18n()
   const saved = useSavedItems()
   const clips = saved.filter((i) => i.type === "clip")
   const analyses = saved.filter((i) => i.type === "analysis")
@@ -237,9 +246,9 @@ const MiLista = () => {
     <main className="w-full space-y-10 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">Mi Lista</h1>
+          <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">{t("header.nav.mi-lista", "Mi Lista")}</h1>
           <p className="mt-2 text-sm text-white/60">
-            Clips y análisis que has guardado para volver cuando quieras.
+            {t("mi-lista.subtitle", "Clips y análisis que has guardado para volver cuando quieras.")}
           </p>
         </div>
         {!nothingSaved &&
@@ -248,14 +257,14 @@ const MiLista = () => {
               onClick={exitManage}
               className="flex shrink-0 items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/5"
             >
-              <X className="h-4 w-4" /> Salir
+              <X className="h-4 w-4" /> {t("common.exit", "Salir")}
             </button>
           ) : (
             <button
               onClick={() => setManaging(true)}
               className="flex shrink-0 items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/5"
             >
-              <Settings2 className="h-4 w-4" /> Gestionar
+              <Settings2 className="h-4 w-4" /> {t("mi-lista.manage", "Gestionar")}
             </button>
           ))}
       </div>
@@ -263,20 +272,20 @@ const MiLista = () => {
       {/* Barra de acciones del modo gestión (§12.1) */}
       {managing && (
         <div className="sticky top-20 z-10 flex flex-wrap items-center gap-3 rounded-xl border border-neon-cyan/30 bg-midnight/90 p-3 backdrop-blur">
-          <span className="text-sm font-medium text-white">{selected.size} seleccionados</span>
+          <span className="text-sm font-medium text-white">{t("mi-lista.selected-count", "{count} seleccionados", { count: selected.size })}</span>
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={removeSelected}
               disabled={selected.size === 0}
               className="flex items-center gap-1.5 rounded-lg bg-red-500/90 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40"
             >
-              <Trash2 className="h-4 w-4" /> Eliminar
+              <Trash2 className="h-4 w-4" /> {t("common.delete", "Eliminar")}
             </button>
             <button
               onClick={emptyAll}
               className="rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5"
             >
-              Vaciar todo
+              {t("mi-lista.empty-all", "Vaciar todo")}
             </button>
           </div>
         </div>
@@ -288,7 +297,7 @@ const MiLista = () => {
         <>
           {clips.length > 0 && (
             <section>
-              <SectionHeading title="Clips guardados" count={clips.length} />
+              <SectionHeading title={t("mi-lista.saved-clips", "Clips guardados")} count={clips.length} />
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {clips.map((c) => (
                   <SavedCard key={c.id} item={c} managing={managing} selected={selected.has(c.id)} onToggleSelect={toggleSelect} />
@@ -299,7 +308,7 @@ const MiLista = () => {
 
           {analyses.length > 0 && (
             <section>
-              <SectionHeading title="Análisis guardados" count={analyses.length} />
+              <SectionHeading title={t("mi-lista.saved-analyses", "Análisis guardados")} count={analyses.length} />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {analyses.map((a) => (
                   <SavedCard key={a.id} item={a} managing={managing} selected={selected.has(a.id)} onToggleSelect={toggleSelect} />
@@ -311,14 +320,14 @@ const MiLista = () => {
           {/* Si no hay guardados pero sí historial, un aviso ligero en vez del estado vacío completo */}
           {nothingSaved && (
             <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/50">
-              Aún no has guardado clips ni análisis. Pulsa el icono de guardar en cualquier contenido para tenerlo aquí.
+              {t("mi-lista.no-saved-hint", "Aún no has guardado clips ni análisis. Pulsa el icono de guardar en cualquier contenido para tenerlo aquí.")}
             </p>
           )}
 
           {/* Vistos recientemente (§12.4): en curso primero (para continuar), luego finalizados. */}
           {inProgressItems.length > 0 && (
             <section>
-              <SectionHeading title="Continuar viendo" count={inProgressItems.length} />
+              <SectionHeading title={t("mi-lista.continue-watching", "Continuar viendo")} count={inProgressItems.length} />
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {inProgressItems.map((item) => (
                   <RecentCard key={item.id} item={item} />
@@ -330,11 +339,11 @@ const MiLista = () => {
           {finishedItems.length > 0 && (
             <section>
               <SectionHeading
-                title="Vistos recientemente"
+                title={t("mi-lista.recently-watched", "Vistos recientemente")}
                 count={finishedItems.length}
                 action={
                   <Link to="/app/search?feed=history" className="text-sm font-medium text-neon-cyan transition hover:brightness-110">
-                    Ver historial completo
+                    {t("mi-lista.see-full-history", "Ver historial completo")}
                   </Link>
                 }
               />

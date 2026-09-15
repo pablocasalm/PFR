@@ -12,6 +12,8 @@ import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import FilterPanel, { type FilterSection } from "../components/FilterPanel"
 import WatchedBadge from "../components/WatchedBadge"
 import EnglishBadge from "../components/EnglishBadge"
+import { useI18n, type TFunc } from "../../../lib/i18n/store"
+import { pickText, pickList } from "../../../lib/i18n/content"
 
 /**
  * Search — Pantalla de Resultados (§11). Destino común de búsqueda, "Ver todo",
@@ -46,35 +48,35 @@ const FUSE_OPTIONS: ConstructorParameters<typeof Fuse<ContentItem>>[1] = {
 }
 
 // Taxonomía oficial de bloques (§5). Mismos campos que el panel de filtros de Explorar.
-const SORTS = [
-  { v: "relevance", l: "Más relevantes" },
-  { v: "recent", l: "Más recientes" },
-  { v: "views", l: "Más vistos" },
-  { v: "duration", l: "Duración" },
+const sorts = (t: TFunc) => [
+  { v: "relevance", l: t("search.sort.relevance", "Más relevantes") },
+  { v: "recent", l: t("search.sort.recent", "Más recientes") },
+  { v: "views", l: t("search.sort.views", "Más vistos") },
+  { v: "duration", l: t("search.sort.duration", "Duración") },
 ]
 
 type Filters = { q: string; block: string; concept: string; type: string; sort: string; feed: string; hasEnglish: string }
 
 // Cabecera adaptada al origen desde el que llega el usuario (§11.1).
-const headerTitle = (f: Filters): string => {
-  if (f.q) return `Resultados para “${f.q}”`
+const headerTitle = (f: Filters, t: TFunc, blockLabel?: string): string => {
+  if (f.q) return t("search.title.query", "Resultados para “{q}”", { q: f.q })
   if (f.concept) return `#${f.concept}`
-  if (f.block) return f.block
-  if (f.feed === "new") return "Nuevo esta semana"
-  if (f.feed === "popular") return "Más vistos esta semana"
-  if (f.feed === "history") return "Vistos recientemente"
-  if (f.type === "analysis") return "Análisis completos"
-  if (f.type === "clip") return "Clips"
-  return "Explorar resultados"
+  if (f.block) return blockLabel ?? f.block
+  if (f.feed === "new") return t("inicio.section.new", "Nuevo esta semana")
+  if (f.feed === "popular") return t("inicio.section.most-viewed", "Más vistos esta semana")
+  if (f.feed === "history") return t("mi-lista.recently-watched", "Vistos recientemente")
+  if (f.type === "analysis") return t("explorar.analyses-heading", "Análisis completos")
+  if (f.type === "clip") return t("explorar.type.clips", "Clips")
+  return t("search.title.default", "Explorar resultados")
 }
 
 // Chips de filtros aplicados (§11.3), cada uno removible.
-const appliedChips = (f: Filters): { key: keyof Filters; label: string }[] => {
+const appliedChips = (f: Filters, t: TFunc): { key: keyof Filters; label: string }[] => {
   const chips: { key: keyof Filters; label: string }[] = []
   if (f.block) chips.push({ key: "block", label: f.block })
   if (f.concept) chips.push({ key: "concept", label: `#${f.concept}` })
-  if (f.type) chips.push({ key: "type", label: f.type === "analysis" ? "Análisis" : "Clips" })
-  if (f.hasEnglish) chips.push({ key: "hasEnglish", label: "Con inglés" })
+  if (f.type) chips.push({ key: "type", label: f.type === "analysis" ? t("explorar.type.analyses", "Análisis") : t("explorar.type.clips", "Clips") })
+  if (f.hasEnglish) chips.push({ key: "hasEnglish", label: t("explorar.filter.has-english", "Con inglés") })
   return chips
 }
 
@@ -107,14 +109,22 @@ const Thumb = ({
   </div>
 )
 
-const meta = (r: ContentItem) => {
+const meta = (r: ContentItem, t: TFunc, lang: string) => {
   // Clips: la descripción propia dice más que el torneo (§reporte de beta #41).
   // Análisis: no tienen descripción a priori, se queda el torneo.
-  if (r.type === "clip" && r.description) return r.description
-  return [r.tournament ?? (r.type === "analysis" ? "Análisis" : "Clip"), r.players].filter(Boolean).join(" • ")
+  if (r.type === "clip" && r.description) return pickText(r.description, r.descriptionEn, lang)
+  return [
+    r.tournament ?? (r.type === "analysis" ? t("content-card.type-analysis", "Análisis") : t("content-card.type-clip", "Clip")),
+    r.players,
+  ]
+    .filter(Boolean)
+    .join(" • ")
 }
 
-const ResultCard = ({ result }: { result: ContentItem }) => (
+const ResultCard = ({ result }: { result: ContentItem }) => {
+  const { t, lang } = useI18n()
+  const concepts = pickList(result.concepts, result.conceptsEn, lang)
+  return (
   <Link to={watchHref(result)} className="group block">
     <div className="relative overflow-hidden rounded-lg border border-white/10">
       <Thumb src={result.thumbnailUrl} hue={hueFor(result.id)} progress={result.progress} completed={result.completed} hasEnglishVersion={result.hasEnglishVersion} />
@@ -130,25 +140,28 @@ const ResultCard = ({ result }: { result: ContentItem }) => (
         result.type === "analysis" ? "text-violet-300" : "text-neon-cyan"
       }`}
     >
-      {result.type === "analysis" ? "Análisis" : "Clip"}
+      {result.type === "analysis" ? t("content-card.type-analysis", "Análisis") : t("content-card.type-clip", "Clip")}
     </p>
-    <h3 className="mt-1 line-clamp-2 text-base font-bold leading-snug text-white">{result.title}</h3>
-    <p className="mt-1.5 text-xs text-white/50">{meta(result)}</p>
-    {result.type === "clip" && result.concepts.length > 0 && (
+    <h3 className="mt-1 line-clamp-2 text-base font-bold leading-snug text-white">{pickText(result.title, result.titleEn, lang)}</h3>
+    <p className="mt-1.5 text-xs text-white/50">{meta(result, t, lang)}</p>
+    {result.type === "clip" && concepts.length > 0 && (
       <div className="mt-3 flex flex-wrap gap-2">
-        {result.concepts.slice(0, 3).map((t) => (
-          <span key={t} className="rounded-md border border-neon-cyan/30 px-2 py-0.5 text-[11px] text-neon-cyan/80">#{t}</span>
+        {concepts.slice(0, 3).map((concept) => (
+          <span key={concept} className="rounded-md border border-neon-cyan/30 px-2 py-0.5 text-[11px] text-neon-cyan/80">#{concept}</span>
         ))}
       </div>
     )}
   </Link>
-)
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Página
 // ---------------------------------------------------------------------------
 
 const Search = () => {
+  const { t, lang } = useI18n()
+  const SORTS = useMemo(() => sorts(t), [t])
   const [params, setParams] = useSearchParams()
   const [showFilters, setShowFilters] = useState(false)
 
@@ -205,6 +218,14 @@ const Search = () => {
     return Array.from(s).sort((a, b) => a.localeCompare(b))
   }, [searched])
 
+  // Nombre en inglés de cada concepto (ES → EN), para traducir las opciones del filtro sin
+  // perder el valor canónico (ES) que usan la URL y el propio filtrado.
+  const conceptLabelEn = useMemo(() => {
+    const map = new Map<string, string>()
+    searched.forEach((r) => (r.concepts ?? []).forEach((c, i) => map.set(c, r.conceptsEn?.[i] ?? c)))
+    return map
+  }, [searched])
+
   // Conjunto base: filtra por concepto/bloque (todo menos tipo), para poder contar las tabs.
   const base = useMemo(() => {
     let items = searched
@@ -229,53 +250,55 @@ const Search = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base, filters.type, filters.sort])
 
-  const chips = appliedChips(filters)
+  const chips = appliedChips(filters, t)
   const activeCount = chips.length
   const empty = !loading && !error && results.length === 0
 
   // Secciones del panel de filtros compartido (mismo componente que Explorar).
   const filterSections: FilterSection[] = [
     {
-      title: "Tipo",
+      title: t("explorar.filter.type", "Tipo"),
       options: [
-        { value: "", label: "Todos" },
-        { value: "clip", label: "Clips" },
-        { value: "analysis", label: "Análisis" },
+        { value: "", label: t("explorar.type.all", "Todos") },
+        { value: "clip", label: t("explorar.type.clips", "Clips") },
+        { value: "analysis", label: t("explorar.type.analyses", "Análisis") },
       ],
       isActive: (v) => (filters.type || "") === v,
       onToggle: (v) => setFilter({ type: v }),
     },
     {
-      title: "Bloque",
-      options: (blocks ?? []).map((b) => ({ value: b, label: b })),
+      title: t("explorar.filter.block", "Bloque"),
+      options: (blocks ?? []).map((b) => ({ value: b.nameEs, label: pickText(b.nameEs, b.nameEn, lang) })),
       isActive: (v) => filters.block === v,
       onToggle: (v) => setFilter({ block: filters.block === v ? "" : v }),
     },
     {
-      title: "Conceptos",
-      options: allConcepts.map((c) => ({ value: c, label: `#${c}` })),
+      title: t("explorar.filter.concepts", "Conceptos"),
+      options: allConcepts.map((c) => ({ value: c, label: `#${pickText(c, conceptLabelEn.get(c), lang)}` })),
       isActive: (v) => filters.concept === v,
       onToggle: (v) => setFilter({ concept: filters.concept === v ? "" : v }),
     },
     {
-      title: "Idioma",
-      options: [{ value: "1", label: "Con inglés" }],
+      title: t("explorar.filter.language", "Idioma"),
+      options: [{ value: "1", label: t("explorar.filter.has-english", "Con inglés") }],
       isActive: (v) => filters.hasEnglish === v,
       onToggle: (v) => setFilter({ hasEnglish: filters.hasEnglish === v ? "" : v }),
     },
   ]
 
   const typeTabs: { key: string; label: string; count: number }[] = [
-    { key: "", label: "Todos", count: counts.all },
-    { key: "clip", label: "Clips", count: counts.clip },
-    { key: "analysis", label: "Análisis", count: counts.analysis },
+    { key: "", label: t("explorar.type.all", "Todos"), count: counts.all },
+    { key: "clip", label: t("explorar.type.clips", "Clips"), count: counts.clip },
+    { key: "analysis", label: t("explorar.type.analyses", "Análisis"), count: counts.analysis },
   ]
 
   return (
     <main className="w-full py-6">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_300px]">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{headerTitle(filters)}</h1>
+          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">
+            {headerTitle(filters, t, blocks?.find((b) => b.nameEs === filters.block)?.nameEn)}
+          </h1>
 
           {/* Tabs por tipo (§11) */}
           <div className="mt-6 flex items-center gap-6 border-b border-white/10">
@@ -301,7 +324,7 @@ const Search = () => {
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-sm text-white/80">
-                <span className="text-white/50">Ordenar por</span>
+                <span className="text-white/50">{t("search.sort-by", "Ordenar por")}</span>
                 <select
                   value={filters.sort || "relevance"}
                   onChange={(e) => setFilter({ sort: e.target.value === "relevance" ? "" : e.target.value })}
@@ -314,7 +337,7 @@ const Search = () => {
                   ))}
                 </select>
               </label>
-              <span className="text-sm text-white/50">{results.length} resultados</span>
+              <span className="text-sm text-white/50">{t("search.result-count", "{count} resultados", { count: results.length })}</span>
             </div>
             <button
               onClick={() => setShowFilters((v) => !v)}
@@ -322,7 +345,7 @@ const Search = () => {
                 showFilters || activeCount > 0 ? "border-neon-cyan/50 bg-neon-cyan/10 text-neon-cyan" : "border-white/15 text-white/80 hover:bg-white/5"
               }`}
             >
-              <SlidersHorizontal className="h-4 w-4" /> Filtros
+              <SlidersHorizontal className="h-4 w-4" /> {t("common.filters", "Filtros")}
               {activeCount > 0 && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-neon-cyan px-1.5 text-[11px] font-bold text-midnight">
                   {activeCount}
@@ -344,35 +367,39 @@ const Search = () => {
                 </button>
               ))}
               <button onClick={clearFilters} className="px-2 text-xs font-medium text-white/50 transition hover:text-white">
-                Borrar todos
+                {t("search.clear-all", "Borrar todos")}
               </button>
             </div>
           )}
 
           {/* Filtros en móvil: hoja inferior (mismo contenido que el aside de escritorio) */}
-          <BottomSheet open={showFilters} onClose={() => setShowFilters(false)} title="Filtros">
+          <BottomSheet open={showFilters} onClose={() => setShowFilters(false)} title={t("common.filters", "Filtros")}>
             <FilterPanel sections={filterSections} onClear={clearFilters} showClear={activeCount > 0} />
           </BottomSheet>
 
-          {loading && <p className="mt-6 text-sm text-white/40">Buscando...</p>}
-          {error && <p className="mt-6 text-sm text-red-400/80">No se pudo buscar ({error}). ¿Está el backend en marcha?</p>}
+          {loading && <p className="mt-6 text-sm text-white/40">{t("search.searching", "Buscando...")}</p>}
+          {error && (
+            <p className="mt-6 text-sm text-red-400/80">
+              {t("search.load-error", "No se pudo buscar ({error}). ¿Está el backend en marcha?", { error })}
+            </p>
+          )}
 
           {/* Estado vacío con acciones (§11.7) */}
           {empty && (
             <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.02] p-10 text-center">
-              <p className="text-sm text-white/70">No hemos encontrado resultados para esta combinación.</p>
-              <p className="mt-1 text-sm text-white/40">Prueba a eliminar algún filtro.</p>
+              <p className="text-sm text-white/70">{t("search.empty.title", "No hemos encontrado resultados para esta combinación.")}</p>
+              <p className="mt-1 text-sm text-white/40">{t("search.empty.hint", "Prueba a eliminar algún filtro.")}</p>
               <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
                 {activeCount > 0 && (
                   <button onClick={clearFilters} className="rounded-lg bg-neon-cyan px-4 py-2 text-sm font-semibold text-midnight transition hover:brightness-110">
-                    Borrar filtros
+                    {t("search.empty.clear-filters", "Borrar filtros")}
                   </button>
                 )}
                 <Link
                   to="/app/explorar"
                   className="flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5"
                 >
-                  <Compass className="h-4 w-4" /> Volver a Explorar
+                  <Compass className="h-4 w-4" /> {t("search.empty.back-to-explore", "Volver a Explorar")}
                 </Link>
               </div>
             </div>

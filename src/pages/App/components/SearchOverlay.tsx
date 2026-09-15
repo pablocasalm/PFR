@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Search, X, Clock } from "lucide-react"
 import { getRecentSearches, addRecentSearch, clearRecentSearches } from "../../../lib/search/recent"
+import { useI18n } from "../../../lib/i18n/store"
 
 /**
  * Overlay de búsqueda — solo móvil (xl:hidden; en escritorio ya hay un campo siempre visible
@@ -11,6 +12,7 @@ import { getRecentSearches, addRecentSearch, clearRecentSearches } from "../../.
  */
 const SearchOverlay = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const navigate = useNavigate()
+  const { t } = useI18n()
   const [query, setQuery] = useState("")
   const [recent, setRecent] = useState<string[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
@@ -19,8 +21,8 @@ const SearchOverlay = ({ open, onClose }: { open: boolean; onClose: () => void }
     if (!open) return
     setQuery("")
     setRecent(getRecentSearches())
-    const t = setTimeout(() => inputRef.current?.focus(), 50)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => inputRef.current?.focus(), 50)
+    return () => clearTimeout(timer)
   }, [open])
 
   const runSearch = (text: string) => {
@@ -42,10 +44,10 @@ const SearchOverlay = ({ open, onClose }: { open: boolean; onClose: () => void }
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && runSearch(query)}
-          placeholder="Buscar clips, conceptos, jugadores..."
+          placeholder={t("header.search.placeholder", "Buscar clips, conceptos, jugadores...")}
           className="flex-1 bg-transparent text-base text-white placeholder:text-white/40 focus:outline-none"
         />
-        <button onClick={onClose} aria-label="Cerrar búsqueda" className="shrink-0 text-white/60 transition hover:text-white">
+        <button onClick={onClose} aria-label={t("search-overlay.close", "Cerrar búsqueda")} className="shrink-0 text-white/60 transition hover:text-white">
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -54,7 +56,9 @@ const SearchOverlay = ({ open, onClose }: { open: boolean; onClose: () => void }
         {recent.length > 0 ? (
           <>
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-xs font-bold uppercase tracking-wide text-white/50">Búsquedas recientes</h2>
+              <h2 className="text-xs font-bold uppercase tracking-wide text-white/50">
+                {t("search-overlay.recent-title", "Búsquedas recientes")}
+              </h2>
               <button
                 onClick={() => {
                   clearRecentSearches()
@@ -62,7 +66,7 @@ const SearchOverlay = ({ open, onClose }: { open: boolean; onClose: () => void }
                 }}
                 className="text-xs font-medium text-white/40 transition hover:text-white"
               >
-                Borrar
+                {t("search-overlay.clear", "Borrar")}
               </button>
             </div>
             <ul className="space-y-0.5">
@@ -80,7 +84,9 @@ const SearchOverlay = ({ open, onClose }: { open: boolean; onClose: () => void }
             </ul>
           </>
         ) : (
-          <p className="text-sm text-white/40">Escribe para buscar clips, conceptos, jugadores o análisis.</p>
+          <p className="text-sm text-white/40">
+            {t("search-overlay.empty-hint", "Escribe para buscar clips, conceptos, jugadores o análisis.")}
+          </p>
         )}
       </div>
     </div>

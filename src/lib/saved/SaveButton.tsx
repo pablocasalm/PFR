@@ -1,6 +1,7 @@
 import { Plus, Check } from "lucide-react"
 import type { ContentItem } from "../api/types"
 import { useSavedItems, isSaved, toggleSavedItem } from "./store"
+import { useI18n } from "../i18n/store"
 
 /**
  * Botón "Mi Lista" reutilizable (§9.4): selector de estado guardar/quitar.
@@ -12,6 +13,7 @@ type Variant = "pill" | "icon"
 
 const SaveButton = ({ item, variant = "icon" }: { item: ContentItem; variant?: Variant }) => {
   useSavedItems() // suscripción para re-render al cambiar el estado guardado
+  const { t } = useI18n()
   const saved = isSaved(item.id)
 
   const onClick = (e: React.MouseEvent) => {
@@ -20,7 +22,7 @@ const SaveButton = ({ item, variant = "icon" }: { item: ContentItem; variant?: V
     toggleSavedItem(item)
   }
 
-  const label = saved ? "En Mi Lista" : "Mi Lista"
+  const label = saved ? t("save-button.saved", "En Mi Lista") : t("save-button.save", "Mi Lista")
 
   if (variant === "pill") {
     return (

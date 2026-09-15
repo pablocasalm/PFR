@@ -4,6 +4,8 @@
  * pantalla decide su propia lógica de selección (única o múltiple) y qué hacer al elegir un
  * valor (filtrar en el sitio en Explorar, navegar en Search); el componente solo pinta.
  */
+import { useI18n } from "../../../lib/i18n/store"
+
 export type FilterOption = { value: string; label: string }
 
 export type FilterSection = {
@@ -21,7 +23,9 @@ const FilterPanel = ({
   sections: FilterSection[]
   onClear: () => void
   showClear: boolean
-}) => (
+}) => {
+  const { t } = useI18n()
+  return (
   <div className="space-y-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
     {sections.map((section) => (
       <div key={section.title} className="space-y-2">
@@ -52,10 +56,11 @@ const FilterPanel = ({
         onClick={onClear}
         className="text-xs font-medium text-white/60 underline-offset-2 transition hover:text-white hover:underline"
       >
-        Limpiar filtros
+        {t("filter-panel.clear", "Limpiar filtros")}
       </button>
     )}
   </div>
-)
+  )
+}
 
 export default FilterPanel

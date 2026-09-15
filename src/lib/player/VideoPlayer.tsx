@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import Hls from "hls.js"
 import { Play, Pause, Volume2, VolumeX, Maximize, Settings } from "lucide-react"
 import { formatDuration } from "../format"
+import { useI18n } from "../i18n/store"
 
 /**
  * Reproductor HLS reutilizable (bloque 6). Reproduce una URL `.m3u8` con hls.js,
@@ -45,6 +46,7 @@ type Props = {
 }
 
 const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initialPosition, onProgress, onEnded, endSlot }: Props) => {
+  const { t } = useI18n()
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hlsRef = useRef<Hls | null>(null)
@@ -116,7 +118,12 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
             .map((l, i) => ({ height: l.height, index: i }))
             .sort((a, b) => b.height - a.height),
         )
-        setSubtitleTracks(hls.subtitleTracks.map((t, i) => ({ index: i, label: t.name || `Subtítulos ${i + 1}` })))
+        setSubtitleTracks(
+          hls.subtitleTracks.map((track, i) => ({
+            index: i,
+            label: track.name || t("video-player.subtitle-track", "Subtítulos {n}", { n: i + 1 }),
+          })),
+        )
         restoreAfterSwitch()
       })
       return () => {
@@ -280,11 +287,11 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
           if (video?.webkitDisplayingFullscreen) video.webkitExitFullscreen?.()
         }}
         onTimeUpdate={(e) => {
-          const t = e.currentTarget.currentTime
-          setCurrent(t)
-          currentRef.current = t
-          if (onProgress && t - lastReportRef.current >= 10) {
-            lastReportRef.current = t
+          const time = e.currentTarget.currentTime
+          setCurrent(time)
+          currentRef.current = time
+          if (onProgress && time - lastReportRef.current >= 10) {
+            lastReportRef.current = time
             report()
           }
         }}
@@ -310,7 +317,7 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
           onClick={togglePlay}
           disabled={loading}
           className="absolute inset-0 flex items-center justify-center"
-          aria-label={loading ? "Cargando" : "Reproducir"}
+          aria-label={loading ? t("video-player.loading", "Cargando") : t("video-player.play", "Reproducir")}
         >
           <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/80 bg-black/40 backdrop-blur-sm transition hover:bg-black/60">
             {loading ? (
@@ -349,12 +356,12 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
         </div>
 
         <div className="flex items-center gap-3 text-white">
-          <button onClick={togglePlay} className="transition hover:text-neon-cyan" aria-label={playing ? "Pausar" : "Reproducir"}>
+          <button onClick={togglePlay} className="transition hover:text-neon-cyan" aria-label={playing ? t("video-player.pause", "Pausar") : t("video-player.play", "Reproducir")}>
             {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" fill="currentColor" />}
           </button>
 
           <div className="flex items-center gap-2">
-            <button onClick={toggleMute} className="transition hover:text-neon-cyan" aria-label={muted ? "Activar sonido" : "Silenciar"}>
+            <button onClick={toggleMute} className="transition hover:text-neon-cyan" aria-label={muted ? t("video-player.unmute", "Activar sonido") : t("video-player.mute", "Silenciar")}>
               {muted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
             </button>
             <input
@@ -365,7 +372,7 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
               value={muted ? 0 : volume}
               onChange={onVolume}
               className="h-1 w-20 cursor-pointer accent-neon-cyan"
-              aria-label="Volumen"
+              aria-label={t("video-player.volume", "Volumen")}
             />
           </div>
 
@@ -378,7 +385,7 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
               <button
                 onClick={() => setQualityOpen((v) => !v)}
                 className={`transition hover:text-neon-cyan ${qualityOpen ? "text-neon-cyan" : ""}`}
-                aria-label="Ajustes"
+                aria-label={t("video-player.settings", "Ajustes")}
               >
                 <Settings className="h-5 w-5" />
               </button>
@@ -388,13 +395,14 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
                   <div className="fixed inset-0 z-10" onClick={() => setQualityOpen(false)} />
                   <div className="absolute bottom-9 right-0 z-20 min-w-[190px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl">
                     {/* Idioma (§9.1/§10.1): vídeo doblado al inglés (HeyGen), si existe. */}
-                    <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Idioma</p>
+                    <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">{t("video-player.language-title", "Idioma")}</p>
                     {srcEn ? (
                       <>
                         <button
                           onClick={() => switchLanguage("es")}
                           className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${lang === "es" ? "text-neon-cyan" : "text-white"}`}
                         >
+                          {/* Nombre del idioma en sí mismo: no se traduce con el idioma de la interfaz. */}
                           Español
                           {lang === "es" && <span>✓</span>}
                         </button>
@@ -411,9 +419,9 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
                         disabled
                         className="flex w-full cursor-not-allowed items-center justify-between gap-4 px-3 py-1.5 text-left text-xs text-white/50"
                       >
-                        Audio con IA
+                        {t("video-player.ai-audio", "Audio con IA")}
                         <span className="rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-neon-cyan">
-                          Próximamente
+                          {t("video-player.coming-soon", "Próximamente")}
                         </span>
                       </button>
                     )}
@@ -421,22 +429,22 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
                     {subtitleTracks.length > 0 && (
                       <>
                         <div className="my-1 border-t border-white/10" />
-                        <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Subtítulos</p>
+                        <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">{t("video-player.subtitles-title", "Subtítulos")}</p>
                         <button
                           onClick={() => selectSubtitle(-1)}
                           className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === -1 ? "text-neon-cyan" : "text-white"}`}
                         >
-                          Desactivados
+                          {t("video-player.subtitles-off", "Desactivados")}
                           {subtitleTrack === -1 && <span>✓</span>}
                         </button>
-                        {subtitleTracks.map((t) => (
+                        {subtitleTracks.map((track) => (
                           <button
-                            key={t.index}
-                            onClick={() => selectSubtitle(t.index)}
-                            className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === t.index ? "text-neon-cyan" : "text-white"}`}
+                            key={track.index}
+                            onClick={() => selectSubtitle(track.index)}
+                            className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === track.index ? "text-neon-cyan" : "text-white"}`}
                           >
-                            {t.label}
-                            {subtitleTrack === t.index && <span>✓</span>}
+                            {track.label}
+                            {subtitleTrack === track.index && <span>✓</span>}
                           </button>
                         ))}
                       </>
@@ -445,12 +453,12 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
                     {levels.length > 0 && (
                       <>
                         <div className="my-1 border-t border-white/10" />
-                        <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">Calidad</p>
+                        <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">{t("video-player.quality-title", "Calidad")}</p>
                         <button
                           onClick={() => selectQuality(-1)}
                           className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${qualityLevel === -1 ? "text-neon-cyan" : "text-white"}`}
                         >
-                          Automática
+                          {t("video-player.quality-auto", "Automática")}
                           {qualityLevel === -1 && <span>✓</span>}
                         </button>
                         {levels.map((l) => (
@@ -459,7 +467,7 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
                             onClick={() => selectQuality(l.index)}
                             className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${qualityLevel === l.index ? "text-neon-cyan" : "text-white"}`}
                           >
-                            {l.height > 0 ? `${l.height}p` : `Nivel ${l.index + 1}`}
+                            {l.height > 0 ? `${l.height}p` : t("video-player.quality-level", "Nivel {n}", { n: l.index + 1 })}
                             {qualityLevel === l.index && <span>✓</span>}
                           </button>
                         ))}
@@ -472,7 +480,7 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
             <button
               onClick={toggleFullscreen}
               className="transition hover:text-neon-cyan"
-              aria-label={fullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+              aria-label={fullscreen ? t("video-player.fullscreen-exit", "Salir de pantalla completa") : t("video-player.fullscreen", "Pantalla completa")}
             >
               <Maximize className="h-5 w-5" />
             </button>

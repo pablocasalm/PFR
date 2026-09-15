@@ -2,20 +2,24 @@ import { useEffect, useRef, useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
 import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox, Megaphone, UserCircle } from "lucide-react"
 import { useAuth, canPublish, isAdmin, type AuthUser } from "../../../lib/auth/store"
+import { useI18n } from "../../../lib/i18n/store"
 import SearchOverlay from "./SearchOverlay"
 import NewsBell from "./NewsBell"
+import LanguageSelector from "./LanguageSelector"
 
 /**
  * Header compartido del nuevo dashboard (/app).
  * Usa NavLink para resaltar la sección activa de forma real.
  */
 
+// `key`: id de traducción (i18n, por ahora sin importar en BD). `label`: texto en español,
+// se pasa como fallback a t() — así la pantalla no cambia hasta que se importe la traducción.
 const NAV_ITEMS = [
-  { label: "Inicio", to: "/app/inicio" },
-  { label: "Explorar", to: "/app/explorar" },
-  { label: "Mi Lista", to: "/app/mi-lista" },
-  { label: "Mi Juego", to: "/app/mi-juego" },
-  { label: "Cómo funciona", to: "/app/como-funciona" },
+  { key: "header.nav.inicio", label: "Inicio", to: "/app/inicio" },
+  { key: "header.nav.explorar", label: "Explorar", to: "/app/explorar" },
+  { key: "header.nav.mi-lista", label: "Mi Lista", to: "/app/mi-lista" },
+  { key: "header.nav.mi-juego", label: "Mi Juego", to: "/app/mi-juego" },
+  { key: "header.nav.como-funciona", label: "Cómo funciona", to: "/app/como-funciona" },
 ]
 
 const Header = () => {
@@ -23,6 +27,7 @@ const Header = () => {
   const [query, setQuery] = useState("")
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const { user } = useAuth()
+  const { t } = useI18n()
 
   const submitSearch = () => {
     const q = query.trim()
@@ -48,7 +53,7 @@ const Header = () => {
 
       {/* Nav (solo escritorio; en móvil/tablet se usa la barra inferior — no cabe antes de xl) */}
       <nav className="hidden items-center gap-7 xl:flex">
-        {NAV_ITEMS.map(({ label, to }) => (
+        {NAV_ITEMS.map(({ key, label, to }) => (
           <NavLink
             key={to}
             to={to}
@@ -61,7 +66,7 @@ const Header = () => {
           >
             {({ isActive }) => (
               <>
-                {label}
+                {t(key, label)}
                 {isActive && (
                   <span className="absolute -bottom-[18px] left-0 h-[2px] w-full rounded-full bg-neon-cyan" />
                 )}
@@ -79,7 +84,7 @@ const Header = () => {
             }
           >
             <UploadCloud className="h-4 w-4" />
-            Publicar
+            {t("header.nav.publicar", "Publicar")}
           </NavLink>
         )}
         {isAdmin(user) && (
@@ -92,7 +97,7 @@ const Header = () => {
             }
           >
             <Ticket className="h-4 w-4" />
-            Invitaciones
+            {t("admin-invites.title", "Invitaciones")}
           </NavLink>
         )}
         {isAdmin(user) && (
@@ -105,7 +110,7 @@ const Header = () => {
             }
           >
             <Inbox className="h-4 w-4" />
-            Reportes
+            {t("admin-feedback.title", "Reportes")}
           </NavLink>
         )}
         {isAdmin(user) && (
@@ -118,7 +123,7 @@ const Header = () => {
             }
           >
             <Megaphone className="h-4 w-4" />
-            Noticias
+            {t("header.nav.noticias", "Noticias")}
           </NavLink>
         )}
       </nav>
@@ -130,7 +135,7 @@ const Header = () => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submitSearch()}
-          placeholder="Buscar clips, conceptos, jugadores..."
+          placeholder={t("header.search.placeholder", "Buscar clips, conceptos, jugadores...")}
           className="w-full bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none"
         />
       </div>
@@ -143,6 +148,9 @@ const Header = () => {
       >
         <Search className="h-5 w-5" />
       </button>
+
+      {/* Idioma */}
+      <LanguageSelector />
 
       {/* Noticias */}
       <NewsBell />
@@ -168,6 +176,7 @@ const initials = (user: AuthUser) => {
 /** Avatar con menú de logout. Dentro de /app siempre hay sesión (lo garantiza RequireAuth). */
 const SessionControl = () => {
   const { user, logout } = useAuth()
+  const { t } = useI18n()
   const [menuOpen, setMenuOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -198,7 +207,7 @@ const SessionControl = () => {
       {menuOpen && (
           <div className="absolute right-0 top-12 z-40 w-56 rounded-xl border border-white/10 bg-midnight p-2 shadow-2xl">
             <div className="border-b border-white/10 px-3 py-2">
-              <p className="truncate text-sm font-semibold text-white">{user.displayName || "Mi cuenta"}</p>
+              <p className="truncate text-sm font-semibold text-white">{user.displayName || t("mi-cuenta.title", "Mi cuenta")}</p>
               <p className="truncate text-xs text-white/50">{user.email}</p>
             </div>
             <Link
@@ -207,7 +216,7 @@ const SessionControl = () => {
               className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
             >
               <UserCircle className="h-4 w-4" />
-              Mi cuenta
+              {t("mi-cuenta.title", "Mi cuenta")}
             </Link>
             {canPublish(user) && (
               <Link
@@ -216,7 +225,7 @@ const SessionControl = () => {
                 className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
               >
                 <UploadCloud className="h-4 w-4" />
-                Publicar
+                {t("header.nav.publicar", "Publicar")}
               </Link>
             )}
             {isAdmin(user) && (
@@ -226,7 +235,7 @@ const SessionControl = () => {
                 className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
               >
                 <Ticket className="h-4 w-4" />
-                Invitaciones
+                {t("admin-invites.title", "Invitaciones")}
               </Link>
             )}
             {isAdmin(user) && (
@@ -236,7 +245,7 @@ const SessionControl = () => {
                 className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
               >
                 <Inbox className="h-4 w-4" />
-                Reportes
+                {t("admin-feedback.title", "Reportes")}
               </Link>
             )}
             {isAdmin(user) && (
@@ -246,7 +255,7 @@ const SessionControl = () => {
                 className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
               >
                 <Megaphone className="h-4 w-4" />
-                Noticias
+                {t("header.nav.noticias", "Noticias")}
               </Link>
             )}
             <button
@@ -257,7 +266,7 @@ const SessionControl = () => {
               className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
             >
               <LogOut className="h-4 w-4" />
-              Cerrar sesión
+              {t("header.logout", "Cerrar sesión")}
             </button>
           </div>
       )}

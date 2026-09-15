@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 import { Link } from "react-router-dom"
+import { useI18n } from "../../../lib/i18n/store"
 
 /**
  * Cómo funciona — página explicativa del método de Padel Film Room.
@@ -307,6 +308,7 @@ const css = `
 `
 
 const ComoFunciona = () => {
+  const { t } = useI18n()
   const rootRef = useRef<HTMLDivElement>(null)
   const heroRef = useRef<HTMLElement>(null)
 
@@ -359,20 +361,22 @@ const ComoFunciona = () => {
         <section className="hero" ref={heroRef}>
           <div className="wrap">
             <h1>
-              Cómo usar <span className="accent">Padel Film Room</span>
+              {t("como-funciona.hero.title-pre", "Cómo usar")} <span className="accent">Padel Film Room</span>
             </h1>
             <p className="lead">
-              Te ayuda a entender mejor lo que ocurre durante un partido y a aprender de las decisiones que toman los jugadores profesionales en
-              situaciones reales. Porque jugar mejor no depende solo de cómo ejecutas un golpe — también importa qué haces, cuándo lo haces y por
-              qué.
+              {t(
+                "como-funciona.hero.lead",
+                "Te ayuda a entender mejor lo que ocurre durante un partido y a aprender de las decisiones que toman los jugadores profesionales en situaciones reales. Porque jugar mejor no depende solo de cómo ejecutas un golpe — también importa qué haces, cuándo lo haces y por qué.",
+              )}
             </p>
             <p className="tagline">
-              No se trata de ver más pádel.
+              {t("como-funciona.hero.tagline1", "No se trata de ver más pádel.")}
               <br />
-              Se trata de <span className="accent">aprender a leerlo</span>.
+              {t("como-funciona.hero.tagline2-pre", "Se trata de")}{" "}
+              <span className="accent">{t("como-funciona.hero.tagline2-accent", "aprender a leerlo")}</span>.
             </p>
             <button type="button" className="scroll-cue" onClick={scrollToNextSection}>
-              Desliza
+              {t("como-funciona.hero.scroll-cue", "Desliza")}
               <svg width="18" height="18">
                 <use href="#i-down" />
               </svg>
@@ -384,34 +388,38 @@ const ComoFunciona = () => {
         <section>
           <div className="wrap">
             <div className="section-head reveal">
-              <p className="eyebrow">01 · Situaciones reales</p>
-              <h2>Aprende de las decisiones que ocurren en pista</h2>
+              <p className="eyebrow">{t("como-funciona.s01.eyebrow", "01 · Situaciones reales")}</p>
+              <h2>{t("como-funciona.s01.title", "Aprende de las decisiones que ocurren en pista")}</h2>
               <p className="lead">
-                En Padel Film Room analizamos partidos y seleccionamos situaciones que merece la pena entender. Cada clip parte de una situación
-                real y te ayuda a ver qué está pasando, qué decisiones se están tomando y por qué pueden marcar la diferencia en el punto.
+                {t(
+                  "como-funciona.s01.lead",
+                  "En Padel Film Room analizamos partidos y seleccionamos situaciones que merece la pena entender. Cada clip parte de una situación real y te ayuda a ver qué está pasando, qué decisiones se están tomando y por qué pueden marcar la diferencia en el punto.",
+                )}
               </p>
             </div>
             <div className="s-grid reveal">
               <div className="clip-media">
-                <img src="/metodo/situacion-reset.png" alt="Clip: El globo como reset" />
+                <img src="/metodo/situacion-reset.png" alt={t("como-funciona.s01.img-alt", "Clip: El globo como reset")} />
               </div>
               <div>
-                <p className="branch-intro">Este clip enseña, a la vez:</p>
+                <p className="branch-intro">{t("como-funciona.s01.branch-intro", "Este clip enseña, a la vez:")}</p>
                 <div className="branches">
                   <div className="branch" style={{ "--c": "#28f0e0" } as React.CSSProperties}>
-                    <span className="block">Uso del globo</span>
+                    <span className="block">{t("como-funciona.block.globo", "Uso del globo")}</span>
                     <span className="arrow">→</span>
                     <span className="concept">#Globo</span>
                   </div>
                   <div className="branch" style={{ "--c": "#5b8cff" } as React.CSSProperties}>
-                    <span className="block">Gestión del ritmo del punto</span>
+                    <span className="block">{t("como-funciona.block.ritmo", "Gestión del ritmo del punto")}</span>
                     <span className="arrow">→</span>
                     <span className="concept">#BajarRitmo</span>
                   </div>
                 </div>
                 <p className="caption">
-                  A veces el aprendizaje estará en qué golpe elegir. Otras, en cuándo avanzar, dónde colocarte, cuándo esperar, cómo jugar con tu
-                  compañero o qué está haciendo el rival — porque durante un punto, todo está conectado.
+                  {t(
+                    "como-funciona.s01.caption",
+                    "A veces el aprendizaje estará en qué golpe elegir. Otras, en cuándo avanzar, dónde colocarte, cuándo esperar, cómo jugar con tu compañero o qué está haciendo el rival — porque durante un punto, todo está conectado.",
+                  )}
                 </p>
               </div>
             </div>
@@ -424,30 +432,34 @@ const ComoFunciona = () => {
             <div className="bloques-grid reveal">
               <div>
                 <div className="section-head">
-                  <p className="eyebrow">02 · Los bloques</p>
-                  <h2>Empieza por una parte del juego</h2>
+                  <p className="eyebrow">{t("como-funciona.s02.eyebrow", "02 · Los bloques")}</p>
+                  <h2>{t("como-funciona.s02.title", "Empieza por una parte del juego")}</h2>
                   <p className="lead">
-                    El pádel está lleno de situaciones y decisiones diferentes. Para ayudarte a entenderlas, hemos organizado el juego en grandes
-                    bloques.
+                    {t(
+                      "como-funciona.s02.lead",
+                      "El pádel está lleno de situaciones y decisiones diferentes. Para ayudarte a entenderlas, hemos organizado el juego en grandes bloques.",
+                    )}
                   </p>
                 </div>
                 <div className="chip-grid">
-                  <span className="chip">Juego desde el fondo</span>
-                  <span className="chip">Transición defensa-ataque</span>
-                  <span className="chip">Juego en la red</span>
-                  <span className="chip">Uso del globo</span>
-                  <span className="chip">Gestión del ritmo del punto</span>
-                  <span className="chip">Lectura táctica del rival</span>
-                  <span className="chip">Uso táctico de golpes</span>
-                  <span className="chip">Juego en pareja</span>
+                  <span className="chip">{t("como-funciona.block.fondo", "Juego desde el fondo")}</span>
+                  <span className="chip">{t("como-funciona.block.transicion", "Transición defensa-ataque")}</span>
+                  <span className="chip">{t("como-funciona.block.red", "Juego en la red")}</span>
+                  <span className="chip">{t("como-funciona.block.globo", "Uso del globo")}</span>
+                  <span className="chip">{t("como-funciona.block.ritmo", "Gestión del ritmo del punto")}</span>
+                  <span className="chip">{t("como-funciona.block.lectura", "Lectura táctica del rival")}</span>
+                  <span className="chip">{t("como-funciona.block.golpes", "Uso táctico de golpes")}</span>
+                  <span className="chip">{t("como-funciona.block.pareja", "Juego en pareja")}</span>
                 </div>
                 <p className="caption" style={{ marginTop: "0.4rem" }}>
-                  No necesitas saber exactamente qué buscar. Empieza por una parte del juego que te interese y observa qué decisiones aparecen una
-                  y otra vez.
+                  {t(
+                    "como-funciona.s02.caption",
+                    "No necesitas saber exactamente qué buscar. Empieza por una parte del juego que te interese y observa qué decisiones aparecen una y otra vez.",
+                  )}
                 </p>
               </div>
               <div className="shot-panel panel">
-                <img src="/metodo/bloques.png" alt="Explorar: bloques con sus clips" />
+                <img src="/metodo/bloques.png" alt={t("como-funciona.s02.img-alt", "Explorar: bloques con sus clips")} />
               </div>
             </div>
           </div>
@@ -457,9 +469,9 @@ const ComoFunciona = () => {
         <section>
           <div className="wrap">
             <div className="section-head reveal">
-              <p className="eyebrow">03 · Los conceptos</p>
-              <h2>Pon nombre a lo que empiezas a reconocer</h2>
-              <p className="lead">Detrás de situaciones diferentes hay ideas que se repiten. Las llamamos conceptos.</p>
+              <p className="eyebrow">{t("como-funciona.s03.eyebrow", "03 · Los conceptos")}</p>
+              <h2>{t("como-funciona.s03.title", "Pon nombre a lo que empiezas a reconocer")}</h2>
+              <p className="lead">{t("como-funciona.s03.lead", "Detrás de situaciones diferentes hay ideas que se repiten. Las llamamos conceptos.")}</p>
             </div>
             <div className="chip-grid reveal">
               <span className="chip-tag">#Timing</span>
@@ -472,27 +484,31 @@ const ComoFunciona = () => {
               </span>
             </div>
             <p className="lead reveal">
-              Nos ayudan a conectar situaciones que, aunque a simple vista puedan parecer distintas, comparten una misma idea detrás de la
-              decisión. Y una misma situación puede contener varias. Por ejemplo:
+              {t(
+                "como-funciona.s03.lead2",
+                "Nos ayudan a conectar situaciones que, aunque a simple vista puedan parecer distintas, comparten una misma idea detrás de la decisión. Y una misma situación puede contener varias. Por ejemplo:",
+              )}
             </p>
             <div className="chain reveal">
-              <span className="chain-item">Te están presionando mucho en defensa</span>
+              <span className="chain-item">{t("como-funciona.s03.chain1", "Te están presionando mucho en defensa")}</span>
               <span className="chain-arrow">→</span>
-              <span className="chain-item">estás incómodo</span>
+              <span className="chain-item">{t("como-funciona.s03.chain2", "estás incómodo")}</span>
               <span className="chain-arrow">→</span>
-              <span className="chain-item">globo alto para quitarte la presión</span>
+              <span className="chain-item">{t("como-funciona.s03.chain3", "globo alto para quitarte la presión")}</span>
             </div>
             <div className="chain-tags reveal">
               <span className="tagline-item">
-                <b>Uso del globo</b> · #Globo
+                <b>{t("como-funciona.block.globo", "Uso del globo")}</b> · #Globo
               </span>
               <span className="tagline-item">
-                <b>Gestión del ritmo del punto</b> · #BajarRitmo
+                <b>{t("como-funciona.block.ritmo", "Gestión del ritmo del punto")}</b> · #BajarRitmo
               </span>
             </div>
             <p className="caption reveal">
-              No tienes que aprenderte una lista de conceptos. Son una forma de ayudarte a reconocer qué hay detrás de las decisiones que ves en
-              pista.
+              {t(
+                "como-funciona.s03.caption",
+                "No tienes que aprenderte una lista de conceptos. Son una forma de ayudarte a reconocer qué hay detrás de las decisiones que ves en pista.",
+              )}
             </p>
           </div>
         </section>
@@ -501,48 +517,52 @@ const ComoFunciona = () => {
         <section>
           <div className="wrap">
             <div className="section-head reveal">
-              <p className="eyebrow">04 · El método</p>
-              <h2>Repetimos el aprendizaje. No el vídeo.</h2>
+              <p className="eyebrow">{t("como-funciona.s04.eyebrow", "04 · El método")}</p>
+              <h2>{t("como-funciona.s04.title", "Repetimos el aprendizaje. No el vídeo.")}</h2>
               <p className="lead">
-                Ver una decisión en una situación concreta te ayuda a entenderla. Pero el pádel nunca te devuelve exactamente el mismo punto:
-                cambian la bola, la posición, los jugadores, el marcador, el rival… La idea, sin embargo, puede ser la misma. Por eso no repetimos
-                una y otra vez el mismo ejemplo — buscamos la misma idea en situaciones, puntos, jugadores y partidos diferentes.
+                {t(
+                  "como-funciona.s04.lead",
+                  "Ver una decisión en una situación concreta te ayuda a entenderla. Pero el pádel nunca te devuelve exactamente el mismo punto: cambian la bola, la posición, los jugadores, el marcador, el rival… La idea, sin embargo, puede ser la misma. Por eso no repetimos una y otra vez el mismo ejemplo — buscamos la misma idea en situaciones, puntos, jugadores y partidos diferentes.",
+                )}
               </p>
             </div>
             <div className="method-path reveal">
               <div className="path-step">
-                <p className="path-word">Ver</p>
-                <p className="path-desc">Observa situaciones reales y entiende las decisiones que hay detrás.</p>
+                <p className="path-word">{t("como-funciona.method.ver", "Ver")}</p>
+                <p className="path-desc">{t("como-funciona.method.ver-desc", "Observa situaciones reales y entiende las decisiones que hay detrás.")}</p>
               </div>
               <div className="path-connector">
                 <span className="ln" />
               </div>
               <div className="path-step">
-                <p className="path-word">Reconocer</p>
-                <p className="path-desc">Encuentra esas mismas ideas en situaciones diferentes.</p>
+                <p className="path-word">{t("como-funciona.method.reconocer", "Reconocer")}</p>
+                <p className="path-desc">{t("como-funciona.method.reconocer-desc", "Encuentra esas mismas ideas en situaciones diferentes.")}</p>
               </div>
               <div className="path-connector">
                 <span className="ln" />
               </div>
               <div className="path-step">
-                <p className="path-word">Jugar</p>
-                <p className="path-desc">Empieza a detectarlas cuando aparecen durante tus propios partidos.</p>
+                <p className="path-word">{t("como-funciona.method.jugar", "Jugar")}</p>
+                <p className="path-desc">{t("como-funciona.method.jugar-desc", "Empieza a detectarlas cuando aparecen durante tus propios partidos.")}</p>
               </div>
               <div className="path-connector">
                 <span className="ln" />
               </div>
               <div className="path-step is-last">
-                <p className="path-word">Repetir</p>
-                <p className="path-desc">Vuelve, descubre nuevos ejemplos y sigue ampliando tu forma de leer el juego.</p>
+                <p className="path-word">{t("como-funciona.method.repetir", "Repetir")}</p>
+                <p className="path-desc">{t("como-funciona.method.repetir-desc", "Vuelve, descubre nuevos ejemplos y sigue ampliando tu forma de leer el juego.")}</p>
               </div>
             </div>
             <div className="method-shot reveal">
-              <img src="/metodo/reconocer.png" alt="Aprender a reconocer: una misma idea en tres situaciones distintas" />
-              <p className="method-shot-caption">Así se ve "reconocer" dentro de la app: el mismo concepto, en situaciones distintas.</p>
+              <img src="/metodo/reconocer.png" alt={t("como-funciona.s04.img-alt", "Aprender a reconocer: una misma idea en tres situaciones distintas")} />
+              <p className="method-shot-caption">
+                {t("como-funciona.s04.img-caption", "Así se ve \"reconocer\" dentro de la app: el mismo concepto, en situaciones distintas.")}
+              </p>
             </div>
             <p className="bigline reveal">
-              El objetivo no es darte una respuesta para cada punto. Es darte <span className="accent">más herramientas</span> para entender el
-              punto que tienes delante.
+              {t("como-funciona.s04.bigline-pre", "El objetivo no es darte una respuesta para cada punto. Es darte")}{" "}
+              <span className="accent">{t("como-funciona.s04.bigline-accent", "más herramientas")}</span>{" "}
+              {t("como-funciona.s04.bigline-post", "para entender el punto que tienes delante.")}
             </p>
           </div>
         </section>
@@ -551,22 +571,23 @@ const ComoFunciona = () => {
         <section>
           <div className="wrap">
             <div className="section-head reveal">
-              <p className="eyebrow">05 · Los análisis</p>
-              <h2>Cuando quieras ir más allá</h2>
+              <p className="eyebrow">{t("como-funciona.s05.eyebrow", "05 · Los análisis")}</p>
+              <h2>{t("como-funciona.s05.title", "Cuando quieras ir más allá")}</h2>
               <p className="lead">
-                Además de clips cortos, en Padel Film Room encontrarás análisis completos de partidos. Los dividimos en capítulos para que puedas
-                seguir el partido mientras entiendes las situaciones y decisiones tácticas que van apareciendo. Puedes ver el análisis completo de
-                principio a fin o ir directamente a los momentos que más te interesen.
+                {t(
+                  "como-funciona.s05.lead",
+                  "Además de clips cortos, en Padel Film Room encontrarás análisis completos de partidos. Los dividimos en capítulos para que puedas seguir el partido mientras entiendes las situaciones y decisiones tácticas que van apareciendo. Puedes ver el análisis completo de principio a fin o ir directamente a los momentos que más te interesen.",
+                )}
               </p>
             </div>
             <div className="wide-shot reveal">
               <div className="panel">
-                <img src="/metodo/analisis.png" alt="Análisis completo dividido en capítulos" />
+                <img src="/metodo/analisis.png" alt={t("como-funciona.s05.img-alt", "Análisis completo dividido en capítulos")} />
               </div>
             </div>
             <p className="bigline reveal">
-              <span className="accent">Clips</span> para reconocer situaciones. <span className="accent-lime">Análisis</span> para entender cómo se
-              conectan dentro de un partido.
+              <span className="accent">{t("explorar.type.clips", "Clips")}</span> {t("como-funciona.s05.bigline-mid", "para reconocer situaciones.")}{" "}
+              <span className="accent-lime">{t("explorar.type.analyses", "Análisis")}</span> {t("como-funciona.s05.bigline-end", "para entender cómo se conectan dentro de un partido.")}
             </p>
           </div>
         </section>
@@ -575,26 +596,29 @@ const ComoFunciona = () => {
         <section>
           <div className="wrap">
             <div className="section-head reveal">
-              <p className="eyebrow">06 · Mi Juego</p>
-              <h2>Mira hacia dónde estás llevando tu aprendizaje</h2>
+              <p className="eyebrow">{t("como-funciona.s06.eyebrow", "06 · Mi Juego")}</p>
+              <h2>{t("como-funciona.s06.title", "Mira hacia dónde estás llevando tu aprendizaje")}</h2>
               <p className="lead">
-                A medida que utilizas Padel Film Room, Mi Juego recoge lo que estás viendo y qué partes del juego aparecen más en tu aprendizaje.
+                {t(
+                  "como-funciona.s06.lead",
+                  "A medida que utilizas Padel Film Room, Mi Juego recoge lo que estás viendo y qué partes del juego aparecen más en tu aprendizaje.",
+                )}
               </p>
             </div>
             <div className="stat-row reveal">
-              <span className="chip">El tiempo que has dedicado a aprender</span>
-              <span className="chip">Los clips y análisis que has visto</span>
-              <span className="chip">Los conceptos que más aparecen</span>
-              <span className="chip">Los bloques que más estás trabajando</span>
+              <span className="chip">{t("como-funciona.s06.stat1", "El tiempo que has dedicado a aprender")}</span>
+              <span className="chip">{t("como-funciona.s06.stat2", "Los clips y análisis que has visto")}</span>
+              <span className="chip">{t("como-funciona.s06.stat3", "Los conceptos que más aparecen")}</span>
+              <span className="chip">{t("como-funciona.s06.stat4", "Los bloques que más estás trabajando")}</span>
             </div>
             <div className="wide-shot reveal">
               <div className="panel">
-                <img src="/metodo/mijuego.png" alt="Mi Juego: resumen de aprendizaje" />
+                <img src="/metodo/mijuego.png" alt={t("como-funciona.s06.img-alt", "Mi Juego: resumen de aprendizaje")} />
               </div>
             </div>
             <p className="caption reveal">
-              No pretende decirte cuánto has mejorado. Te ayuda a ver dónde estás poniendo tu atención. Y puedes compartir tu progreso con tu
-              propia <b style={{ color: "var(--text)" }}>Film Room Story</b>.
+              {t("como-funciona.s06.caption-pre", "No pretende decirte cuánto has mejorado. Te ayuda a ver dónde estás poniendo tu atención. Y puedes compartir tu progreso con tu propia")}{" "}
+              <b style={{ color: "var(--text)" }}>Film Room Story</b>.
             </p>
           </div>
         </section>
@@ -603,80 +627,85 @@ const ComoFunciona = () => {
         <section>
           <div className="wrap">
             <div className="section-head reveal">
-              <p className="eyebrow">07 · Tu primer ciclo</p>
-              <h2>Ahora pruébalo tú</h2>
-              <p className="lead">No necesitas entender todo Padel Film Room antes de empezar. De hecho, la mejor forma de entenderlo es usarlo.</p>
+              <p className="eyebrow">{t("como-funciona.s07.eyebrow", "07 · Tu primer ciclo")}</p>
+              <h2>{t("como-funciona.s07.title", "Ahora pruébalo tú")}</h2>
+              <p className="lead">
+                {t("como-funciona.s07.lead", "No necesitas entender todo Padel Film Room antes de empezar. De hecho, la mejor forma de entenderlo es usarlo.")}
+              </p>
             </div>
             <div className="panel checklist reveal">
               <ul>
                 <li>
                   <span className="box">1</span>
                   <span>
-                    <div className="item-t">Entra en Explorar</div>
-                    <div className="item-s">Mira los diferentes bloques del juego.</div>
+                    <div className="item-t">{t("como-funciona.checklist.1-t", "Entra en Explorar")}</div>
+                    <div className="item-s">{t("como-funciona.checklist.1-s", "Mira los diferentes bloques del juego.")}</div>
                   </span>
                 </li>
                 <li>
                   <span className="box">2</span>
                   <span>
-                    <div className="item-t">Escoge uno</div>
-                    <div className="item-s">Empieza por una parte del juego que te interese o quieras mejorar.</div>
+                    <div className="item-t">{t("como-funciona.checklist.2-t", "Escoge uno")}</div>
+                    <div className="item-s">{t("como-funciona.checklist.2-s", "Empieza por una parte del juego que te interese o quieras mejorar.")}</div>
                   </span>
                 </li>
                 <li>
                   <span className="box">3</span>
                   <span>
-                    <div className="item-t">Mira varias situaciones</div>
-                    <div className="item-s">No te quedes solo con un ejemplo.</div>
+                    <div className="item-t">{t("como-funciona.checklist.3-t", "Mira varias situaciones")}</div>
+                    <div className="item-s">{t("como-funciona.checklist.3-s", "No te quedes solo con un ejemplo.")}</div>
                   </span>
                 </li>
                 <li>
                   <span className="box">4</span>
                   <span>
-                    <div className="item-t">Fíjate en lo que se repite</div>
-                    <div className="item-s">Empieza a reconocer ideas y conceptos en situaciones diferentes.</div>
+                    <div className="item-t">{t("como-funciona.checklist.4-t", "Fíjate en lo que se repite")}</div>
+                    <div className="item-s">{t("como-funciona.checklist.4-s", "Empieza a reconocer ideas y conceptos en situaciones diferentes.")}</div>
                   </span>
                 </li>
                 <li>
                   <span className="box">5</span>
                   <span>
-                    <div className="item-t">Guarda lo que te interese</div>
-                    <div className="item-s">Añádelo a Mi Lista para volver cuando quieras.</div>
+                    <div className="item-t">{t("como-funciona.checklist.5-t", "Guarda lo que te interese")}</div>
+                    <div className="item-s">{t("como-funciona.checklist.5-s", "Añádelo a Mi Lista para volver cuando quieras.")}</div>
                   </span>
                 </li>
                 <li>
                   <span className="box">6</span>
                   <span>
-                    <div className="item-t">Llévate una idea a pista</div>
-                    <div className="item-s">No intentes recordarlo todo. Simplemente presta atención cuando aparezca una situación parecida.</div>
+                    <div className="item-t">{t("como-funciona.checklist.6-t", "Llévate una idea a pista")}</div>
+                    <div className="item-s">
+                      {t("como-funciona.checklist.6-s", "No intentes recordarlo todo. Simplemente presta atención cuando aparezca una situación parecida.")}
+                    </div>
                   </span>
                 </li>
                 <li>
                   <span className="box">7</span>
                   <span>
-                    <div className="item-t">Vuelve y repite</div>
-                    <div className="item-s">Descubre nuevas situaciones y sigue construyendo tu lectura del juego.</div>
+                    <div className="item-t">{t("como-funciona.checklist.7-t", "Vuelve y repite")}</div>
+                    <div className="item-s">{t("como-funciona.checklist.7-s", "Descubre nuevas situaciones y sigue construyendo tu lectura del juego.")}</div>
                   </span>
                 </li>
               </ul>
             </div>
 
-            <p className="mantra-pre reveal">No queremos que recuerdes vídeos. Queremos que reconozcas situaciones.</p>
+            <p className="mantra-pre reveal">{t("como-funciona.mantra-pre", "No queremos que recuerdes vídeos. Queremos que reconozcas situaciones.")}</p>
             <p className="mantra reveal">
-              Ver <span className="sep">→</span> Reconocer <span className="sep">→</span> Jugar <span className="sep">→</span>{" "}
-              <span className="last">Repetir</span>
+              {t("como-funciona.method.ver", "Ver")} <span className="sep">→</span> {t("como-funciona.method.reconocer", "Reconocer")}{" "}
+              <span className="sep">→</span> {t("como-funciona.method.jugar", "Jugar")} <span className="sep">→</span>{" "}
+              <span className="last">{t("como-funciona.method.repetir", "Repetir")}</span>
             </p>
 
             <div className="cta-final reveal">
-              <Link to="/app/explorar">Ir a Explorar →</Link>
+              <Link to="/app/explorar">{t("como-funciona.cta-final", "Ir a Explorar →")}</Link>
             </div>
             <p className="bigline reveal" style={{ marginTop: "2.8rem" }}>
-              Deja de copiar golpes. <span className="accent">Empieza a copiar decisiones.</span>
+              {t("como-funciona.closing-pre", "Deja de copiar golpes.")} <span className="accent">{t("como-funciona.closing-accent", "Empieza a copiar decisiones.")}</span>
             </p>
           </div>
         </section>
 
-        <footer>Padel Film Room · Nos vemos en la pista.</footer>
+        <footer>{t("como-funciona.footer", "Padel Film Room · Nos vemos en la pista.")}</footer>
       </main>
     </div>
   )

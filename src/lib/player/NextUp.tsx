@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom"
 import { Play, X } from "lucide-react"
 import type { ContentItem } from "../api/types"
 import { hueFor, thumbStyle, watchHref } from "../format"
+import { useI18n } from "../i18n/store"
+import { pickText } from "../i18n/content"
 
 /**
  * Autoplay / "Siguiente" (§9.7 y §10.7). Al terminar un vídeo se ofrece el siguiente
@@ -58,6 +60,7 @@ export const NextUpCard = ({
   onCancel?: () => void
 }) => {
   const navigate = useNavigate()
+  const { t, lang } = useI18n()
   const [seconds, setSeconds] = useState(autoplay ? 3 : -1) // -1 = sin cuenta atrás
   const go = () => navigate(watchHref(item))
 
@@ -68,8 +71,8 @@ export const NextUpCard = ({
       go()
       return
     }
-    const t = setTimeout(() => setSeconds((s) => s - 1), 1000)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setSeconds((s) => s - 1), 1000)
+    return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seconds])
 
@@ -78,7 +81,7 @@ export const NextUpCard = ({
   return (
     <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-midnight/95 p-5 text-center shadow-2xl">
       <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-neon-cyan">
-        {counting ? `${label} en ${seconds}…` : label}
+        {counting ? t("next-up.countdown", "{label} en {seconds}…", { label, seconds }) : label}
       </p>
 
       <button onClick={go} className="group mt-4 block w-full overflow-hidden rounded-xl border border-white/10 text-left">
@@ -93,14 +96,14 @@ export const NextUpCard = ({
           </span>
         </div>
       </button>
-      <p className="mt-3 line-clamp-2 text-sm font-semibold text-white">{item.title}</p>
+      <p className="mt-3 line-clamp-2 text-sm font-semibold text-white">{pickText(item.title, item.titleEn, lang)}</p>
 
       <div className="mt-4 flex items-center justify-center gap-2">
         <button
           onClick={go}
           className="flex items-center gap-2 rounded-lg bg-neon-cyan px-4 py-2 text-sm font-semibold text-midnight transition hover:brightness-110"
         >
-          <Play className="h-4 w-4" fill="currentColor" /> Reproducir ahora
+          <Play className="h-4 w-4" fill="currentColor" /> {t("next-up.play-now", "Reproducir ahora")}
         </button>
         <button
           onClick={() => {
@@ -109,7 +112,7 @@ export const NextUpCard = ({
           }}
           className="flex items-center gap-1.5 rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5"
         >
-          <X className="h-4 w-4" /> Cancelar
+          <X className="h-4 w-4" /> {t("common.cancel", "Cancelar")}
         </button>
       </div>
 
@@ -120,7 +123,7 @@ export const NextUpCard = ({
           onChange={(e) => onToggleAutoplay(e.target.checked)}
           className="h-3.5 w-3.5 accent-neon-cyan"
         />
-        Reproducción automática
+        {t("next-up.autoplay-label", "Reproducción automática")}
       </label>
     </div>
   )

@@ -26,6 +26,8 @@ import { saveProgress } from "../../../lib/api/history"
 import EditContentLink from "../components/EditContentLink"
 import WatchedBadge from "../components/WatchedBadge"
 import { useAuth } from "../../../lib/auth/store"
+import { useI18n } from "../../../lib/i18n/store"
+import { pickText, pickList } from "../../../lib/i18n/content"
 
 /**
  * Clip — Vista de reproducción de un clip en /app/watch?c=:id.
@@ -114,13 +116,14 @@ function useClipSocial(clip: ClipDetail) {
 /** "Compartir" real (§9.4): hoja de compartir nativa o copia el enlace con feedback. */
 const ShareActionRow = () => {
   const { share, copied } = useShare()
+  const { t } = useI18n()
   return (
     <button
       onClick={share}
       className={`flex items-center gap-2 text-sm transition ${copied ? "text-neon-cyan" : "text-white/80 hover:text-white"}`}
     >
       {copied ? <Check className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}
-      {copied ? "¡Copiado!" : "Compartir"}
+      {copied ? t("clip.copied", "¡Copiado!") : t("watch.share", "Compartir")}
     </button>
   )
 }
@@ -128,6 +131,7 @@ const ShareActionRow = () => {
 /** "Compartir" real en el rail vertical (móvil). */
 const ShareActionRail = () => {
   const { share, copied } = useShare()
+  const { t } = useI18n()
   return (
     <button onClick={share} className="flex flex-col items-center gap-1 text-white">
       <span
@@ -137,7 +141,7 @@ const ShareActionRail = () => {
       >
         {copied ? <Check className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}
       </span>
-      <span className="text-[11px] font-medium">{copied ? "Copiado" : "Compartir"}</span>
+      <span className="text-[11px] font-medium">{copied ? t("clip.copied-short", "Copiado") : t("watch.share", "Compartir")}</span>
     </button>
   )
 }
@@ -173,15 +177,19 @@ const clipToItem = (clip: ClipDetail): ContentItem => ({
   id: clip.id,
   type: "clip",
   title: clip.title,
+  titleEn: clip.titleEn,
   thumbnailUrl: clip.thumbnailUrl,
   durationSeconds: clip.durationSeconds,
   concepts: clip.concepts,
+  conceptsEn: clip.conceptsEn,
   block: clip.blocks?.[0],
+  blockEn: clip.blocksEn?.[0],
 })
 
 /** Acción "Mi Lista" (§9.4) en la fila horizontal de acciones sociales. */
 const SaveActionRow = ({ item }: { item: ContentItem }) => {
   useSavedItems()
+  const { t } = useI18n()
   const saved = isSaved(item.id)
   return (
     <button
@@ -190,7 +198,7 @@ const SaveActionRow = ({ item }: { item: ContentItem }) => {
       className={`flex items-center gap-2 text-sm transition ${saved ? "text-neon-cyan" : "text-white/80 hover:text-white"}`}
     >
       {saved ? <Check className="h-5 w-5" /> : <ListPlus className="h-5 w-5" />}
-      {saved ? "En Mi Lista" : "Mi lista"}
+      {saved ? t("save-button.saved", "En Mi Lista") : t("clip.save-action", "Mi lista")}
     </button>
   )
 }
@@ -198,6 +206,7 @@ const SaveActionRow = ({ item }: { item: ContentItem }) => {
 /** Acción "Mi Lista" en el rail vertical (móvil). */
 const SaveActionRail = ({ item }: { item: ContentItem }) => {
   useSavedItems()
+  const { t } = useI18n()
   const saved = isSaved(item.id)
   return (
     <button onClick={() => toggleSavedItem(item)} aria-pressed={saved} className="flex flex-col items-center gap-1 text-white">
@@ -208,7 +217,7 @@ const SaveActionRail = ({ item }: { item: ContentItem }) => {
       >
         {saved ? <Check className="h-5 w-5" /> : <ListPlus className="h-5 w-5" />}
       </span>
-      <span className="text-[11px] font-medium">{saved ? "Guardado" : "Mi lista"}</span>
+      <span className="text-[11px] font-medium">{saved ? t("clip.saved-short", "Guardado") : t("clip.save-action", "Mi lista")}</span>
     </button>
   )
 }
@@ -233,6 +242,7 @@ const Concepts = ({ concepts }: { concepts: string[] }) => (
 )
 
 const AppearsIn = ({ clip }: { clip: ClipDetail }) => {
+  const { t, lang } = useI18n()
   if (!clip.appearsIn) return null
   const a = clip.appearsIn
   return (
@@ -246,8 +256,8 @@ const AppearsIn = ({ clip }: { clip: ClipDetail }) => {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs text-white/50">Aparece en:</p>
-          <p className="text-sm font-semibold leading-snug text-white">{a.title}</p>
+          <p className="text-xs text-white/50">{t("clip.appears-in", "Aparece en:")}</p>
+          <p className="text-sm font-semibold leading-snug text-white">{pickText(a.title, a.titleEn, lang)}</p>
           {a.event && <p className="mt-0.5 text-xs text-white/50">{a.event}</p>}
         </div>
       </div>
@@ -255,7 +265,7 @@ const AppearsIn = ({ clip }: { clip: ClipDetail }) => {
         to={`/app/watch?v=${a.analysisId}`}
         className="flex items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110 sm:shrink-0"
       >
-        Ver análisis completo <ChevronRight className="h-4 w-4" />
+        {t("clip.see-full-analysis", "Ver análisis completo")} <ChevronRight className="h-4 w-4" />
       </Link>
     </div>
   )
@@ -263,12 +273,13 @@ const AppearsIn = ({ clip }: { clip: ClipDetail }) => {
 
 const CommentList = ({ social, hideHeading = false }: { social: ClipSocial; hideHeading?: boolean }) => {
   const { user } = useAuth()
+  const { t } = useI18n()
   return (
     <section className="space-y-5">
       {!hideHeading && (
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-white">
-            Comentarios <span className="text-white/50">({social.comments.length})</span>
+            {t("watch.comments", "Comentarios")} <span className="text-white/50">({social.comments.length})</span>
           </h2>
         </div>
       )}
@@ -280,13 +291,13 @@ const CommentList = ({ social, hideHeading = false }: { social: ClipSocial; hide
             value={social.text}
             onChange={(e) => social.setText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && social.onSubmit()}
-            placeholder="Añadir un comentario..."
+            placeholder={t("clip.add-comment-placeholder", "Añadir un comentario...")}
             className="w-full bg-transparent text-base text-white placeholder:text-white/40 focus:outline-none sm:text-sm"
           />
           <button
             onClick={social.onSubmit}
             disabled={!social.text.trim() || social.sending}
-            aria-label="Publicar comentario"
+            aria-label={t("clip.submit-comment", "Publicar comentario")}
             className="text-neon-cyan transition hover:brightness-110 disabled:cursor-not-allowed disabled:text-white/30"
           >
             <Send className="h-4 w-4" />
@@ -327,6 +338,7 @@ const CommentList = ({ social, hideHeading = false }: { social: ClipSocial; hide
  */
 const ClipComments = ({ social }: { social: ClipSocial }) => {
   const [open, setOpen] = useState(false)
+  const { t } = useI18n()
   return (
     <>
       <div className="hidden lg:block">
@@ -338,24 +350,26 @@ const ClipComments = ({ social }: { social: ClipSocial }) => {
         className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm transition hover:bg-white/5 lg:hidden"
       >
         <span className="font-semibold text-white">
-          Comentarios <span className="text-white/50">({social.comments.length})</span>
+          {t("watch.comments", "Comentarios")} <span className="text-white/50">({social.comments.length})</span>
         </span>
-        <span className="font-medium text-neon-cyan">Ver todos</span>
+        <span className="font-medium text-neon-cyan">{t("watch.see-all-comments", "Ver todos")}</span>
       </button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)} title={`Comentarios (${social.comments.length})`}>
+      <BottomSheet open={open} onClose={() => setOpen(false)} title={t("watch.comments-with-count", "Comentarios ({count})", { count: social.comments.length })}>
         <CommentList social={social} hideHeading />
       </BottomSheet>
     </>
   )
 }
 
-const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; vertical?: boolean }) => (
+const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; vertical?: boolean }) => {
+  const { t, lang } = useI18n()
+  return (
   <section className={vertical ? "mt-10 space-y-4" : "space-y-4"}>
     <div className="flex items-center justify-between">
-      <h2 className="text-lg font-bold text-white">Sigue aprendiendo</h2>
+      <h2 className="text-lg font-bold text-white">{t("watch.keep-learning", "Sigue aprendiendo")}</h2>
       <button className="flex items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110">
-        Ver clips de conceptos relacionados <ArrowRight className="h-4 w-4" />
+        {t("clip.related-concepts-cta", "Ver clips de conceptos relacionados")} <ArrowRight className="h-4 w-4" />
       </button>
     </div>
     <CardRow
@@ -375,12 +389,12 @@ const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; v
             </span>
             {item.completed && <WatchedBadge />}
           </div>
-          <p className="mt-2 line-clamp-2 text-sm font-medium text-white">{item.title}</p>
+          <p className="mt-2 line-clamp-2 text-sm font-medium text-white">{pickText(item.title, item.titleEn, lang)}</p>
           {!vertical && (
             <div className="mt-1.5 flex flex-wrap gap-2">
-              {item.concepts.slice(0, 2).map((t) => (
-                <span key={t} className="rounded-full border border-neon-cyan/30 px-2 py-0.5 text-[11px] text-neon-cyan/80">
-                  #{t}
+              {pickList(item.concepts, item.conceptsEn, lang).slice(0, 2).map((concept) => (
+                <span key={concept} className="rounded-full border border-neon-cyan/30 px-2 py-0.5 text-[11px] text-neon-cyan/80">
+                  #{concept}
                 </span>
               ))}
             </div>
@@ -389,7 +403,8 @@ const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; v
       ))}
     </CardRow>
   </section>
-)
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Players (placeholder hasta el bloque 6)
@@ -442,12 +457,13 @@ const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: C
 // ---------------------------------------------------------------------------
 
 const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => {
+  const { t, lang } = useI18n()
   const social = useClipSocial(clip)
   const [autoplay, setAutoplay] = useAutoplay()
   const nextClip = pickNextRelated(clip.related, clip.concepts)
   const endSlot = nextClip
     ? (dismiss: () => void) => (
-        <NextUpCard item={nextClip} label="Siguiente clip" autoplay={autoplay} onToggleAutoplay={setAutoplay} onCancel={dismiss} />
+        <NextUpCard item={nextClip} label={t("watch.next-clip", "Siguiente clip")} autoplay={autoplay} onToggleAutoplay={setAutoplay} onCancel={dismiss} />
       )
     : undefined
   return (
@@ -460,17 +476,17 @@ const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => {
           href="#clip-relacionados"
           className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] py-2.5 text-sm font-medium text-neon-cyan transition hover:bg-white/5 lg:hidden"
         >
-          Sigue aprendiendo <ArrowDown className="h-4 w-4 animate-bounce" />
+          {t("watch.keep-learning", "Sigue aprendiendo")} <ArrowDown className="h-4 w-4 animate-bounce" />
         </a>
       )}
 
       <div className="space-y-4">
         <span className="inline-block rounded border border-neon-cyan/40 bg-neon-cyan/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neon-cyan">
-          Clip
+          {t("content-card.type-clip", "Clip")}
         </span>
-        <h1 className="font-display text-3xl font-bold text-white">{clip.title}</h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-white/60">{clip.description}</p>
-        <Concepts concepts={clip.concepts} />
+        <h1 className="font-display text-3xl font-bold text-white">{pickText(clip.title, clip.titleEn, lang)}</h1>
+        <p className="max-w-2xl text-sm leading-relaxed text-white/60">{pickText(clip.description, clip.descriptionEn, lang)}</p>
+        <Concepts concepts={pickList(clip.concepts, clip.conceptsEn, lang)} />
         <EditContentLink type="clip" id={clip.id} />
       </div>
 
@@ -494,12 +510,13 @@ const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => {
 }
 
 const ClipVertical = ({ clip }: { clip: ClipDetail }) => {
+  const { t, lang } = useI18n()
   const social = useClipSocial(clip)
   const [autoplay, setAutoplay] = useAutoplay()
   const nextClip = pickNextRelated(clip.related, clip.concepts)
   const endSlot = nextClip
     ? (dismiss: () => void) => (
-        <NextUpCard item={nextClip} label="Siguiente clip" autoplay={autoplay} onToggleAutoplay={setAutoplay} onCancel={dismiss} />
+        <NextUpCard item={nextClip} label={t("watch.next-clip", "Siguiente clip")} autoplay={autoplay} onToggleAutoplay={setAutoplay} onCancel={dismiss} />
       )
     : undefined
   return (
@@ -509,11 +526,11 @@ const ClipVertical = ({ clip }: { clip: ClipDetail }) => {
         <div className="space-y-6">
           <div className="space-y-4">
             <span className="inline-block rounded border border-neon-cyan/40 bg-neon-cyan/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neon-cyan">
-              Clip · Vertical
+              {t("clip.vertical-badge", "Clip · Vertical")}
             </span>
-            <h1 className="font-display text-3xl font-bold text-white">{clip.title}</h1>
-            <p className="text-sm leading-relaxed text-white/60">{clip.description}</p>
-            <Concepts concepts={clip.concepts} />
+            <h1 className="font-display text-3xl font-bold text-white">{pickText(clip.title, clip.titleEn, lang)}</h1>
+            <p className="text-sm leading-relaxed text-white/60">{pickText(clip.description, clip.descriptionEn, lang)}</p>
+            <Concepts concepts={pickList(clip.concepts, clip.conceptsEn, lang)} />
             <EditContentLink type="clip" id={clip.id} />
           </div>
           <AppearsIn clip={clip} />
@@ -530,17 +547,20 @@ const ClipVertical = ({ clip }: { clip: ClipDetail }) => {
 // ---------------------------------------------------------------------------
 
 const Clip = () => {
+  const { t } = useI18n()
   const [params] = useSearchParams()
   const id = params.get("c") ?? ""
   const vertical = params.get("layout") === "vertical"
   const { data: clip, loading, error } = useApi(() => getClipDetail(id), [id])
 
-  if (loading) return <main className="w-full py-8 text-sm text-white/40">Cargando clip...</main>
+  if (loading) return <main className="w-full py-8 text-sm text-white/40">{t("clip.loading", "Cargando clip...")}</main>
   if (error || !clip)
     return (
       <main className="w-full py-8">
         <p className="text-sm text-red-400/80">
-          No se pudo cargar el clip ({error ?? "no encontrado"}). ¿Está el backend en marcha?
+          {t("clip.load-error", "No se pudo cargar el clip ({error}). ¿Está el backend en marcha?", {
+            error: error ?? t("watch.not-found", "no encontrado"),
+          })}
         </p>
       </main>
     )

@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom"
 import { Home, Compass, Bookmark, BarChart2, BookOpen } from "lucide-react"
+import { useI18n } from "../../../lib/i18n/store"
 
 /**
  * Barra de navegación inferior — móvil y tablet (xl:hidden; el nav de escritorio del
@@ -10,32 +11,36 @@ import { Home, Compass, Bookmark, BarChart2, BookOpen } from "lucide-react"
  * la pantalla de Resultados, que es un destino de "después de buscar", no de navegación.
  */
 
+// Mismas claves de i18n que Header.tsx (header.nav.*): es el mismo texto, solo cambia el layout.
 const ITEMS = [
-  { to: "/app/inicio", label: "Inicio", icon: Home },
-  { to: "/app/explorar", label: "Explorar", icon: Compass },
-  { to: "/app/mi-lista", label: "Mi Lista", icon: Bookmark },
-  { to: "/app/mi-juego", label: "Mi Juego", icon: BarChart2 },
-  { to: "/app/como-funciona", label: "Cómo funciona", icon: BookOpen },
+  { to: "/app/inicio", key: "header.nav.inicio", label: "Inicio", icon: Home },
+  { to: "/app/explorar", key: "header.nav.explorar", label: "Explorar", icon: Compass },
+  { to: "/app/mi-lista", key: "header.nav.mi-lista", label: "Mi Lista", icon: Bookmark },
+  { to: "/app/mi-juego", key: "header.nav.mi-juego", label: "Mi Juego", icon: BarChart2 },
+  { to: "/app/como-funciona", key: "header.nav.como-funciona", label: "Cómo funciona", icon: BookOpen },
 ]
 
-const MobileNav = () => (
-  <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-white/10 bg-black/80 px-1 py-2 backdrop-blur-md xl:hidden">
-    {ITEMS.map(({ to, label, icon: Icon }) => (
-      <NavLink
-        key={to}
-        to={to}
-        id={to === "/app/como-funciona" ? "tour-como-funciona-mobile" : undefined}
-        className={({ isActive }) =>
-          `flex flex-1 flex-col items-center gap-1 py-1 text-[10px] font-medium transition-colors ${
-            isActive ? "text-neon-cyan" : "text-white/50"
-          }`
-        }
-      >
-        <Icon className="h-5 w-5" />
-        {label}
-      </NavLink>
-    ))}
-  </nav>
-)
+const MobileNav = () => {
+  const { t } = useI18n()
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-white/10 bg-black/80 px-1 py-2 backdrop-blur-md xl:hidden">
+      {ITEMS.map(({ to, key, label, icon: Icon }) => (
+        <NavLink
+          key={to}
+          to={to}
+          id={to === "/app/como-funciona" ? "tour-como-funciona-mobile" : undefined}
+          className={({ isActive }) =>
+            `flex flex-1 flex-col items-center gap-1 py-1 text-[10px] font-medium transition-colors ${
+              isActive ? "text-neon-cyan" : "text-white/50"
+            }`
+          }
+        >
+          <Icon className="h-5 w-5" />
+          {t(key, label)}
+        </NavLink>
+      ))}
+    </nav>
+  )
+}
 
 export default MobileNav

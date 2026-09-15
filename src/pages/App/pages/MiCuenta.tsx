@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { UserCircle } from "lucide-react"
 import { useAuth, setLocalDisplayName } from "../../../lib/auth/store"
 import { getMyProfile, updateProfile, changePassword, type ProfileResponse } from "../../../lib/api/profile"
 import { createPortalSession } from "../../../lib/api/billing"
+import { useI18n, type TFunc } from "../../../lib/i18n/store"
 
 /**
  * Mi cuenta — autogestión básica del perfil (§MVP): ver email/plan/rol, cambiar nombre visible
@@ -11,21 +12,29 @@ import { createPortalSession } from "../../../lib/api/billing"
  * adelante si hace falta.
  */
 
-const ROLE_LABEL: Record<string, string> = { User: "Beta tester", ContentCreator: "Creador de contenido", Admin: "Administrador" }
-const PLAN_LABEL: Record<string, string> = { Free: "Gratis", TrialThenPaid: "Prueba 14 días", Discounted: "Descuento" }
+const roleLabel = (t: TFunc): Record<string, string> => ({
+  User: t("mi-cuenta.role.user", "Beta tester"),
+  ContentCreator: t("mi-cuenta.role.content-creator", "Creador de contenido"),
+  Admin: t("mi-cuenta.role.admin", "Administrador"),
+})
+const planLabel = (t: TFunc): Record<string, string> => ({
+  Free: t("mi-cuenta.plan.free", "Gratis"),
+  TrialThenPaid: t("mi-cuenta.plan.trial", "Prueba 14 días"),
+  Discounted: t("mi-cuenta.plan.discounted", "Descuento"),
+})
 const PLAN_CLS: Record<string, string> = {
   Free: "border-white/15 bg-white/5 text-white/60",
   TrialThenPaid: "border-violet-400/40 bg-violet-400/10 text-violet-300",
   Discounted: "border-neon-lime/40 bg-neon-lime/10 text-neon-lime",
 }
 
-const SUB_STATUS_LABEL: Record<string, string> = {
-  None: "Sin suscripción de pago",
-  Trialing: "En prueba",
-  Active: "Activa",
-  PastDue: "Pago pendiente",
-  Canceled: "Cancelada",
-}
+const subStatusLabel = (t: TFunc): Record<string, string> => ({
+  None: t("mi-cuenta.sub-status.none", "Sin suscripción de pago"),
+  Trialing: t("mi-cuenta.sub-status.trialing", "En prueba"),
+  Active: t("mi-cuenta.sub-status.active", "Activa"),
+  PastDue: t("mi-cuenta.sub-status.past-due", "Pago pendiente"),
+  Canceled: t("mi-cuenta.sub-status.canceled", "Cancelada"),
+})
 const SUB_STATUS_CLS: Record<string, string> = {
   None: "border-white/15 bg-white/5 text-white/60",
   Trialing: "border-violet-400/40 bg-violet-400/10 text-violet-300",
@@ -38,6 +47,10 @@ const inputCls =
   "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/50 focus:outline-none sm:text-sm"
 
 const MiCuenta = () => {
+  const { t, lang } = useI18n()
+  const ROLE_LABEL = useMemo(() => roleLabel(t), [t])
+  const PLAN_LABEL = useMemo(() => planLabel(t), [t])
+  const SUB_STATUS_LABEL = useMemo(() => subStatusLabel(t), [t])
   const { user } = useAuth()
 
   const [profile, setProfile] = useState<ProfileResponse | null>(null)
@@ -66,7 +79,7 @@ const MiCuenta = () => {
       const { url } = await createPortalSession()
       window.location.href = url
     } catch (err) {
-      setPortalError(err instanceof Error ? err.message : "No se pudo abrir la gestión de la suscripción.")
+      setPortalError(err instanceof Error ? err.message : t("mi-cuenta.error.portal", "No se pudo abrir la gestión de la suscripción."))
       setPortalLoading(false)
     }
   }
@@ -77,7 +90,8 @@ const MiCuenta = () => {
         setProfile(res)
         setName(res.displayName ?? "")
       })
-      .catch((err) => setLoadError(err instanceof Error ? err.message : "No se pudieron cargar los datos de la cuenta."))
+      .catch((err) => setLoadError(err instanceof Error ? err.message : t("mi-cuenta.error.load", "No se pudieron cargar los datos de la cuenta.")))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const saveName = async (e: React.FormEvent) => {
@@ -104,11 +118,11 @@ const MiCuenta = () => {
     setPwError(null)
     setPwSaved(false)
     if (newPassword.length < 6) {
-      setPwError("La nueva contraseña debe tener al menos 6 caracteres.")
+      setPwError(t("mi-cuenta.password.error.too-short", "La nueva contraseña debe tener al menos 6 caracteres."))
       return
     }
     if (newPassword !== confirmPassword) {
-      setPwError("Las contraseñas nuevas no coinciden.")
+      setPwError(t("mi-cuenta.password.error.mismatch", "Las contraseñas nuevas no coinciden."))
       return
     }
     setPwSaving(true)
@@ -119,7 +133,7 @@ const MiCuenta = () => {
       setConfirmPassword("")
       setPwSaved(true)
     } catch (err) {
-      setPwError(err instanceof Error ? err.message : "No se pudo cambiar la contraseña.")
+      setPwError(err instanceof Error ? err.message : t("mi-cuenta.password.error.generic", "No se pudo cambiar la contraseña."))
     } finally {
       setPwSaving(false)
     }
@@ -132,8 +146,8 @@ const MiCuenta = () => {
           <UserCircle className="h-5 w-5" />
         </span>
         <div>
-          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">Mi cuenta</h1>
-          <p className="text-sm text-white/60">Datos de tu perfil y acceso.</p>
+          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{t("mi-cuenta.title", "Mi cuenta")}</h1>
+          <p className="text-sm text-white/60">{t("mi-cuenta.subtitle", "Datos de tu perfil y acceso.")}</p>
         </div>
       </div>
 
@@ -141,18 +155,18 @@ const MiCuenta = () => {
 
       {/* Información de la cuenta (solo lectura) */}
       <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/70">Información de la cuenta</h2>
+        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/70">{t("mi-cuenta.account-info", "Información de la cuenta")}</h2>
         <dl className="space-y-3 text-sm">
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-white/50">Email</dt>
+            <dt className="text-white/50">{t("mi-cuenta.email", "Email")}</dt>
             <dd className="text-white">{profile?.email ?? user?.email ?? "—"}</dd>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-white/50">Rol</dt>
+            <dt className="text-white/50">{t("mi-cuenta.role", "Rol")}</dt>
             <dd className="text-white">{profile ? (ROLE_LABEL[profile.role] ?? profile.role) : "—"}</dd>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-white/50">Plan</dt>
+            <dt className="text-white/50">{t("mi-cuenta.plan", "Plan")}</dt>
             <dd>
               {profile ? (
                 <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${PLAN_CLS[profile.planType] ?? PLAN_CLS.Free}`}>
@@ -168,10 +182,10 @@ const MiCuenta = () => {
 
       {/* Mi suscripción */}
       <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/70">Mi suscripción</h2>
+        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/70">{t("mi-cuenta.subscription", "Mi suscripción")}</h2>
         <dl className="mb-4 space-y-3 text-sm">
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-white/50">Estado</dt>
+            <dt className="text-white/50">{t("mi-cuenta.status", "Estado")}</dt>
             <dd>
               <span
                 className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
@@ -184,8 +198,10 @@ const MiCuenta = () => {
           </div>
           {profile?.subscriptionCurrentPeriodEndUtc && (
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-white/50">Renueva el</dt>
-              <dd className="text-white">{new Date(profile.subscriptionCurrentPeriodEndUtc).toLocaleDateString("es-ES")}</dd>
+              <dt className="text-white/50">{t("mi-cuenta.renews-on", "Renueva el")}</dt>
+              <dd className="text-white">
+                {new Date(profile.subscriptionCurrentPeriodEndUtc).toLocaleDateString(lang === "en" ? "en-US" : "es-ES")}
+              </dd>
             </div>
           )}
         </dl>
@@ -199,21 +215,21 @@ const MiCuenta = () => {
             disabled={portalLoading}
             className="rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {portalLoading ? "Abriendo..." : "Gestionar suscripción"}
+            {portalLoading ? t("mi-cuenta.opening", "Abriendo...") : t("mi-cuenta.manage-subscription", "Gestionar suscripción")}
           </button>
         ) : (
           <Link
             to="/app/precios"
             className="inline-block rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
           >
-            Ver planes
+            {t("mi-cuenta.see-plans", "Ver planes")}
           </Link>
         )}
       </section>
 
       {/* Nombre visible */}
       <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/70">Nombre visible</h2>
+        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/70">{t("mi-cuenta.display-name", "Nombre visible")}</h2>
         <form onSubmit={saveName} className="space-y-3">
           <input
             type="text"
@@ -222,26 +238,26 @@ const MiCuenta = () => {
               setName(e.target.value)
               setNameSaved(false)
             }}
-            placeholder="Tu nombre"
+            placeholder={t("mi-cuenta.name-placeholder", "Tu nombre")}
             className={inputCls}
             autoComplete="name"
             maxLength={80}
           />
           {nameError && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{nameError}</p>}
-          {nameSaved && <p className="rounded-lg bg-neon-cyan/10 px-3 py-2 text-sm text-neon-cyan">Nombre actualizado.</p>}
+          {nameSaved && <p className="rounded-lg bg-neon-cyan/10 px-3 py-2 text-sm text-neon-cyan">{t("mi-cuenta.name-saved", "Nombre actualizado.")}</p>}
           <button
             type="submit"
             disabled={!name.trim() || nameSaving}
             className="rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {nameSaving ? "Guardando..." : "Guardar nombre"}
+            {nameSaving ? t("mi-cuenta.saving", "Guardando...") : t("mi-cuenta.save-name", "Guardar nombre")}
           </button>
         </form>
       </section>
 
       {/* Cambiar contraseña */}
       <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/70">Cambiar contraseña</h2>
+        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/70">{t("mi-cuenta.change-password", "Cambiar contraseña")}</h2>
         <form onSubmit={savePassword} className="space-y-3">
           <input
             type="password"
@@ -251,7 +267,7 @@ const MiCuenta = () => {
               setCurrentPassword(e.target.value)
               setPwSaved(false)
             }}
-            placeholder="Contraseña actual"
+            placeholder={t("mi-cuenta.current-password", "Contraseña actual")}
             className={inputCls}
             autoComplete="current-password"
           />
@@ -263,7 +279,7 @@ const MiCuenta = () => {
               setNewPassword(e.target.value)
               setPwSaved(false)
             }}
-            placeholder="Nueva contraseña"
+            placeholder={t("reset-password.field.new", "Nueva contraseña")}
             className={inputCls}
             autoComplete="new-password"
           />
@@ -275,18 +291,18 @@ const MiCuenta = () => {
               setConfirmPassword(e.target.value)
               setPwSaved(false)
             }}
-            placeholder="Repite la nueva contraseña"
+            placeholder={t("mi-cuenta.confirm-new-password", "Repite la nueva contraseña")}
             className={inputCls}
             autoComplete="new-password"
           />
           {pwError && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{pwError}</p>}
-          {pwSaved && <p className="rounded-lg bg-neon-cyan/10 px-3 py-2 text-sm text-neon-cyan">Contraseña actualizada.</p>}
+          {pwSaved && <p className="rounded-lg bg-neon-cyan/10 px-3 py-2 text-sm text-neon-cyan">{t("mi-cuenta.password-saved", "Contraseña actualizada.")}</p>}
           <button
             type="submit"
             disabled={!currentPassword || !newPassword || !confirmPassword || pwSaving}
             className="rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {pwSaving ? "Guardando..." : "Cambiar contraseña"}
+            {pwSaving ? t("mi-cuenta.saving", "Guardando...") : t("mi-cuenta.change-password-cta", "Cambiar contraseña")}
           </button>
         </form>
       </section>

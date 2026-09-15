@@ -1,12 +1,14 @@
 import { useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { resetPassword } from "../api/auth"
+import { useI18n } from "../i18n/store"
 
 /**
  * Página de "nueva contraseña" (/reset-password?token=...). Pública: se llega desde el enlace
  * del email de recuperación. Valida el token en el backend y fija la contraseña nueva.
  */
 const ResetPasswordPage = () => {
+  const { t } = useI18n()
   const [params] = useSearchParams()
   const token = params.get("token") ?? ""
 
@@ -24,11 +26,11 @@ const ResetPasswordPage = () => {
     e.preventDefault()
     setError(null)
     if (password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres.")
+      setError(t("reset-password.error.too-short", "La contraseña debe tener al menos 6 caracteres."))
       return
     }
     if (password !== confirm) {
-      setError("Las contraseñas no coinciden.")
+      setError(t("reset-password.error.mismatch", "Las contraseñas no coinciden."))
       return
     }
     setLoading(true)
@@ -36,7 +38,7 @@ const ResetPasswordPage = () => {
       await resetPassword(token, password)
       setDone(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo restablecer la contraseña.")
+      setError(err instanceof Error ? err.message : t("reset-password.error.generic", "No se pudo restablecer la contraseña."))
     } finally {
       setLoading(false)
     }
@@ -59,25 +61,29 @@ const ResetPasswordPage = () => {
 
         {!token ? (
           <>
-            <h1 className="font-display text-2xl font-bold text-white">Enlace no válido</h1>
-            <p className="mt-2 text-sm text-white/60">Falta el token de recuperación. Solicita un enlace nuevo desde la pantalla de acceso.</p>
-            <Link to="/login" className="mt-6 inline-block font-semibold text-neon-cyan hover:underline">Volver a iniciar sesión</Link>
+            <h1 className="font-display text-2xl font-bold text-white">{t("reset-password.invalid.title", "Enlace no válido")}</h1>
+            <p className="mt-2 text-sm text-white/60">
+              {t("reset-password.invalid.subtitle", "Falta el token de recuperación. Solicita un enlace nuevo desde la pantalla de acceso.")}
+            </p>
+            <Link to="/login" className="mt-6 inline-block font-semibold text-neon-cyan hover:underline">
+              {t("login.back-to-login", "Volver a iniciar sesión")}
+            </Link>
           </>
         ) : done ? (
           <>
-            <h1 className="font-display text-2xl font-bold text-white">Contraseña actualizada</h1>
-            <p className="mt-2 text-sm text-white/60">Ya puedes iniciar sesión con tu nueva contraseña.</p>
+            <h1 className="font-display text-2xl font-bold text-white">{t("reset-password.done.title", "Contraseña actualizada")}</h1>
+            <p className="mt-2 text-sm text-white/60">{t("reset-password.done.subtitle", "Ya puedes iniciar sesión con tu nueva contraseña.")}</p>
             <Link
               to="/login"
               className="mt-6 inline-block rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
             >
-              Iniciar sesión
+              {t("reset-password.cta-login", "Iniciar sesión")}
             </Link>
           </>
         ) : (
           <>
-            <h1 className="font-display text-3xl font-bold text-white">Nueva contraseña</h1>
-            <p className="mt-1.5 text-sm text-white/60">Elige una contraseña nueva para tu cuenta.</p>
+            <h1 className="font-display text-3xl font-bold text-white">{t("reset-password.title", "Nueva contraseña")}</h1>
+            <p className="mt-1.5 text-sm text-white/60">{t("reset-password.subtitle", "Elige una contraseña nueva para tu cuenta.")}</p>
 
             <form onSubmit={submit} className="mt-7 space-y-3">
               <input
@@ -85,7 +91,7 @@ const ResetPasswordPage = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Nueva contraseña"
+                placeholder={t("reset-password.field.new", "Nueva contraseña")}
                 className={inputCls}
                 autoComplete="new-password"
               />
@@ -94,7 +100,7 @@ const ResetPasswordPage = () => {
                 required
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Repite la contraseña"
+                placeholder={t("reset-password.field.confirm", "Repite la contraseña")}
                 className={inputCls}
                 autoComplete="new-password"
               />
@@ -106,7 +112,7 @@ const ResetPasswordPage = () => {
                 disabled={loading}
                 className="w-full rounded-lg bg-neon-cyan py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-60"
               >
-                {loading ? "Un momento..." : "Guardar contraseña"}
+                {loading ? t("login.wait", "Un momento...") : t("reset-password.cta", "Guardar contraseña")}
               </button>
             </form>
           </>

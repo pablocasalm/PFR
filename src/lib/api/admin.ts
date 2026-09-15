@@ -20,19 +20,23 @@ export type PublishClipInput = {
   uid: string
   uidEn?: string // uid del vídeo doblado al inglés (HeyGen), opcional
   title: string
+  titleEn?: string
   description?: string
+  descriptionEn?: string
   durationSeconds?: number
   blocks: BlockConceptsInput[]
 }
 
-export type PublishChapterInput = { startSeconds: number; title: string; concept?: string }
+export type PublishChapterInput = { startSeconds: number; title: string; titleEn?: string }
 
 export type PublishInput = {
   analysis: {
     uid: string
     uidEn?: string // uid del vídeo doblado al inglés (HeyGen), opcional
     title: string
+    titleEn?: string
     description?: string
+    descriptionEn?: string
     durationSeconds?: number
     players: string[]
     venue?: string
@@ -42,6 +46,9 @@ export type PublishInput = {
     chapters: PublishChapterInput[]
   }
   clips: PublishClipInput[]
+  /** NameEs (tal cual se escribió) → NameEn, solo para los conceptos que el formulario
+   * detectó sin traducir (§ traducción de contenido al publicar). */
+  conceptTranslations?: Record<string, string>
 }
 
 export const publish = (input: PublishInput) =>
@@ -52,9 +59,12 @@ export const publish = (input: PublishInput) =>
 
 export type PatchClipInput = {
   title: string
+  titleEn?: string
   description?: string
+  descriptionEn?: string
   players: string[]
   blocks: BlockConceptsInput[]
+  conceptTranslations?: Record<string, string>
 }
 
 export const patchClip = (id: string, input: PatchClipInput) =>
@@ -62,7 +72,9 @@ export const patchClip = (id: string, input: PatchClipInput) =>
 
 export type PatchAnalysisInput = {
   title: string
+  titleEn?: string
   description?: string
+  descriptionEn?: string
   players: string[]
   venue?: string
   category?: string
@@ -75,12 +87,23 @@ export const patchAnalysis = (id: string, input: PatchAnalysisInput) =>
 
 // Datos en bruto para precargar el formulario de edición (distinto del GET público, que
 // devuelve todo ya compuesto/aplanado para mostrar, no para editar).
-export type ClipForEdit = { title: string; description: string; players: string[]; blocks: BlockConceptsInput[]; streamUidEn: string | null }
+export type BlockConceptsForEdit = { block: string; concepts: string[]; conceptsEn: (string | null)[] }
+export type ClipForEdit = {
+  title: string
+  titleEn: string | null
+  description: string
+  descriptionEn: string | null
+  players: string[]
+  blocks: BlockConceptsForEdit[]
+  streamUidEn: string | null
+}
 export const getClipForEdit = (id: string) => apiGet<ClipForEdit>(`/api/admin/clips/${id}`)
 
 export type AnalysisForEdit = {
   title: string
+  titleEn: string | null
   description: string
+  descriptionEn: string | null
   players: string[]
   venue: string | null
   category: string | null
@@ -89,6 +112,11 @@ export type AnalysisForEdit = {
   streamUidEn: string | null
 }
 export const getAnalysisForEdit = (id: string) => apiGet<AnalysisForEdit>(`/api/admin/analyses/${id}`)
+
+// --- Catálogo de conceptos (§ traducción de contenido): para detectar en Publicar/Editar
+// qué conceptos seleccionados todavía no tienen NameEn y pedir su traducción en el formulario. ---
+export type ConceptOption = { nameEs: string; nameEn: string | null }
+export const getConcepts = () => apiGet<ConceptOption[]>("/api/admin/concepts")
 
 // --- Versión en inglés (HeyGen): vídeo doblado + subtítulos. El vídeo se sube igual que el
 // original (direct-upload + tus). Los subtítulos se asocian directamente al uid de Cloudflare

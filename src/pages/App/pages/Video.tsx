@@ -24,6 +24,8 @@ import { useState } from "react"
 import EditContentLink from "../components/EditContentLink"
 import WatchedBadge from "../components/WatchedBadge"
 import { useAuth } from "../../../lib/auth/store"
+import { useI18n } from "../../../lib/i18n/store"
+import { pickText, pickList } from "../../../lib/i18n/content"
 
 /**
  * Video — Vista de un análisis completo en /app/watch?v=:id.
@@ -71,13 +73,14 @@ const VideoPlayer = ({ video, endSlot }: { video: AnalysisDetail; endSlot?: (dis
 /** "Compartir" real (§10.5): hoja de compartir nativa o copia el enlace con feedback. */
 const ShareButton = () => {
   const { share, copied } = useShare()
+  const { t } = useI18n()
   return (
     <button
       onClick={share}
       className="flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/5"
     >
       {copied ? <Check className="h-4 w-4 text-neon-cyan" /> : <Share2 className="h-4 w-4" />}
-      {copied ? "¡Enlace copiado!" : "Compartir"}
+      {copied ? t("watch.link-copied", "¡Enlace copiado!") : t("watch.share", "Compartir")}
     </button>
   )
 }
@@ -87,9 +90,11 @@ const analysisToItem = (video: AnalysisDetail): ContentItem => ({
   id: video.id,
   type: "analysis",
   title: video.title,
+  titleEn: video.titleEn,
   thumbnailUrl: video.thumbnailUrl,
   durationSeconds: video.durationSeconds,
   concepts: video.concepts,
+  conceptsEn: video.conceptsEn,
   players: video.players,
   tournament: video.tournament,
 })
@@ -97,6 +102,7 @@ const analysisToItem = (video: AnalysisDetail): ContentItem => ({
 /** Acción "Mi Lista" (§10.5): selector de estado guardar/quitar. */
 const SaveAction = ({ item }: { item: ContentItem }) => {
   useSavedItems()
+  const { t } = useI18n()
   const saved = isSaved(item.id)
   return (
     <button
@@ -109,15 +115,17 @@ const SaveAction = ({ item }: { item: ContentItem }) => {
       }`}
     >
       {saved ? <Check className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
-      {saved ? "En Mi Lista" : "Mi Lista"}
+      {saved ? t("save-button.saved", "En Mi Lista") : t("save-button.save", "Mi Lista")}
     </button>
   )
 }
 
-const ChaptersPanel = ({ video }: { video: AnalysisDetail }) => (
+const ChaptersPanel = ({ video }: { video: AnalysisDetail }) => {
+  const { t, lang } = useI18n()
+  return (
   <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
     <div className="mb-3 flex items-center justify-between px-1">
-      <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">Capítulos</h2>
+      <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">{t("watch.chapters", "Capítulos")}</h2>
       <span className="flex items-center gap-1.5 text-xs text-white/50">
         <Clock className="h-3.5 w-3.5" /> {formatDuration(video.durationSeconds)}
       </span>
@@ -127,7 +135,7 @@ const ChaptersPanel = ({ video }: { video: AnalysisDetail }) => (
         i === 0 ? (
           <div key={i} className="flex items-center gap-3 rounded-xl border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-3">
             <span className="w-12 shrink-0 text-xs font-semibold tabular-nums text-neon-cyan">{formatDuration(ch.startSeconds)}</span>
-            <span className="flex-1 text-sm font-semibold text-white">{ch.title}</span>
+            <span className="flex-1 text-sm font-semibold text-white">{pickText(ch.title, ch.titleEn, lang)}</span>
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-neon-cyan text-midnight">
               <Play className="h-3.5 w-3.5" fill="currentColor" />
             </span>
@@ -136,24 +144,22 @@ const ChaptersPanel = ({ video }: { video: AnalysisDetail }) => (
           <button key={i} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5">
             <Play className="h-2.5 w-2.5 shrink-0 text-white/30" fill="currentColor" />
             <span className="w-12 shrink-0 text-xs tabular-nums text-white/50">{formatDuration(ch.startSeconds)}</span>
-            <span className="flex-1 truncate text-sm text-white/90">{ch.title}</span>
-            {ch.concept && (
-              <span className="shrink-0 rounded-full border border-neon-cyan/30 px-2 py-0.5 text-[11px] text-neon-cyan/80">
-                #{ch.concept}
-              </span>
-            )}
+            <span className="flex-1 truncate text-sm text-white/90">{pickText(ch.title, ch.titleEn, lang)}</span>
           </button>
         )
       )}
     </div>
   </section>
-)
+  )
+}
 
 const KeepLearningPanel = ({ next }: { next?: ContentItem }) => {
+  const { t, lang } = useI18n()
   if (!next) return null
+  const concepts = pickList(next.concepts, next.conceptsEn, lang)
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-      <h2 className="mb-4 text-sm font-bold uppercase tracking-[0.12em] text-white">Sigue aprendiendo</h2>
+      <h2 className="mb-4 text-sm font-bold uppercase tracking-[0.12em] text-white">{t("watch.keep-learning", "Sigue aprendiendo")}</h2>
       <Link to={watchHref(next)} className="flex gap-3">
         <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded-lg" style={thumbStyle(hueFor(next.id))}>
           {next.thumbnailUrl && <img src={next.thumbnailUrl} alt="" className="h-full w-full object-cover" />}
@@ -165,7 +171,7 @@ const KeepLearningPanel = ({ next }: { next?: ContentItem }) => {
           {next.completed && <WatchedBadge />}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold leading-snug text-white">{next.title}</p>
+          <p className="text-sm font-bold leading-snug text-white">{pickText(next.title, next.titleEn, lang)}</p>
           {(next.tournament || next.durationSeconds) && (
             <p className="mt-1 text-xs text-white/50">
               {next.tournament}
@@ -173,10 +179,10 @@ const KeepLearningPanel = ({ next }: { next?: ContentItem }) => {
               {formatDuration(next.durationSeconds)}
             </p>
           )}
-          {next.concepts.length > 0 && (
+          {concepts.length > 0 && (
             <p className="mt-2 text-xs text-white/50">
-              Conceptos:{" "}
-              {next.concepts.slice(0, 3).map((c) => (
+              {t("watch.concepts-label", "Conceptos:")}{" "}
+              {concepts.slice(0, 3).map((c) => (
                 <span key={c} className="text-neon-cyan/80">#{c} </span>
               ))}
             </p>
@@ -188,7 +194,7 @@ const KeepLearningPanel = ({ next }: { next?: ContentItem }) => {
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-neon-cyan px-4 py-3 text-sm font-semibold text-midnight transition hover:brightness-110"
       >
         <Play className="h-4 w-4" fill="currentColor" />
-        Reproducir siguiente análisis
+        {t("watch.play-next-analysis", "Reproducir siguiente análisis")}
       </Link>
     </section>
   )
@@ -197,6 +203,7 @@ const KeepLearningPanel = ({ next }: { next?: ContentItem }) => {
 /** Acciones sociales: me gusta (optimista) + comentarios (POST). */
 const Social = ({ video }: { video: AnalysisDetail }) => {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [liked, setLiked] = useState(video.likedByMe ?? false)
   const [likes, setLikes] = useState(video.likes ?? 0)
   const [comments, setComments] = useState<Comment[]>(video.comments)
@@ -241,7 +248,7 @@ const Social = ({ video }: { video: AnalysisDetail }) => {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onSubmit()}
-          placeholder="Escribe un comentario..."
+          placeholder={t("watch.comment-placeholder", "Escribe un comentario...")}
           className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:outline-none focus:border-neon-cyan/40 sm:text-sm"
         />
         <button
@@ -249,7 +256,7 @@ const Social = ({ video }: { video: AnalysisDetail }) => {
           disabled={!text.trim() || sending}
           className="rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-semibold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/50"
         >
-          Publicar
+          {t("watch.comment-submit", "Publicar")}
         </button>
       </div>
 
@@ -279,7 +286,7 @@ const Social = ({ video }: { video: AnalysisDetail }) => {
           }`}
         >
           <Heart className="h-4 w-4" fill={liked ? "currentColor" : "none"} />
-          Me gusta
+          {t("watch.like", "Me gusta")}
           <span className="text-white">{likes}</span>
         </button>
         <ShareButton />
@@ -289,7 +296,7 @@ const Social = ({ video }: { video: AnalysisDetail }) => {
       {/* Comentarios: en escritorio en línea; en móvil, hoja inferior (§10.6). */}
       <div className="hidden space-y-5 border-t border-white/10 pt-6 lg:block">
         <h2 className="text-lg font-bold text-white">
-          Comentarios <span className="text-white/50">({comments.length})</span>
+          {t("watch.comments", "Comentarios")} <span className="text-white/50">({comments.length})</span>
         </h2>
         {commentsBody}
       </div>
@@ -299,12 +306,12 @@ const Social = ({ video }: { video: AnalysisDetail }) => {
         className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm transition hover:bg-white/5 lg:hidden"
       >
         <span className="font-semibold text-white">
-          Comentarios <span className="text-white/50">({comments.length})</span>
+          {t("watch.comments", "Comentarios")} <span className="text-white/50">({comments.length})</span>
         </span>
-        <span className="font-medium text-neon-cyan">Ver todos</span>
+        <span className="font-medium text-neon-cyan">{t("watch.see-all-comments", "Ver todos")}</span>
       </button>
 
-      <BottomSheet open={commentsOpen} onClose={() => setCommentsOpen(false)} title={`Comentarios (${comments.length})`}>
+      <BottomSheet open={commentsOpen} onClose={() => setCommentsOpen(false)} title={t("watch.comments-with-count", "Comentarios ({count})", { count: comments.length })}>
         {commentsBody}
       </BottomSheet>
     </>
@@ -316,17 +323,20 @@ const Social = ({ video }: { video: AnalysisDetail }) => {
 // ---------------------------------------------------------------------------
 
 const Video = () => {
+  const { t, lang } = useI18n()
   const [params] = useSearchParams()
   const id = params.get("v") ?? ""
   const { data: video, loading, error } = useApi(() => getAnalysisDetail(id), [id])
   const [autoplay, setAutoplay] = useAutoplay()
 
-  if (loading) return <main className="w-full py-8 text-sm text-white/40">Cargando análisis...</main>
+  if (loading) return <main className="w-full py-8 text-sm text-white/40">{t("watch.loading-analysis", "Cargando análisis...")}</main>
   if (error || !video)
     return (
       <main className="w-full py-8">
         <p className="text-sm text-red-400/80">
-          No se pudo cargar el análisis ({error ?? "no encontrado"}). ¿Está el backend en marcha?
+          {t("watch.analysis-load-error", "No se pudo cargar el análisis ({error}). ¿Está el backend en marcha?", {
+            error: error ?? t("watch.not-found", "no encontrado"),
+          })}
         </p>
       </main>
     )
@@ -343,7 +353,7 @@ const Video = () => {
             endSlot={
               nextAnalysis
                 ? (dismiss: () => void) => (
-                    <NextUpCard item={nextAnalysis} label="Siguiente análisis" autoplay={autoplay} onToggleAutoplay={setAutoplay} onCancel={dismiss} />
+                    <NextUpCard item={nextAnalysis} label={t("watch.next-analysis", "Siguiente análisis")} autoplay={autoplay} onToggleAutoplay={setAutoplay} onCancel={dismiss} />
                   )
                 : undefined
             }
@@ -353,7 +363,7 @@ const Video = () => {
             <div className="space-y-4">
               <div>
                 <h1 className="flex items-center gap-2 font-display text-3xl font-bold text-white">
-                  {video.title}
+                  {pickText(video.title, video.titleEn, lang)}
                   <BadgeCheck className="h-6 w-6 text-neon-cyan" />
                 </h1>
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-white/60">
@@ -373,7 +383,7 @@ const Video = () => {
                   (agregados de sus clips). Se ven en los clips, no aquí. */}
             </div>
 
-            <p className="max-w-xs text-sm leading-relaxed text-white/60">{video.description}</p>
+            <p className="max-w-xs text-sm leading-relaxed text-white/60">{pickText(video.description, video.descriptionEn, lang)}</p>
           </div>
 
           <Social video={video} />

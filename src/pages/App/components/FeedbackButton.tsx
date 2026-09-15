@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useSearchParams } from "react-router-dom"
 import { MessageSquarePlus, X, Check, Bug, Lightbulb, MessageCircle, UploadCloud, Trash2 } from "lucide-react"
 import { sendFeedback, type FeedbackType } from "../../../lib/api/feedback"
+import { useI18n, type TFunc } from "../../../lib/i18n/store"
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
@@ -14,14 +15,16 @@ export const TOUR_OPEN_FEEDBACK_EVENT = "pfr:tour-open-feedback"
  * la ruta actual y, si está viendo un clip/análisis, su id (el navegador lo añade el backend).
  */
 
-const TYPES: { key: FeedbackType; label: string; icon: typeof Bug; hint: string }[] = [
-  { key: "bug", label: "Fallo", icon: Bug, hint: "Algo no funciona o se ve mal. Cuéntanos qué pasó y qué esperabas." },
-  { key: "idea", label: "Idea", icon: Lightbulb, hint: "Una mejora o algo que echas en falta. ¡Nos encanta leerlas!" },
-  { key: "other", label: "Otro", icon: MessageCircle, hint: "Cualquier otro comentario que quieras hacernos llegar." },
+const buildTypes = (t: TFunc): { key: FeedbackType; label: string; icon: typeof Bug; hint: string }[] => [
+  { key: "bug", label: t("feedback-button.type.bug", "Fallo"), icon: Bug, hint: t("feedback-button.hint.bug", "Algo no funciona o se ve mal. Cuéntanos qué pasó y qué esperabas.") },
+  { key: "idea", label: t("feedback-button.type.idea", "Idea"), icon: Lightbulb, hint: t("feedback-button.hint.idea", "Una mejora o algo que echas en falta. ¡Nos encanta leerlas!") },
+  { key: "other", label: t("feedback-button.type.other", "Otro"), icon: MessageCircle, hint: t("feedback-button.hint.other", "Cualquier otro comentario que quieras hacernos llegar.") },
 ]
 
 const FeedbackButton = () => {
   const location = useLocation()
+  const { t } = useI18n()
+  const TYPES = useMemo(() => buildTypes(t), [t])
   const [params] = useSearchParams()
   const [open, setOpen] = useState(false)
   const [type, setType] = useState<FeedbackType>("bug")
@@ -80,11 +83,11 @@ const FeedbackButton = () => {
   const onPickImage = (file: File | undefined) => {
     if (!file) return
     if (!file.type.startsWith("image/")) {
-      setImageError("El archivo debe ser una imagen.")
+      setImageError(t("feedback-button.error.not-image", "El archivo debe ser una imagen."))
       return
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      setImageError("La imagen no puede superar 5 MB.")
+      setImageError(t("feedback-button.error.too-big", "La imagen no puede superar 5 MB."))
       return
     }
     if (imagePreview) URL.revokeObjectURL(imagePreview)
@@ -119,20 +122,20 @@ const FeedbackButton = () => {
     }
   }
 
-  const activeHint = TYPES.find((t) => t.key === type)?.hint ?? ""
+  const activeHint = TYPES.find((ty) => ty.key === type)?.hint ?? ""
 
   return (
     <>
       <button
         id="tour-feedback-button"
         onClick={() => setOpen(true)}
-        aria-label="Reportar un fallo o enviar feedback"
+        aria-label={t("feedback-button.open", "Reportar un fallo o enviar feedback")}
         className={`fixed bottom-24 left-4 z-40 flex items-center gap-2 rounded-full border border-neon-cyan/40 bg-midnight/90 px-4 py-2.5 text-sm font-semibold text-neon-cyan shadow-lg backdrop-blur transition-all duration-300 hover:bg-neon-cyan/10 xl:pointer-events-auto xl:bottom-6 xl:left-auto xl:right-6 xl:translate-y-0 xl:opacity-100 ${
           hidden ? "translate-y-20 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
         }`}
       >
         <MessageSquarePlus className="h-4 w-4" />
-        <span className="hidden sm:inline">Reportar / Feedback</span>
+        <span className="hidden sm:inline">{t("feedback-button.cta", "Reportar / Feedback")}</span>
       </button>
 
       {open && (
@@ -143,8 +146,8 @@ const FeedbackButton = () => {
             className="relative w-full max-w-md rounded-t-2xl border border-white/10 bg-midnight p-5 sm:rounded-2xl"
           >
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-bold text-white">¿Qué quieres contarnos?</h2>
-              <button onClick={close} aria-label="Cerrar" className="text-white/60 transition hover:text-white">
+              <h2 className="text-base font-bold text-white">{t("feedback-button.title", "¿Qué quieres contarnos?")}</h2>
+              <button onClick={close} aria-label={t("common.close", "Cerrar")} className="text-white/60 transition hover:text-white">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -154,12 +157,12 @@ const FeedbackButton = () => {
                 <span className="flex h-12 w-12 items-center justify-center rounded-full bg-neon-cyan/15 text-neon-cyan">
                   <Check className="h-6 w-6" />
                 </span>
-                <p className="text-sm text-white">¡Gracias! Lo revisaremos y lo iremos solucionando.</p>
+                <p className="text-sm text-white">{t("feedback-button.thanks", "¡Gracias! Lo revisaremos y lo iremos solucionando.")}</p>
                 <button
                   onClick={close}
                   className="mt-1 rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5"
                 >
-                  Cerrar
+                  {t("common.close", "Cerrar")}
                 </button>
               </div>
             ) : (
@@ -196,11 +199,11 @@ const FeedbackButton = () => {
                 />
                 {imagePreview ? (
                   <div className="mb-3 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-2.5">
-                    <img src={imagePreview} alt="Captura adjunta" className="h-12 w-12 shrink-0 rounded object-cover" />
+                    <img src={imagePreview} alt={t("feedback-button.image-alt", "Captura adjunta")} className="h-12 w-12 shrink-0 rounded object-cover" />
                     <span className="min-w-0 flex-1 truncate text-xs text-white/60">{image?.name}</span>
                     <button
                       onClick={clearImage}
-                      aria-label="Quitar imagen"
+                      aria-label={t("feedback-button.image-remove", "Quitar imagen")}
                       className="shrink-0 p-1 text-white/50 transition hover:text-white"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -213,8 +216,8 @@ const FeedbackButton = () => {
                     className="mb-3 flex w-full flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-white/15 bg-white/[0.02] px-4 py-4 text-center transition hover:border-neon-cyan/40 hover:bg-white/5 active:bg-white/5"
                   >
                     <UploadCloud className="h-5 w-5 text-white/50" />
-                    <span className="text-xs font-medium text-white/70">Adjuntar una captura (opcional)</span>
-                    <span className="text-[11px] text-white/35">PNG, JPG o WEBP · máx. 5&nbsp;MB</span>
+                    <span className="text-xs font-medium text-white/70">{t("feedback-button.attach", "Adjuntar una captura (opcional)")}</span>
+                    <span className="text-[11px] text-white/35">{t("feedback-button.attach-hint", "PNG, JPG o WEBP · máx. 5 MB")}</span>
                   </button>
                 )}
                 {imageError && <p className="-mt-2 mb-3 text-xs text-red-400">{imageError}</p>}
@@ -223,7 +226,11 @@ const FeedbackButton = () => {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={4}
-                  placeholder={type === "bug" ? "¿Qué ocurrió? ¿En qué pantalla?" : "Escribe tu comentario..."}
+                  placeholder={
+                    type === "bug"
+                      ? t("feedback-button.placeholder.bug", "¿Qué ocurrió? ¿En qué pantalla?")
+                      : t("feedback-button.placeholder.other", "Escribe tu comentario...")
+                  }
                   className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
                 />
 
@@ -232,7 +239,7 @@ const FeedbackButton = () => {
                   disabled={!message.trim() || sending}
                   className="mt-3 w-full rounded-lg bg-neon-cyan py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {sending ? "Enviando..." : "Enviar"}
+                  {sending ? t("common.sending", "Enviando...") : t("common.send", "Enviar")}
                 </button>
               </>
             )}

@@ -3,25 +3,32 @@ import { useSearchParams } from "react-router-dom"
 import { Check, CreditCard } from "lucide-react"
 import { getBillingPlans, createCheckoutSession, type BillingPlans, type BillingInterval } from "../../../lib/api/billing"
 import { Skeleton } from "../../../lib/ui/Skeleton"
+import { useI18n, type TFunc } from "../../../lib/i18n/store"
 
 /**
  * Pantalla de precios / paywall. Un único plan (sin tiers) — el precio real por país viene de
  * GET /api/billing/plans (país resuelto por IP en el backend, no elegido por el cliente).
  */
 
-const FEATURES = [
-  "Todo el catálogo de análisis y clips tácticos",
-  "Vídeo y subtítulos en inglés incluidos (traducción con IA)",
-  "Mi Lista, Mi Juego e historial de visionado",
-  "Nuevo contenido cada semana",
+const features = (t: TFunc) => [
+  t("precios.feature.catalog", "Todo el catálogo de análisis y clips tácticos"),
+  t("precios.feature.english", "Vídeo y subtítulos en inglés incluidos (traducción con IA)"),
+  t("precios.feature.mi-lista", "Mi Lista, Mi Juego e historial de visionado"),
+  t("precios.feature.new-content", "Nuevo contenido cada semana"),
 ]
 
-const intervalLabel: Record<BillingInterval, string> = { Monthly: "Mensual", Yearly: "Anual" }
+const intervalLabel = (t: TFunc): Record<BillingInterval, string> => ({
+  Monthly: t("precios.interval.monthly", "Mensual"),
+  Yearly: t("precios.interval.yearly", "Anual"),
+})
 
-const currencyFormat = (amount: number, currency: string) =>
-  new Intl.NumberFormat("es-ES", { style: "currency", currency }).format(amount)
+const currencyFormat = (amount: number, currency: string, lang: string) =>
+  new Intl.NumberFormat(lang === "en" ? "en-US" : "es-ES", { style: "currency", currency }).format(amount)
 
 const Precios = () => {
+  const { t, lang } = useI18n()
+  const FEATURES = features(t)
+  const intervalLabels = intervalLabel(t)
   const [searchParams] = useSearchParams()
   const [plans, setPlans] = useState<BillingPlans | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -32,7 +39,8 @@ const Precios = () => {
   useEffect(() => {
     getBillingPlans()
       .then(setPlans)
-      .catch((err) => setLoadError(err instanceof Error ? err.message : "No se pudieron cargar los precios."))
+      .catch((err) => setLoadError(err instanceof Error ? err.message : t("precios.error.load", "No se pudieron cargar los precios.")))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const price = plans?.prices.find((p) => p.interval === interval)
@@ -45,7 +53,7 @@ const Precios = () => {
       const { url } = await createCheckoutSession(interval)
       window.location.href = url
     } catch (err) {
-      setCheckoutError(err instanceof Error ? err.message : "No se pudo iniciar el pago.")
+      setCheckoutError(err instanceof Error ? err.message : t("precios.error.checkout", "No se pudo iniciar el pago."))
       setCheckoutLoading(false)
     }
   }
@@ -57,14 +65,14 @@ const Precios = () => {
           <CreditCard className="h-5 w-5" />
         </span>
         <div>
-          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">Suscripción</h1>
-          <p className="text-sm text-white/60">Acceso completo a Padel Film Room.</p>
+          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{t("precios.title", "Suscripción")}</h1>
+          <p className="text-sm text-white/60">{t("precios.subtitle", "Acceso completo a Padel Film Room.")}</p>
         </div>
       </div>
 
       {searchParams.get("checkout") === "cancelled" && (
         <p className="mb-6 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
-          Has cancelado el pago. Puedes intentarlo de nuevo cuando quieras.
+          {t("precios.cancelled", "Has cancelado el pago. Puedes intentarlo de nuevo cuando quieras.")}
         </p>
       )}
       {loadError && <p className="mb-6 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{loadError}</p>}
@@ -80,7 +88,7 @@ const Precios = () => {
               interval === i ? "bg-neon-cyan text-midnight" : "text-white/60 hover:text-white"
             }`}
           >
-            {intervalLabel[i]}
+            {intervalLabels[i]}
           </button>
         ))}
       </div>
@@ -92,14 +100,14 @@ const Precios = () => {
           <p className="mb-1 text-2xl font-bold text-white">
             {price ? (
               <>
-                {currencyFormat(price.displayAmount, price.currency)}
-                <span className="text-sm font-normal text-white/50"> / {intervalLabel[interval].toLowerCase()}</span>
+                {currencyFormat(price.displayAmount, price.currency, lang)}
+                <span className="text-sm font-normal text-white/50"> / {intervalLabels[interval].toLowerCase()}</span>
               </>
             ) : (
               "—"
             )}
           </p>
-          <p className="mb-5 text-sm text-white/60">Cancela cuando quieras, sin permanencia.</p>
+          <p className="mb-5 text-sm text-white/60">{t("precios.cancel-anytime", "Cancela cuando quieras, sin permanencia.")}</p>
           <ul className="space-y-2.5 text-sm text-white/80">
             {FEATURES.map((f) => (
               <li key={f} className="flex items-start gap-2">
@@ -119,7 +127,7 @@ const Precios = () => {
         disabled={!plans || checkoutLoading}
         className="mt-6 w-full rounded-lg bg-neon-cyan px-5 py-3 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {checkoutLoading ? "Abriendo pago..." : "Suscribirme"}
+        {checkoutLoading ? t("precios.opening-checkout", "Abriendo pago...") : t("precios.subscribe", "Suscribirme")}
       </button>
     </main>
   )

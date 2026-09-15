@@ -1,26 +1,29 @@
 import { useEffect, useState } from "react"
 import { Megaphone, Trash2 } from "lucide-react"
 import { listAllNews, createNews, deleteNews, type AdminNewsItem, type NewsTargetRole } from "../../../lib/api/news"
+import { useI18n, type TFunc } from "../../../lib/i18n/store"
 
 /**
  * AdminNoticias — publica y gestiona las noticias que ven todos los usuarios en la campana
  * del header (solo Admin).
  */
 
-const fmt = (iso: string): string => {
+const fmt = (iso: string, lang: string): string => {
   const hasTz = /[zZ]|[+-]\d{2}:?\d{2}$/.test(iso)
   const d = new Date(hasTz ? iso : `${iso}Z`)
   if (Number.isNaN(d.getTime())) return "—"
-  return d.toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+  return d.toLocaleString(lang === "en" ? "en-US" : "es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
 }
 
-const TARGET_LABEL: Record<NewsTargetRole, string> = {
-  User: "Beta testers",
-  ContentCreator: "Creadores de contenido",
-  Admin: "Solo Admin",
-}
+const targetLabel = (t: TFunc): Record<NewsTargetRole, string> => ({
+  User: t("admin-noticias.target.user", "Beta testers"),
+  ContentCreator: t("admin-noticias.target.content-creator", "Creadores de contenido"),
+  Admin: t("admin-noticias.target.admin", "Solo Admin"),
+})
 
 const AdminNoticias = () => {
+  const { t, lang } = useI18n()
+  const TARGET_LABEL = targetLabel(t)
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
   const [targetRole, setTargetRole] = useState<NewsTargetRole | "">("")
@@ -35,7 +38,7 @@ const AdminNoticias = () => {
     try {
       setItems(await listAllNews())
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudieron cargar las noticias.")
+      setError(err instanceof Error ? err.message : t("admin-noticias.error.load", "No se pudieron cargar las noticias."))
     } finally {
       setLoading(false)
     }
@@ -52,25 +55,25 @@ const AdminNoticias = () => {
     setNotice(null)
     try {
       await createNews(title.trim(), body.trim(), targetRole || undefined)
-      setNotice("Noticia publicada.")
+      setNotice(t("admin-noticias.published", "Noticia publicada."))
       setTitle("")
       setBody("")
       setTargetRole("")
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo publicar la noticia.")
+      setError(err instanceof Error ? err.message : t("admin-noticias.error.publish", "No se pudo publicar la noticia."))
     } finally {
       setSending(false)
     }
   }
 
   const remove = async (n: AdminNewsItem) => {
-    if (!window.confirm(`¿Borrar la noticia "${n.title}"?`)) return
+    if (!window.confirm(t("admin-noticias.confirm-delete", "¿Borrar la noticia \"{title}\"?", { title: n.title }))) return
     try {
       await deleteNews(n.id)
       setItems((prev) => prev.filter((x) => x.id !== n.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo borrar la noticia.")
+      setError(err instanceof Error ? err.message : t("admin-noticias.error.delete", "No se pudo borrar la noticia."))
     }
   }
 
@@ -81,43 +84,43 @@ const AdminNoticias = () => {
           <Megaphone className="h-5 w-5" />
         </span>
         <div>
-          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">Noticias</h1>
-          <p className="text-sm text-white/60">Publica novedades y arreglos — las ve todo el mundo en la campana.</p>
+          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{t("header.nav.noticias", "Noticias")}</h1>
+          <p className="text-sm text-white/60">{t("admin-noticias.subtitle", "Publica novedades y arreglos — las ve todo el mundo en la campana.")}</p>
         </div>
       </div>
 
       {/* Publicar */}
       <div className="max-w-2xl space-y-4">
         <div>
-          <label className="mb-2 block text-sm font-medium text-white">Título</label>
+          <label className="mb-2 block text-sm font-medium text-white">{t("admin-noticias.field.title", "Título")}</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ej. Nuevo filtro de jugadores"
+            placeholder={t("admin-noticias.title-placeholder", "Ej. Nuevo filtro de jugadores")}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-white">Contenido</label>
+          <label className="mb-2 block text-sm font-medium text-white">{t("admin-noticias.field.body", "Contenido")}</label>
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={4}
-            placeholder="Qué ha cambiado o se ha arreglado..."
+            placeholder={t("admin-noticias.body-placeholder", "Qué ha cambiado o se ha arreglado...")}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-white">Para quién</label>
+          <label className="mb-2 block text-sm font-medium text-white">{t("admin-noticias.field.target", "Para quién")}</label>
           <select
             value={targetRole}
             onChange={(e) => setTargetRole(e.target.value as NewsTargetRole | "")}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
           >
-            <option value="" className="bg-midnight">Todos</option>
-            <option value="User" className="bg-midnight">Beta testers</option>
-            <option value="ContentCreator" className="bg-midnight">Creadores de contenido</option>
-            <option value="Admin" className="bg-midnight">Solo Admin</option>
+            <option value="" className="bg-midnight">{t("explorar.type.all", "Todos")}</option>
+            <option value="User" className="bg-midnight">{TARGET_LABEL.User}</option>
+            <option value="ContentCreator" className="bg-midnight">{TARGET_LABEL.ContentCreator}</option>
+            <option value="Admin" className="bg-midnight">{TARGET_LABEL.Admin}</option>
           </select>
         </div>
 
@@ -129,20 +132,20 @@ const AdminNoticias = () => {
           disabled={!title.trim() || !body.trim() || sending}
           className="rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {sending ? "Publicando..." : "Publicar"}
+          {sending ? t("admin-noticias.publishing", "Publicando...") : t("admin-noticias.publish", "Publicar")}
         </button>
       </div>
 
       {/* Lista */}
       <div className="mt-10 max-w-2xl">
         <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/70">
-          Publicadas {!loading && `(${items.length})`}
+          {t("admin-noticias.published-heading", "Publicadas")} {!loading && `(${items.length})`}
         </h2>
 
         {loading ? (
-          <p className="text-sm text-white/40">Cargando...</p>
+          <p className="text-sm text-white/40">{t("common.loading", "Cargando...")}</p>
         ) : items.length === 0 ? (
-          <p className="text-sm text-white/40">Todavía no has publicado ninguna noticia.</p>
+          <p className="text-sm text-white/40">{t("admin-noticias.no-news", "Todavía no has publicado ninguna noticia.")}</p>
         ) : (
           <ul className="space-y-2">
             {items.map((n) => (
@@ -158,11 +161,11 @@ const AdminNoticias = () => {
                       )}
                     </div>
                     <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-white/60">{n.body}</p>
-                    <p className="mt-1.5 text-xs text-white/40">{fmt(n.createdAtUtc)}</p>
+                    <p className="mt-1.5 text-xs text-white/40">{fmt(n.createdAtUtc, lang)}</p>
                   </div>
                   <button
                     onClick={() => remove(n)}
-                    aria-label={`Borrar noticia "${n.title}"`}
+                    aria-label={t("admin-noticias.delete-aria", "Borrar noticia \"{title}\"", { title: n.title })}
                     className="flex shrink-0 items-center rounded-lg p-1.5 text-white/40 transition hover:text-red-400"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

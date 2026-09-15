@@ -27,8 +27,8 @@ export type MiJuegoStats = {
   minutes: number
   clipsViewed: number
   analysesViewed: number
-  concepts: { name: string; count: number }[]
-  blocks: { name: string; count: number }[]
+  concepts: { name: string; nameEn: string; count: number }[]
+  blocks: { name: string; nameEn: string; count: number }[]
 }
 
 export const getStats = () => apiGet<MiJuegoStats>("/api/history/stats")

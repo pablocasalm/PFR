@@ -9,6 +9,8 @@ import { Skeleton, CardGridSkeleton } from "../../../lib/ui/Skeleton"
 import CardRow from "../../../lib/ui/CardRow"
 import WatchedBadge from "../components/WatchedBadge"
 import EnglishBadge from "../components/EnglishBadge"
+import { useI18n } from "../../../lib/i18n/store"
+import { pickText, pickList } from "../../../lib/i18n/content"
 
 /**
  * Inicio — Dashboard principal. Consume GET /api/home (endpoint con forma de pantalla).
@@ -50,35 +52,44 @@ const Thumb = ({ src, hue, className = "" }: { src?: string; hue: number; classN
   </div>
 )
 
-const TypeBadge = ({ type }: { type: ContentItem["type"] }) =>
-  type === "analysis" ? (
+const TypeBadge = ({ type }: { type: ContentItem["type"] }) => {
+  const { t } = useI18n()
+  return type === "analysis" ? (
     <span className="rounded border border-violet-400/40 bg-violet-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-300">
-      Análisis
+      {t("content-card.type-analysis", "Análisis")}
     </span>
   ) : (
     <span className="rounded border border-neon-cyan/40 bg-neon-cyan/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neon-cyan">
-      Clip
+      {t("content-card.type-clip", "Clip")}
     </span>
   )
+}
 
 // ---------------------------------------------------------------------------
 // Subcomponentes
 // ---------------------------------------------------------------------------
 
-const SectionHeading = ({ title, to }: { title: string; to?: string }) => (
-  <div className="mb-5 flex items-center justify-between">
-    <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">{title}</h2>
-    {to && (
-      <Link to={to} className="flex items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110">
-        Ver todo <ChevronRight className="h-4 w-4" />
-      </Link>
-    )}
-  </div>
-)
+const SectionHeading = ({ title, to }: { title: string; to?: string }) => {
+  const { t } = useI18n()
+  return (
+    <div className="mb-5 flex items-center justify-between">
+      <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">{title}</h2>
+      {to && (
+        <Link to={to} className="flex items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110">
+          {t("common.see-all", "Ver todo")} <ChevronRight className="h-4 w-4" />
+        </Link>
+      )}
+    </div>
+  )
+}
 
 const Hero = ({ item }: { item: ContentItem | null }) => {
-  const title = item?.title ?? "Bienvenido a Padel Film Room"
-  const subtitle = item?.block ?? "Explora clips y análisis tácticos para mejorar tu juego."
+  const { t, lang } = useI18n()
+  const title = item ? pickText(item.title, item.titleEn, lang) : t("inicio.hero.default-title", "Bienvenido a Padel Film Room")
+  const subtitle = item?.block
+    ? pickText(item.block, item.blockEn, lang)
+    : t("inicio.hero.default-subtitle", "Explora clips y análisis tácticos para mejorar tu juego.")
+  const concepts = item ? pickList(item.concepts, item.conceptsEn, lang) : []
   return (
     <section className="relative overflow-hidden rounded-2xl border border-white/10">
       <Thumb src={item?.thumbnailUrl} hue={205} className="absolute inset-0" />
@@ -87,15 +98,15 @@ const Hero = ({ item }: { item: ContentItem | null }) => {
 
       <div className="relative flex min-h-[260px] flex-col justify-center gap-4 p-6 sm:p-8 md:min-h-[360px] md:gap-5 md:p-12">
         <span className="w-fit rounded-md bg-neon-cyan px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-midnight">
-          Destacado
+          {t("inicio.hero.featured", "Destacado")}
         </span>
         <h1 className="max-w-md font-display text-3xl font-bold leading-[1.1] text-white sm:text-4xl md:text-6xl md:leading-[1.05]">
           {title}
         </h1>
         <p className="max-w-sm text-sm leading-relaxed text-white/70">{subtitle}</p>
-        {item && item.type === "clip" && item.concepts.length > 0 && (
+        {item && item.type === "clip" && concepts.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {item.concepts.map((c) => (
+            {concepts.map((c) => (
               <span
                 key={c}
                 className="rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-1 text-xs font-medium text-neon-cyan"
@@ -111,7 +122,7 @@ const Hero = ({ item }: { item: ContentItem | null }) => {
             className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-neon-cyan px-4 py-3 text-sm font-semibold text-midnight transition hover:brightness-110 sm:px-6"
           >
             <Play className="h-4 w-4" fill="currentColor" />
-            Ver contenido
+            {t("inicio.hero.cta", "Ver contenido")}
           </Link>
           {item && <SaveButton item={item} variant="pill" />}
         </div>
@@ -121,6 +132,7 @@ const Hero = ({ item }: { item: ContentItem | null }) => {
 }
 
 const ContinueCard = ({ item }: { item: ContentItem }) => {
+  const { lang } = useI18n()
   const progress = item.progress ?? 0
   const current = Math.round((item.durationSeconds * progress) / 100)
   return (
@@ -137,7 +149,7 @@ const ContinueCard = ({ item }: { item: ContentItem }) => {
         </span>
       </div>
       <div className="flex flex-1 flex-col justify-center gap-4 p-4 sm:p-6">
-        <h3 className="text-base font-medium leading-snug text-white">{item.title}</h3>
+        <h3 className="text-base font-medium leading-snug text-white">{pickText(item.title, item.titleEn, lang)}</h3>
         <div>
           <p className="mb-2 text-sm text-neon-cyan">
             {formatDuration(current)} / {formatDuration(item.durationSeconds)}
@@ -151,56 +163,63 @@ const ContinueCard = ({ item }: { item: ContentItem }) => {
   )
 }
 
-const ContentCard = ({ item, rank }: { item: ContentItem; rank?: number }) => (
-  <Link to={watchHref(item)} className="group block w-full cursor-pointer">
-    <div className="relative overflow-hidden rounded-xl border border-white/10">
-      <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-full" />
-      {item.completed && <WatchedBadge />}
-      {item.hasEnglishVersion && rank == null && <EnglishBadge />}
-      {rank != null && (
-        <span className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-neon-cyan text-sm font-bold text-midnight">
-          {rank}
-        </span>
-      )}
-      <span className="absolute right-2 top-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white">
-        {formatDuration(item.durationSeconds)}
-      </span>
-      <span className="absolute bottom-2 right-2">
-        <SaveButton item={item} variant="icon" />
-      </span>
-    </div>
-    <div className="mt-2.5">
-      <TypeBadge type={item.type} />
-    </div>
-    <p className="mt-2 text-sm font-medium leading-snug text-white">{item.title}</p>
-    {item.type === "clip" && (
-      <div className="mt-2 flex flex-wrap gap-2">
-        {item.concepts.slice(0, 3).map((c) => (
-          <span key={c} className="text-[11px] text-neon-cyan/80">
-            #{c}
+const ContentCard = ({ item, rank }: { item: ContentItem; rank?: number }) => {
+  const { lang } = useI18n()
+  const concepts = pickList(item.concepts, item.conceptsEn, lang)
+  return (
+    <Link to={watchHref(item)} className="group block w-full cursor-pointer">
+      <div className="relative overflow-hidden rounded-xl border border-white/10">
+        <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-full" />
+        {item.completed && <WatchedBadge />}
+        {item.hasEnglishVersion && rank == null && <EnglishBadge />}
+        {rank != null && (
+          <span className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-neon-cyan text-sm font-bold text-midnight">
+            {rank}
           </span>
-        ))}
+        )}
+        <span className="absolute right-2 top-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white">
+          {formatDuration(item.durationSeconds)}
+        </span>
+        <span className="absolute bottom-2 right-2">
+          <SaveButton item={item} variant="icon" />
+        </span>
       </div>
-    )}
-  </Link>
-)
+      <div className="mt-2.5">
+        <TypeBadge type={item.type} />
+      </div>
+      <p className="mt-2 text-sm font-medium leading-snug text-white">{pickText(item.title, item.titleEn, lang)}</p>
+      {item.type === "clip" && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {concepts.slice(0, 3).map((c) => (
+            <span key={c} className="text-[11px] text-neon-cyan/80">
+              #{c}
+            </span>
+          ))}
+        </div>
+      )}
+    </Link>
+  )
+}
 
-const ConceptoCard = ({ concept, icon: Icon }: { concept: PopularConcept; icon: LucideIcon }) => (
-  <Link
-    to={`/app/search?concept=${encodeURIComponent(concept.name)}`}
-    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-left transition hover:border-neon-cyan/40 hover:bg-white/[0.04]"
-  >
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan">
-      <Icon className="h-4 w-4" />
-    </span>
-    <span className="leading-tight">
-      <span className="block text-sm font-semibold text-neon-cyan">#{concept.name}</span>
-      <span className="block text-xs text-white/50">
-        {concept.clipCount} {concept.clipCount === 1 ? "clip" : "clips"}
+const ConceptoCard = ({ concept, icon: Icon }: { concept: PopularConcept; icon: LucideIcon }) => {
+  const { lang } = useI18n()
+  return (
+    <Link
+      to={`/app/search?concept=${encodeURIComponent(concept.name)}`}
+      className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-left transition hover:border-neon-cyan/40 hover:bg-white/[0.04]"
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan">
+        <Icon className="h-4 w-4" />
       </span>
-    </span>
-  </Link>
-)
+      <span className="leading-tight">
+        <span className="block text-sm font-semibold text-neon-cyan">#{pickText(concept.name, concept.nameEn, lang)}</span>
+        <span className="block text-xs text-white/50">
+          {concept.clipCount} {concept.clipCount === 1 ? "clip" : "clips"}
+        </span>
+      </span>
+    </Link>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Página
@@ -222,6 +241,7 @@ const InicioSkeleton = () => (
 )
 
 const Inicio = () => {
+  const { t } = useI18n()
   const { data, loading, error } = useApi(getHome, [], "home")
 
   if (loading) return <InicioSkeleton />
@@ -229,7 +249,7 @@ const Inicio = () => {
     return (
       <main className="w-full py-8">
         <p className="text-sm text-red-400/80">
-          No se pudo cargar Inicio ({error}). ¿Está el backend en marcha y expone <code>/api/home</code>?
+          {t("inicio.load-error", "No se pudo cargar Inicio ({error}). ¿Está el backend en marcha y expone /api/home?", { error })}
         </p>
       </main>
     )
@@ -247,7 +267,7 @@ const Inicio = () => {
       {/* Continúa viendo — solo si hay contenido iniciado y no completado */}
       {continueWatching.length > 0 && (
         <section>
-          <SectionHeading title="Continúa viendo" />
+          <SectionHeading title={t("inicio.section.continue", "Continúa viendo")} />
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             {continueWatching.map((item) => (
               <ContinueCard key={item.id} item={item} />
@@ -259,7 +279,7 @@ const Inicio = () => {
       {/* Nuevo esta semana — clips + análisis por fecha de publicación */}
       {newThisWeek.length > 0 && (
         <section>
-          <SectionHeading title="Nuevo esta semana" to="/app/search?feed=new" />
+          <SectionHeading title={t("inicio.section.new", "Nuevo esta semana")} to="/app/search?feed=new" />
           <CardRow>
             {newThisWeek.map((item) => (
               <ContentCard key={item.id} item={item} />
@@ -271,7 +291,7 @@ const Inicio = () => {
       {/* Conceptos populares */}
       {popularConcepts.length > 0 && (
         <section>
-          <SectionHeading title="Conceptos populares" to="/app/explorar" />
+          <SectionHeading title={t("inicio.section.popular-concepts", "Conceptos populares")} to="/app/explorar" />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {popularConcepts.map((c, i) => (
               <ConceptoCard key={c.name} concept={c} icon={CONCEPT_ICONS[i % CONCEPT_ICONS.length]} />
@@ -283,7 +303,7 @@ const Inicio = () => {
       {/* Más vistos esta semana — ordenados por visualizaciones (7 días) */}
       {mostViewed.length > 0 && (
         <section>
-          <SectionHeading title="Más vistos esta semana" to="/app/search?feed=popular" />
+          <SectionHeading title={t("inicio.section.most-viewed", "Más vistos esta semana")} to="/app/search?feed=popular" />
           <CardRow>
             {mostViewed.map((item, i) => (
               <ContentCard key={item.id} item={item} rank={i + 1} />

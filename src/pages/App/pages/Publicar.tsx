@@ -1,39 +1,101 @@
 import { useState } from "react"
 import { Plus, Trash2, X, CheckCircle2 } from "lucide-react"
-import { createDirectUpload, uploadToCloudflare, uploadCaptions, readVideoDuration, publish, type PublishChapterInput } from "../../../lib/api/admin"
+import { createDirectUpload, uploadToCloudflare, uploadCaptions, readVideoDuration, publish, getConcepts, type PublishChapterInput, type ConceptOption } from "../../../lib/api/admin"
 import { getBlocks } from "../../../lib/api/blocks"
 import { useApi } from "../../../lib/hooks/useApi"
 import CatalogPicker from "../components/CatalogPicker"
 import FileDrop from "../components/FileDrop"
+import ConceptTranslationPanel from "../components/ConceptTranslationPanel"
+import { useI18n, type TFunc } from "../../../lib/i18n/store"
 
 /**
  * Publicar — Wizard de creación de contenido (§ proceso de publicación). Solo ContentCreator/Admin.
  * Paso 1: análisis (vídeo largo + torneo + jugadores). Paso 2: clips (cada uno con su vídeo y
  * grupos bloque→conceptos). Torneo/jugadores se heredan del análisis en los clips.
+ * Título/descripción se piden en español e inglés a la vez (§ traducción de contenido) — igual
+ * que el vídeo en inglés (HeyGen), es opcional: se puede publicar solo en español y traducir
+ * después desde Editar.
  */
 
-const ROUNDS = [
-  "Treintaidosavos de final",
-  "Dieciseisavos de final",
-  "Octavos de final",
-  "Cuartos de final",
-  "Semifinales",
-  "Final",
+const rounds = (t: TFunc) => [
+  t("publicar.round.32", "Treintaidosavos de final"),
+  t("publicar.round.16", "Dieciseisavos de final"),
+  t("publicar.round.8", "Octavos de final"),
+  t("publicar.round.4", "Cuartos de final"),
+  t("publicar.round.semis", "Semifinales"),
+  t("publicar.round.final", "Final"),
 ]
 
 type Group = { block: string; concepts: string[] }
-type ClipDraft = { file: File | null; fileEn: File | null; captionsEn: File | null; title: string; description: string; groups: Group[] }
-type ChapterDraft = { time: string; title: string; concept: string }
+type ClipDraft = {
+  file: File | null
+  fileEn: File | null
+  captionsEn: File | null
+  title: string
+  titleEn: string
+  description: string
+  descriptionEn: string
+  groups: Group[]
+}
+type ChapterDraft = { time: string; title: string; titleEn: string }
 
 const emptyClip = (defaultBlock: string): ClipDraft => ({
   file: null,
   fileEn: null,
   captionsEn: null,
   title: "",
+  titleEn: "",
   description: "",
+  descriptionEn: "",
   groups: [{ block: defaultBlock, concepts: [] }],
 })
-const emptyChapter = (): ChapterDraft => ({ time: "", title: "", concept: "" })
+const emptyChapter = (): ChapterDraft => ({ time: "", title: "", titleEn: "" })
+
+/**
+ * Catálogo de referencia bloque→conceptos (§ Importar JSON), con la misma numeración anidada
+ * que se usa en los códigos "bloque.concepto" del JSON (p. ej. "4.2" = 2º concepto del bloque 4).
+ * Derivado de datos reales de uso (/api/explore) y confirmado con el usuario — el número de
+ * bloque solo indexa esta tabla; el nombre resultante se valida contra el catálogo real de
+ * bloques (blockNames) al importar, por si hubiera cambiado.
+ */
+const CONCEPT_CATALOG: { block: string; concepts: string[] }[] = [
+  { block: "Juego desde el fondo", concepts: ["Decisiones", "Presión", "Defensa"] },
+  { block: "Transición defensa-ataque", concepts: ["Media pista", "Subir", "Recuperar"] },
+  // 3.4 "Presión" se sustituye por "Posición" (era un duplicado del 3.1 "Presión en red";
+  // el 1.2 "Presión" del bloque 1 no se toca, es un concepto distinto).
+  { block: "Juego en la red", concepts: ["Presión en red", "Mantener", "Espacios", "Posición"] },
+  { block: "Uso del globo", concepts: ["Timing", "Globo"] },
+  { block: "Gestión del ritmo del punto", concepts: ["Paciencia", "Bajar ritmo", "Cambio ritmo"] },
+  { block: "Lectura táctica del rival", concepts: ["Lectura", "Insistencia", "Detectar Espacios"] },
+  { block: "Uso táctico de golpes", concepts: ["Volea", "Bandeja", "Saque", "Resto", "Remate", "Chiquita"] },
+  { block: "Juego en pareja", concepts: ["Sincronía", "Comunicación", "Cubrir"] },
+]
+
+/** "4.2" → { block: "Uso del globo", concept: "Globo" }. null si el código no es válido. */
+const resolveConceptCode = (code: string): { block: string; concept: string } | null => {
+  const m = code.trim().match(/^(\d+)\.(\d+)$/)
+  if (!m) return null
+  const block = CONCEPT_CATALOG[Number(m[1]) - 1]
+  const concept = block?.concepts[Number(m[2]) - 1]
+  return block && concept ? { block: block.block, concept } : null
+}
+
+type ImportChapter = { time: string; title: string; title_en?: string }
+type ImportClip = { clip_id?: string; title: string; title_en?: string; description?: string; description_en?: string; concepts?: string[] }
+type ImportJson = {
+  match_id?: string
+  title: string
+  title_en?: string
+  description?: string
+  description_en?: string
+  players?: string[]
+  venue?: string
+  category?: string
+  round?: string
+  year?: number
+  chapters?: ImportChapter[]
+  clips: ImportClip[]
+}
 
 /** "mm:ss" o "hh:mm:ss" (solo dígitos y ":") → segundos. null si el formato no es válido. */
 const parseTimeToSeconds = (text: string): number | null => {
@@ -59,8 +121,11 @@ const StepDot = ({ n, label, active }: { n: number; label: string; active: boole
 )
 
 const Publicar = () => {
+  const { t } = useI18n()
+  const ROUNDS = rounds(t)
   const { data: blocksData } = useApi(getBlocks, [], "blocks")
-  const blocks = blocksData ?? []
+  const blockNames = (blocksData ?? []).map((b) => b.nameEs)
+  const { data: conceptCatalog } = useApi(getConcepts, [], "concepts")
 
   const [step, setStep] = useState<1 | 2>(1)
 
@@ -69,7 +134,9 @@ const Publicar = () => {
   const [aFileEn, setAFileEn] = useState<File | null>(null)
   const [aCaptionsEn, setACaptionsEn] = useState<File | null>(null)
   const [aTitle, setATitle] = useState("")
+  const [aTitleEn, setATitleEn] = useState("")
   const [aDesc, setADesc] = useState("")
+  const [aDescEn, setADescEn] = useState("")
   const [players, setPlayers] = useState<string[]>([])
   const [venue, setVenue] = useState("")
   const [category, setCategory] = useState("")
@@ -78,12 +145,82 @@ const Publicar = () => {
   const [chapters, setChapters] = useState<ChapterDraft[]>([])
 
   // Clips
-  const [clips, setClips] = useState<ClipDraft[]>([emptyClip(blocks[0] ?? "")])
+  const [clips, setClips] = useState<ClipDraft[]>([emptyClip(blockNames[0] ?? "")])
+
+  // Traducción de conceptos nuevos (§ ver ConceptTranslationPanel): nameEs → nameEn escrito a mano.
+  const [conceptTranslations, setConceptTranslations] = useState<Record<string, string>>({})
 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
   const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null)
+
+  // Importar JSON (§ pre-rellenar el wizard desde un JSON preparado fuera de la app).
+  const [importText, setImportText] = useState("")
+  const [importError, setImportError] = useState<string | null>(null)
+
+  const applyImport = () => {
+    setImportError(null)
+    let json: ImportJson
+    try {
+      json = JSON.parse(importText)
+    } catch {
+      return setImportError(t("publicar.import.bad-json", "El JSON no es válido."))
+    }
+    if (!json.title?.trim()) return setImportError(t("publicar.import.no-title", "Falta el título del análisis."))
+    if (!Array.isArray(json.clips) || json.clips.length === 0)
+      return setImportError(t("publicar.import.no-clips", "El JSON no tiene clips."))
+
+    const warnings: string[] = []
+
+    setATitle(json.title.trim())
+    setATitleEn(json.title_en?.trim() ?? "")
+    setADesc(json.description?.trim() ?? "")
+    setADescEn(json.description_en?.trim() ?? "")
+    setPlayers(json.players ?? [])
+    setVenue(json.venue ?? "")
+    setCategory(json.category ?? "")
+    setRound(json.round ?? "")
+    setYear(json.year ? String(json.year) : "")
+
+    setChapters(
+      (json.chapters ?? []).map((ch) => ({
+        time: ch.time ?? "",
+        title: ch.title ?? "",
+        titleEn: ch.title_en ?? "",
+      })),
+    )
+
+    const newClips: ClipDraft[] = json.clips.map((c) => {
+      const byBlock = new Map<string, string[]>()
+      for (const code of c.concepts ?? []) {
+        const resolved = resolveConceptCode(code)
+        if (!resolved) {
+          warnings.push(t("publicar.import.bad-code", 'Código de concepto no reconocido: "{code}" (clip "{title}")', { code, title: c.title }))
+          continue
+        }
+        if (blockNames.length > 0 && !blockNames.includes(resolved.block)) {
+          warnings.push(t("publicar.import.unknown-block", 'El bloque "{block}" del código "{code}" no existe en el catálogo actual', { block: resolved.block, code }))
+        }
+        const list = byBlock.get(resolved.block) ?? []
+        list.push(resolved.concept)
+        byBlock.set(resolved.block, list)
+      }
+      const groups: Group[] = Array.from(byBlock.entries()).map(([block, concepts]) => ({ block, concepts }))
+      return {
+        ...emptyClip(blockNames[0] ?? ""),
+        title: c.title ?? "",
+        titleEn: c.title_en ?? "",
+        description: c.description ?? "",
+        descriptionEn: c.description_en ?? "",
+        groups: groups.length > 0 ? groups : [{ block: blockNames[0] ?? "", concepts: [] }],
+      }
+    })
+    setClips(newClips)
+
+    setImportError(warnings.length > 0 ? warnings.join(" · ") : null)
+    setImportText("")
+  }
 
   const updateClip = (i: number, patch: Partial<ClipDraft>) =>
     setClips((cs) => cs.map((c, idx) => (idx === i ? { ...c, ...patch } : c)))
@@ -96,7 +233,7 @@ const Publicar = () => {
     )
 
   const addGroup = (ci: number) =>
-    setClips((cs) => cs.map((c, idx) => (idx === ci ? { ...c, groups: [...c.groups, { block: blocks[0] ?? "", concepts: [] }] } : c)))
+    setClips((cs) => cs.map((c, idx) => (idx === ci ? { ...c, groups: [...c.groups, { block: blockNames[0] ?? "", concepts: [] }] } : c)))
 
   const removeGroup = (ci: number, gi: number) =>
     setClips((cs) => cs.map((c, idx) => (idx === ci ? { ...c, groups: c.groups.filter((_, j) => j !== gi) } : c)))
@@ -112,6 +249,9 @@ const Publicar = () => {
     return Array.from(set)
   }
 
+  // Todos los conceptos seleccionados en cualquier clip, para el panel de traducción (§ abajo).
+  const allSelectedConcepts = clips.flatMap((c) => c.groups.flatMap((g) => g.concepts))
+
   const updateChapter = (i: number, patch: Partial<ChapterDraft>) =>
     setChapters((cs) => cs.map((c, idx) => (idx === i ? { ...c, ...patch } : c)))
   const addChapter = () => setChapters((cs) => [...cs, emptyChapter()])
@@ -119,8 +259,8 @@ const Publicar = () => {
 
   const goToClips = () => {
     setError(null)
-    if (!aFile) return setError("Sube el vídeo del análisis.")
-    if (!aTitle.trim()) return setError("El análisis necesita un título.")
+    if (!aFile) return setError(t("publicar.error.no-video", "Sube el vídeo del análisis."))
+    if (!aTitle.trim()) return setError(t("publicar.error.no-title", "El análisis necesita un título."))
     setStep(2)
   }
 
@@ -128,29 +268,35 @@ const Publicar = () => {
     setError(null)
     setDone(null)
     const validClips = clips.filter((c) => c.file && c.title.trim())
-    if (validClips.length === 0) return setError("Añade al menos un clip con vídeo y título.")
+    if (validClips.length === 0) return setError(t("publicar.error.no-clips", "Añade al menos un clip con vídeo y título."))
 
     const chapterInputs: PublishChapterInput[] = []
     for (const ch of chapters) {
       if (!ch.title.trim()) continue
       const startSeconds = parseTimeToSeconds(ch.time)
-      if (startSeconds === null) return setError(`Formato de tiempo inválido en el capítulo "${ch.title.trim()}" (usa mm:ss).`)
-      chapterInputs.push({ startSeconds, title: ch.title.trim(), concept: ch.concept.trim() || undefined })
+      if (startSeconds === null)
+        return setError(t("publicar.error.bad-time", "Formato de tiempo inválido en el capítulo \"{title}\" (usa mm:ss).", { title: ch.title.trim() }))
+      chapterInputs.push({
+        startSeconds,
+        title: ch.title.trim(),
+        titleEn: ch.titleEn.trim() || undefined,
+      })
     }
 
     setBusy(true)
-    setProgress({ label: "Subiendo análisis…", percent: 0 })
+    setProgress({ label: t("publicar.progress.analysis", "Subiendo análisis…"), percent: 0 })
     try {
       // 1) Subir el vídeo del análisis
       const aDur = await readVideoDuration(aFile!)
       const aUp = await createDirectUpload(aTitle || aFile!.name, aFile!.size)
-      await uploadToCloudflare(aUp.uploadURL, aFile!, (p) => setProgress({ label: "Subiendo análisis…", percent: p }))
+      await uploadToCloudflare(aUp.uploadURL, aFile!, (p) => setProgress({ label: t("publicar.progress.analysis", "Subiendo análisis…"), percent: p }))
 
       let aUidEn: string | undefined
       if (aFileEn) {
-        setProgress({ label: "Subiendo vídeo en inglés del análisis…", percent: 0 })
+        const labelEnAnalysis = t("publicar.progress.analysis-en", "Subiendo vídeo en inglés del análisis…")
+        setProgress({ label: labelEnAnalysis, percent: 0 })
         const aUpEn = await createDirectUpload(`${aTitle || aFile!.name} (EN)`, aFileEn.size)
-        await uploadToCloudflare(aUpEn.uploadURL, aFileEn, (p) => setProgress({ label: "Subiendo vídeo en inglés del análisis…", percent: p }))
+        await uploadToCloudflare(aUpEn.uploadURL, aFileEn, (p) => setProgress({ label: labelEnAnalysis, percent: p }))
         aUidEn = aUpEn.uid
         if (aCaptionsEn) await uploadCaptions(aUidEn, aCaptionsEn)
       }
@@ -159,7 +305,7 @@ const Publicar = () => {
       const clipInputs = []
       for (let i = 0; i < validClips.length; i++) {
         const c = validClips[i]
-        const label = `Subiendo clip ${i + 1} de ${validClips.length}…`
+        const label = t("publicar.progress.clip", "Subiendo clip {n} de {total}…", { n: i + 1, total: validClips.length })
         setProgress({ label, percent: 0 })
         const dur = await readVideoDuration(c.file!)
         const up = await createDirectUpload(c.title || c.file!.name, c.file!.size)
@@ -167,7 +313,7 @@ const Publicar = () => {
 
         let uidEn: string | undefined
         if (c.fileEn) {
-          const labelEn = `Subiendo vídeo en inglés del clip ${i + 1}…`
+          const labelEn = t("publicar.progress.clip-en", "Subiendo vídeo en inglés del clip {n}…", { n: i + 1 })
           setProgress({ label: labelEn, percent: 0 })
           const upEn = await createDirectUpload(`${c.title || c.file!.name} (EN)`, c.fileEn.size)
           await uploadToCloudflare(upEn.uploadURL, c.fileEn, (p) => setProgress({ label: labelEn, percent: p }))
@@ -179,7 +325,9 @@ const Publicar = () => {
           uid: up.uid,
           uidEn,
           title: c.title,
+          titleEn: c.titleEn.trim() || undefined,
           description: c.description,
+          descriptionEn: c.descriptionEn.trim() || undefined,
           durationSeconds: dur,
           blocks: c.groups
             .filter((g) => g.block && g.concepts.length > 0)
@@ -188,13 +336,18 @@ const Publicar = () => {
       }
 
       // 3) Crear análisis + clips juntos
-      setProgress({ label: "Creando contenido…", percent: 100 })
+      setProgress({ label: t("publicar.progress.creating", "Creando contenido…"), percent: 100 })
+      const translationsToSend = Object.fromEntries(
+        Object.entries(conceptTranslations).filter(([, v]) => v.trim().length > 0),
+      )
       await publish({
         analysis: {
           uid: aUp.uid,
           uidEn: aUidEn,
           title: aTitle,
+          titleEn: aTitleEn.trim() || undefined,
           description: aDesc,
+          descriptionEn: aDescEn.trim() || undefined,
           durationSeconds: aDur,
           players,
           venue: venue || undefined,
@@ -204,25 +357,37 @@ const Publicar = () => {
           chapters: chapterInputs,
         },
         clips: clipInputs,
+        conceptTranslations: Object.keys(translationsToSend).length > 0 ? translationsToSend : undefined,
       })
 
-      setDone(`¡Publicado! Análisis + ${clipInputs.length} clip(s). Se están procesando en Cloudflare y estarán disponibles en unos minutos.`)
+      setDone(
+        t(
+          "publicar.done",
+          "¡Publicado! Análisis + {count} clip(s). Se están procesando en Cloudflare y estarán disponibles en unos minutos.",
+          { count: clipInputs.length },
+        ),
+      )
       // Reset
       setStep(1)
       setAFile(null)
       setAFileEn(null)
       setACaptionsEn(null)
       setATitle("")
+      setATitleEn("")
       setADesc("")
+      setADescEn("")
       setPlayers([])
       setVenue("")
       setCategory("")
       setRound("")
       setYear("")
       setChapters([])
-      setClips([emptyClip(blocks[0] ?? "")])
+      setClips([emptyClip(blockNames[0] ?? "")])
+      setConceptTranslations({})
+      setImportText("")
+      setImportError(null)
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo publicar el contenido.")
+      setError(e instanceof Error ? e.message : t("publicar.error.generic", "No se pudo publicar el contenido."))
     } finally {
       setBusy(false)
       setProgress(null)
@@ -232,14 +397,14 @@ const Publicar = () => {
   return (
     <main className="mx-auto w-full max-w-2xl space-y-6 py-8">
       <div>
-        <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">Publicar contenido</h1>
-        <p className="mt-2 text-sm text-white/60">Un análisis y sus clips se publican juntos.</p>
+        <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">{t("publicar.title", "Publicar contenido")}</h1>
+        <p className="mt-2 text-sm text-white/60">{t("publicar.subtitle", "Un análisis y sus clips se publican juntos.")}</p>
       </div>
 
       <div className="flex items-center gap-4">
-        <StepDot n={1} label="Análisis" active={step === 1} />
+        <StepDot n={1} label={t("explorar.type.analyses", "Análisis")} active={step === 1} />
         <span className="h-px flex-1 bg-white/10" />
-        <StepDot n={2} label="Clips" active={step === 2} />
+        <StepDot n={2} label={t("explorar.type.clips", "Clips")} active={step === 2} />
       </div>
 
       {done && (
@@ -252,39 +417,73 @@ const Publicar = () => {
       {/* ---------- Paso 1: Análisis ---------- */}
       {step === 1 && (
         <div className="space-y-4">
-          <FileDrop file={aFile} onFile={setAFile} label="Vídeo del análisis completo" />
           <details className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
-            <summary className="cursor-pointer text-sm font-medium text-white/70">¿Ya tienes el doblaje de HeyGen? Añádelo aquí</summary>
+            <summary className="cursor-pointer text-sm font-medium text-white/70">
+              {t("publicar.import.toggle", "¿Tienes el contenido preparado en un JSON? Impórtalo aquí")}
+            </summary>
+            <div className="mt-3 space-y-2">
+              <p className="text-xs text-white/40">
+                {t(
+                  "publicar.import.hint",
+                  "Pega el JSON con el análisis y sus clips. Rellena los campos de texto (título, descripción, jugadores, capítulos, bloques/conceptos); los vídeos se siguen adjuntando a mano.",
+                )}
+              </p>
+              <textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder='{ "title": "...", "clips": [...] }'
+                rows={6}
+                className={`${inputCls} font-mono text-xs`}
+              />
+              {importError && <p className="text-xs text-amber-300">{importError}</p>}
+              <button
+                onClick={applyImport}
+                className="rounded-lg border border-neon-cyan/40 px-4 py-2 text-xs font-semibold text-neon-cyan transition hover:bg-neon-cyan/10"
+              >
+                {t("publicar.import.apply", "Rellenar formulario")}
+              </button>
+            </div>
+          </details>
+
+          <FileDrop file={aFile} onFile={setAFile} label={t("publicar.field.analysis-video", "Vídeo del análisis completo")} />
+          <details className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
+            <summary className="cursor-pointer text-sm font-medium text-white/70">{t("publicar.heygen-toggle", "¿Ya tienes el doblaje de HeyGen? Añádelo aquí")}</summary>
             <div className="mt-3 space-y-3">
-              <FileDrop file={aFileEn} onFile={setAFileEn} label="Vídeo en inglés (HeyGen)" hint="Opcional" />
+              <FileDrop file={aFileEn} onFile={setAFileEn} label={t("publicar.field.en-video", "Vídeo en inglés (HeyGen)")} hint={t("common.optional", "Opcional")} />
               <FileDrop
                 file={aCaptionsEn}
                 onFile={setACaptionsEn}
-                label="Subtítulos en inglés (.srt o .vtt)"
+                label={t("publicar.field.en-captions", "Subtítulos en inglés (.srt o .vtt)")}
                 accept=".srt,.vtt,text/vtt,application/x-subrip"
-                hint={aFileEn ? "Opcional" : "Sube antes el vídeo en inglés"}
+                hint={aFileEn ? t("common.optional", "Opcional") : t("publicar.upload-en-video-first", "Sube antes el vídeo en inglés")}
               />
             </div>
           </details>
-          <input value={aTitle} onChange={(e) => setATitle(e.target.value)} placeholder="Título del análisis" className={inputCls} />
-          <textarea value={aDesc} onChange={(e) => setADesc(e.target.value)} placeholder="Descripción" rows={3} className={inputCls} />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <input value={aTitle} onChange={(e) => setATitle(e.target.value)} placeholder={t("publicar.field.analysis-title", "Título del análisis")} className={inputCls} />
+            <input value={aTitleEn} onChange={(e) => setATitleEn(e.target.value)} placeholder={t("publicar.field.analysis-title-en", "Título en inglés (opcional)")} className={inputCls} />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <textarea value={aDesc} onChange={(e) => setADesc(e.target.value)} placeholder={t("publicar.field.description", "Descripción")} rows={3} className={inputCls} />
+            <textarea value={aDescEn} onChange={(e) => setADescEn(e.target.value)} placeholder={t("publicar.field.description-en", "Descripción en inglés (opcional)")} rows={3} className={inputCls} />
+          </div>
           <div>
-            <span className="mb-1.5 block text-xs font-medium text-white/50">Jugadores</span>
-            <CatalogPicker type="player" multi selected={players} onChange={setPlayers} placeholder="Busca o crea un jugador…" />
+            <span className="mb-1.5 block text-xs font-medium text-white/50">{t("publicar.field.players", "Jugadores")}</span>
+            <CatalogPicker type="player" multi selected={players} onChange={setPlayers} placeholder={t("publicar.field.players-placeholder", "Busca o crea un jugador…")} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <span className="mb-1.5 block text-xs font-medium text-white/50">Sede (ciudad)</span>
-              <CatalogPicker type="venue" selected={venue ? [venue] : []} onChange={(v) => setVenue(v[0] ?? "")} placeholder="Busca o crea una sede…" />
+              <span className="mb-1.5 block text-xs font-medium text-white/50">{t("publicar.field.venue", "Sede (ciudad)")}</span>
+              <CatalogPicker type="venue" selected={venue ? [venue] : []} onChange={(v) => setVenue(v[0] ?? "")} placeholder={t("publicar.field.venue-placeholder", "Busca o crea una sede…")} />
             </div>
             <div>
-              <span className="mb-1.5 block text-xs font-medium text-white/50">Categoría</span>
-              <CatalogPicker type="category" selected={category ? [category] : []} onChange={(v) => setCategory(v[0] ?? "")} placeholder="Busca o crea una categoría…" />
+              <span className="mb-1.5 block text-xs font-medium text-white/50">{t("publicar.field.category", "Categoría")}</span>
+              <CatalogPicker type="category" selected={category ? [category] : []} onChange={(v) => setCategory(v[0] ?? "")} placeholder={t("publicar.field.category-placeholder", "Busca o crea una categoría…")} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-white/50">Ronda (opcional)</span>
+              <span className="mb-1.5 block text-xs font-medium text-white/50">{t("publicar.field.round", "Ronda (opcional)")}</span>
               <select value={round} onChange={(e) => setRound(e.target.value)} className={inputCls}>
                 <option value="" className="bg-midnight">—</option>
                 {ROUNDS.map((r) => (
@@ -293,15 +492,15 @@ const Publicar = () => {
               </select>
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-white/50">Año</span>
+              <span className="mb-1.5 block text-xs font-medium text-white/50">{t("publicar.field.year", "Año")}</span>
               <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="2024" className={inputCls} />
             </label>
           </div>
-          <p className="text-xs text-white/40">Jugadores, sede, categoría, ronda y año se aplican también a todos los clips.</p>
+          <p className="text-xs text-white/40">{t("publicar.inherit-hint", "Jugadores, sede, categoría, ronda y año se aplican también a todos los clips.")}</p>
 
-          {/* Capítulos (opcional): momento (mm:ss) + título + concepto opcional. §v1: minuto a mano. */}
+          {/* Capítulos (opcional): momento (mm:ss) + título. §v1: minuto a mano. */}
           <div className="space-y-2">
-            <span className="mb-1.5 block text-xs font-medium text-white/50">Capítulos (opcional)</span>
+            <span className="mb-1.5 block text-xs font-medium text-white/50">{t("publicar.chapters", "Capítulos (opcional)")}</span>
             {chapters.map((ch, i) => (
               <div key={i} className="flex flex-col gap-2 rounded-lg border border-white/10 bg-white/[0.02] p-3 sm:flex-row sm:items-center">
                 <input
@@ -313,31 +512,31 @@ const Publicar = () => {
                 <input
                   value={ch.title}
                   onChange={(e) => updateChapter(i, { title: e.target.value })}
-                  placeholder="Título del capítulo"
+                  placeholder={t("publicar.field.chapter-title", "Título del capítulo")}
                   className={`${inputCls} flex-1`}
                 />
                 <input
-                  value={ch.concept}
-                  onChange={(e) => updateChapter(i, { concept: e.target.value })}
-                  placeholder="Concepto (opcional)"
-                  className={`${inputCls} sm:w-40 sm:shrink-0`}
+                  value={ch.titleEn}
+                  onChange={(e) => updateChapter(i, { titleEn: e.target.value })}
+                  placeholder={t("publicar.field.chapter-title-en", "Título en inglés (opcional)")}
+                  className={`${inputCls} flex-1`}
                 />
                 <button
                   onClick={() => removeChapter(i)}
                   className="self-end text-white/40 transition hover:text-red-400 sm:self-center"
-                  aria-label="Quitar capítulo"
+                  aria-label={t("publicar.remove-chapter", "Quitar capítulo")}
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
             ))}
             <button onClick={addChapter} className="flex items-center gap-1.5 text-xs font-medium text-neon-cyan transition hover:brightness-110">
-              <Plus className="h-3.5 w-3.5" /> Añadir capítulo
+              <Plus className="h-3.5 w-3.5" /> {t("publicar.add-chapter", "Añadir capítulo")}
             </button>
           </div>
 
           <button onClick={goToClips} className="w-full rounded-lg bg-neon-cyan py-3 text-sm font-bold text-midnight transition hover:brightness-110">
-            Siguiente: clips
+            {t("publicar.next-clips", "Siguiente: clips")}
           </button>
         </div>
       )}
@@ -348,7 +547,7 @@ const Publicar = () => {
           {clips.map((clip, ci) => (
             <div key={ci} className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white">Clip {ci + 1}</h3>
+                <h3 className="text-sm font-bold text-white">{t("publicar.clip-n", "Clip {n}", { n: ci + 1 })}</h3>
                 {clips.length > 1 && (
                   <button onClick={() => setClips((cs) => cs.filter((_, i) => i !== ci))} className="text-white/40 transition hover:text-red-400">
                     <Trash2 className="h-4 w-4" />
@@ -356,26 +555,32 @@ const Publicar = () => {
                 )}
               </div>
 
-              <FileDrop file={clip.file} onFile={(f) => updateClip(ci, { file: f })} label="Vídeo del clip" />
+              <FileDrop file={clip.file} onFile={(f) => updateClip(ci, { file: f })} label={t("publicar.field.clip-video", "Vídeo del clip")} />
               <details className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
-                <summary className="cursor-pointer text-sm font-medium text-white/70">¿Ya tienes el doblaje de HeyGen? Añádelo aquí</summary>
+                <summary className="cursor-pointer text-sm font-medium text-white/70">{t("publicar.heygen-toggle", "¿Ya tienes el doblaje de HeyGen? Añádelo aquí")}</summary>
                 <div className="mt-3 space-y-3">
-                  <FileDrop file={clip.fileEn} onFile={(f) => updateClip(ci, { fileEn: f })} label="Vídeo en inglés (HeyGen)" hint="Opcional" />
+                  <FileDrop file={clip.fileEn} onFile={(f) => updateClip(ci, { fileEn: f })} label={t("publicar.field.en-video", "Vídeo en inglés (HeyGen)")} hint={t("common.optional", "Opcional")} />
                   <FileDrop
                     file={clip.captionsEn}
                     onFile={(f) => updateClip(ci, { captionsEn: f })}
-                    label="Subtítulos en inglés (.srt o .vtt)"
+                    label={t("publicar.field.en-captions", "Subtítulos en inglés (.srt o .vtt)")}
                     accept=".srt,.vtt,text/vtt,application/x-subrip"
-                    hint={clip.fileEn ? "Opcional" : "Sube antes el vídeo en inglés"}
+                    hint={clip.fileEn ? t("common.optional", "Opcional") : t("publicar.upload-en-video-first", "Sube antes el vídeo en inglés")}
                   />
                 </div>
               </details>
-              <input value={clip.title} onChange={(e) => updateClip(ci, { title: e.target.value })} placeholder="Título del clip" className={inputCls} />
-              <textarea value={clip.description} onChange={(e) => updateClip(ci, { description: e.target.value })} placeholder="Descripción del clip" rows={2} className={inputCls} />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <input value={clip.title} onChange={(e) => updateClip(ci, { title: e.target.value })} placeholder={t("publicar.field.clip-title", "Título del clip")} className={inputCls} />
+                <input value={clip.titleEn} onChange={(e) => updateClip(ci, { titleEn: e.target.value })} placeholder={t("publicar.field.clip-title-en", "Título en inglés (opcional)")} className={inputCls} />
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <textarea value={clip.description} onChange={(e) => updateClip(ci, { description: e.target.value })} placeholder={t("publicar.field.clip-description", "Descripción del clip")} rows={2} className={inputCls} />
+                <textarea value={clip.descriptionEn} onChange={(e) => updateClip(ci, { descriptionEn: e.target.value })} placeholder={t("publicar.field.clip-description-en", "Descripción en inglés (opcional)")} rows={2} className={inputCls} />
+              </div>
 
               {/* Grupos bloque → conceptos (un bloque puede tener varios conceptos) */}
               <div className="space-y-2">
-                <p className="text-xs font-medium text-white/50">Bloques y conceptos</p>
+                <p className="text-xs font-medium text-white/50">{t("publicar.blocks-and-concepts", "Bloques y conceptos")}</p>
                 {clip.groups.map((g, gi) => (
                   <div key={gi} className="space-y-2 rounded-lg border border-white/10 bg-white/[0.02] p-3">
                     <div className="flex items-center gap-2">
@@ -384,7 +589,7 @@ const Publicar = () => {
                         onChange={(e) => updateGroup(ci, gi, { block: e.target.value })}
                         className={`${inputCls} flex-1`}
                       >
-                        {blocks.map((b) => (
+                        {blockNames.map((b) => (
                           <option key={b} value={b} className="bg-midnight">{b}</option>
                         ))}
                       </select>
@@ -400,24 +605,31 @@ const Publicar = () => {
                       block={g.block}
                       selected={g.concepts}
                       onChange={(v) => updateGroup(ci, gi, { concepts: v })}
-                      placeholder="Busca o crea un concepto…"
+                      placeholder={t("publicar.field.concept-placeholder", "Busca o crea un concepto…")}
                       extraSuggestions={conceptsForBlock(g.block)}
                     />
                   </div>
                 ))}
                 <button onClick={() => addGroup(ci)} className="flex items-center gap-1.5 text-xs font-medium text-neon-cyan transition hover:brightness-110">
-                  <Plus className="h-3.5 w-3.5" /> Añadir bloque
+                  <Plus className="h-3.5 w-3.5" /> {t("publicar.add-block", "Añadir bloque")}
                 </button>
               </div>
             </div>
           ))}
 
           <button
-            onClick={() => setClips((cs) => [...cs, emptyClip(blocks[0] ?? "")])}
+            onClick={() => setClips((cs) => [...cs, emptyClip(blockNames[0] ?? "")])}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-white/20 py-3 text-sm font-medium text-white/70 transition hover:border-neon-cyan/40 hover:text-white"
           >
-            <Plus className="h-4 w-4" /> Añadir otro clip
+            <Plus className="h-4 w-4" /> {t("publicar.add-clip", "Añadir otro clip")}
           </button>
+
+          <ConceptTranslationPanel
+            selectedConcepts={allSelectedConcepts}
+            catalog={conceptCatalog ?? ([] as ConceptOption[])}
+            translations={conceptTranslations}
+            onChange={setConceptTranslations}
+          />
 
           {busy && progress && (
             <div className="space-y-1.5">
@@ -433,10 +645,10 @@ const Publicar = () => {
 
           <div className="flex gap-3">
             <button onClick={() => setStep(1)} disabled={busy} className="rounded-lg border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/5 disabled:opacity-60">
-              Atrás
+              {t("publicar.back", "Atrás")}
             </button>
             <button onClick={publishAll} disabled={busy} className="flex-1 rounded-lg bg-neon-cyan py-3 text-sm font-bold text-midnight transition hover:brightness-110 disabled:opacity-60">
-              {busy ? "Publicando…" : "Publicar análisis + clips"}
+              {busy ? t("publicar.publishing", "Publicando…") : t("publicar.publish-cta", "Publicar análisis + clips")}
             </button>
           </div>
         </div>

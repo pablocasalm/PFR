@@ -10,6 +10,7 @@ import {
   type InviteRequestItem,
   type BillingPlan,
 } from "../../../lib/api/invites"
+import { useI18n } from "../../../lib/i18n/store"
 
 /**
  * AdminInvites — gestión de invitaciones de la beta (solo Admin). Genera y envía códigos,
@@ -29,19 +30,20 @@ const parseEmails = (raw: string): string[] => {
   return [...set]
 }
 
-const fmt = (iso: string | null): string => {
+const fmt = (iso: string | null, lang: string): string => {
   if (!iso) return "—"
   // El backend envía las fechas en UTC pero a veces sin marca de zona ('Z'). Si no la trae,
   // la forzamos a UTC para que toLocaleString la convierta bien a la hora local (Madrid).
   const hasTz = /[zZ]|[+-]\d{2}:?\d{2}$/.test(iso)
   const d = new Date(hasTz ? iso : `${iso}Z`)
   if (Number.isNaN(d.getTime())) return "—"
-  return d.toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+  return d.toLocaleString(lang === "en" ? "en-US" : "es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
 }
 
 type Filter = "all" | "pending" | "used"
 
 const AdminInvites = () => {
+  const { t, lang } = useI18n()
   const [raw, setRaw] = useState("")
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -59,14 +61,13 @@ const AdminInvites = () => {
   const [requestsOpen, setRequestsOpen] = useState(false)
 
   const emails = parseEmails(raw)
-  const plural = emails.length === 1 ? "" : "s"
 
   const refresh = async () => {
     setLoading(true)
     try {
       setCodes(await listInvites())
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cargar la lista.")
+      setError(err instanceof Error ? err.message : t("admin-invites.error.load-codes", "No se pudo cargar la lista."))
     } finally {
       setLoading(false)
     }
@@ -77,7 +78,7 @@ const AdminInvites = () => {
     try {
       setRequests(await listInviteRequests())
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudieron cargar las solicitudes.")
+      setError(err instanceof Error ? err.message : t("admin-invites.error.load-requests", "No se pudieron cargar las solicitudes."))
     } finally {
       setRequestsLoading(false)
     }
@@ -96,10 +97,10 @@ const AdminInvites = () => {
     setNotice(null)
     try {
       await generateInvites([email])
-      setNotice(`Invitación generada y enviada a ${email}.`)
+      setNotice(t("admin-invites.notice.sent-one", "Invitación generada y enviada a {email}.", { email }))
       await Promise.all([refresh(), refreshRequests()])
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo generar la invitación.")
+      setError(err instanceof Error ? err.message : t("admin-invites.error.generate-one", "No se pudo generar la invitación."))
     } finally {
       setInvitingEmail(null)
     }
@@ -107,12 +108,12 @@ const AdminInvites = () => {
 
   // Descarta una solicitud sin invitar (pruebas, email mal escrito).
   const removeRequest = async (r: InviteRequestItem) => {
-    if (!window.confirm(`¿Descartar la solicitud de ${r.email}?`)) return
+    if (!window.confirm(t("admin-invites.confirm.discard-request", "¿Descartar la solicitud de {email}?", { email: r.email }))) return
     try {
       await deleteInviteRequest(r.id)
       setRequests((prev) => prev.filter((x) => x.id !== r.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo descartar la solicitud.")
+      setError(err instanceof Error ? err.message : t("admin-invites.error.discard-request", "No se pudo descartar la solicitud."))
     }
   }
 
@@ -123,23 +124,27 @@ const AdminInvites = () => {
     setNotice(null)
     try {
       const res = await generateInvites(emails)
-      setNotice(`${res.length} invitación${res.length === 1 ? "" : "es"} generada${res.length === 1 ? "" : "s"} y enviada${res.length === 1 ? "" : "s"}.`)
+      setNotice(
+        res.length === 1
+          ? t("admin-invites.notice.sent-singular", "1 invitación generada y enviada.")
+          : t("admin-invites.notice.sent-plural", "{count} invitaciones generadas y enviadas.", { count: res.length }),
+      )
       setRaw("")
       await Promise.all([refresh(), refreshRequests()])
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudieron generar las invitaciones.")
+      setError(err instanceof Error ? err.message : t("admin-invites.error.generate", "No se pudieron generar las invitaciones."))
     } finally {
       setSending(false)
     }
   }
 
   const remove = async (c: InviteCode) => {
-    if (!window.confirm(`¿Eliminar el código de ${c.email}?`)) return
+    if (!window.confirm(t("admin-invites.confirm.delete-code", "¿Eliminar el código de {email}?", { email: c.email }))) return
     try {
       await deleteInvite(c.id)
       setCodes((prev) => prev.filter((x) => x.id !== c.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo eliminar el código.")
+      setError(err instanceof Error ? err.message : t("admin-invites.error.delete-code", "No se pudo eliminar el código."))
     }
   }
 
@@ -167,7 +172,11 @@ const AdminInvites = () => {
     }`
 
   // Categoría de facturación (§base para Stripe) — solo informativo por ahora.
-  const PLAN_LABEL: Record<BillingPlan, string> = { Free: "Gratis", TrialThenPaid: "Prueba 14 días", Discounted: "Descuento" }
+  const PLAN_LABEL: Record<BillingPlan, string> = {
+    Free: t("mi-cuenta.plan.free", "Gratis"),
+    TrialThenPaid: t("mi-cuenta.plan.trial", "Prueba 14 días"),
+    Discounted: t("mi-cuenta.plan.discounted", "Descuento"),
+  }
   const PLAN_CLS: Record<BillingPlan, string> = {
     Free: "border-white/15 bg-white/5 text-white/60",
     TrialThenPaid: "border-violet-400/40 bg-violet-400/10 text-violet-300",
@@ -181,24 +190,26 @@ const AdminInvites = () => {
           <Ticket className="h-5 w-5" />
         </span>
         <div>
-          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">Invitaciones</h1>
-          <p className="text-sm text-white/60">Genera, envía y gestiona los códigos de la beta.</p>
+          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{t("admin-invites.title", "Invitaciones")}</h1>
+          <p className="text-sm text-white/60">{t("admin-invites.subtitle", "Genera, envía y gestiona los códigos de la beta.")}</p>
         </div>
       </div>
 
       {/* Generar */}
       <div className="max-w-2xl space-y-4">
         <div>
-          <label className="mb-2 block text-sm font-medium text-white">Nuevos emails</label>
+          <label className="mb-2 block text-sm font-medium text-white">{t("admin-invites.new-emails", "Nuevos emails")}</label>
           <textarea
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             rows={5}
-            placeholder="Pega los emails separados por comas, espacios o saltos de línea..."
+            placeholder={t("admin-invites.emails-placeholder", "Pega los emails separados por comas, espacios o saltos de línea...")}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
           />
           <p className="mt-1.5 text-xs text-white/50">
-            {emails.length} email{plural} válido{plural} detectado{plural}.
+            {emails.length === 1
+              ? t("admin-invites.detected-singular", "1 email válido detectado.")
+              : t("admin-invites.detected-plural", "{count} emails válidos detectados.", { count: emails.length })}
           </p>
         </div>
 
@@ -210,7 +221,7 @@ const AdminInvites = () => {
           disabled={emails.length === 0 || sending}
           className="rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {sending ? "Enviando..." : `Generar y enviar (${emails.length})`}
+          {sending ? t("common.sending", "Enviando...") : t("admin-invites.generate-cta", "Generar y enviar ({count})", { count: emails.length })}
         </button>
       </div>
 
@@ -224,15 +235,15 @@ const AdminInvites = () => {
           className="flex w-full items-center gap-2 text-left text-sm font-bold uppercase tracking-wide text-white/70 transition hover:text-white"
         >
           <Mail className="h-4 w-4" />
-          Solicitudes pendientes {!requestsLoading && `(${requests.length})`}
+          {t("admin-invites.pending-requests", "Solicitudes pendientes")} {!requestsLoading && `(${requests.length})`}
           <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${requestsOpen ? "rotate-180" : ""}`} />
         </button>
 
         {requestsOpen &&
           (requestsLoading ? (
-            <p className="mt-4 text-sm text-white/40">Cargando...</p>
+            <p className="mt-4 text-sm text-white/40">{t("common.loading", "Cargando...")}</p>
           ) : requests.length === 0 ? (
-            <p className="mt-4 text-sm text-white/40">No hay solicitudes pendientes.</p>
+            <p className="mt-4 text-sm text-white/40">{t("admin-invites.no-requests", "No hay solicitudes pendientes.")}</p>
           ) : (
             <ul className="mt-4 space-y-2">
               {requests.map((r) => (
@@ -242,7 +253,7 @@ const AdminInvites = () => {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm text-white/90">{r.email}</p>
-                    <p className="text-xs text-white/40">{fmt(r.createdAtUtc)}</p>
+                    <p className="text-xs text-white/40">{fmt(r.createdAtUtc, lang)}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <button
@@ -251,11 +262,11 @@ const AdminInvites = () => {
                       className="flex items-center gap-1.5 rounded-lg border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-1.5 text-xs font-semibold text-neon-cyan transition hover:bg-neon-cyan/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Send className="h-3.5 w-3.5" />
-                      {invitingEmail === r.email ? "Invitando..." : "Invitar"}
+                      {invitingEmail === r.email ? t("admin-invites.inviting", "Invitando...") : t("admin-invites.invite", "Invitar")}
                     </button>
                     <button
                       onClick={() => removeRequest(r)}
-                      aria-label={`Descartar solicitud de ${r.email}`}
+                      aria-label={t("admin-invites.discard-aria", "Descartar solicitud de {email}", { email: r.email })}
                       className="flex items-center rounded-lg p-1.5 text-white/40 transition hover:text-red-400"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -270,28 +281,28 @@ const AdminInvites = () => {
       {/* Lista */}
       <div className="mt-10">
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <h2 className="mr-2 text-sm font-bold uppercase tracking-wide text-white/70">Códigos</h2>
-          <button onClick={() => setFilter("all")} className={tabCls(filter === "all")}>Todos ({codes.length})</button>
-          <button onClick={() => setFilter("pending")} className={tabCls(filter === "pending")}>Pendientes ({pendingCount})</button>
-          <button onClick={() => setFilter("used")} className={tabCls(filter === "used")}>Usados ({usedCount})</button>
+          <h2 className="mr-2 text-sm font-bold uppercase tracking-wide text-white/70">{t("admin-invites.codes", "Códigos")}</h2>
+          <button onClick={() => setFilter("all")} className={tabCls(filter === "all")}>{t("explorar.type.all", "Todos")} ({codes.length})</button>
+          <button onClick={() => setFilter("pending")} className={tabCls(filter === "pending")}>{t("admin-invites.pending", "Pendientes")} ({pendingCount})</button>
+          <button onClick={() => setFilter("used")} className={tabCls(filter === "used")}>{t("admin-invites.used", "Usados")} ({usedCount})</button>
         </div>
 
         {loading ? (
-          <p className="text-sm text-white/40">Cargando...</p>
+          <p className="text-sm text-white/40">{t("common.loading", "Cargando...")}</p>
         ) : filtered.length === 0 ? (
-          <p className="text-sm text-white/40">No hay códigos que mostrar.</p>
+          <p className="text-sm text-white/40">{t("admin-invites.no-codes", "No hay códigos que mostrar.")}</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-white/10">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="bg-white/5 text-xs uppercase tracking-wide text-white/50">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Email</th>
-                  <th className="px-4 py-3 font-semibold">Código</th>
-                  <th className="px-4 py-3 font-semibold">Estado</th>
-                  <th className="px-4 py-3 font-semibold">Plan</th>
-                  <th className="px-4 py-3 font-semibold">Creado</th>
-                  <th className="px-4 py-3 font-semibold">Usado</th>
-                  <th className="px-4 py-3 font-semibold">Acciones</th>
+                  <th className="px-4 py-3 font-semibold">{t("mi-cuenta.email", "Email")}</th>
+                  <th className="px-4 py-3 font-semibold">{t("admin-invites.code", "Código")}</th>
+                  <th className="px-4 py-3 font-semibold">{t("mi-cuenta.status", "Estado")}</th>
+                  <th className="px-4 py-3 font-semibold">{t("mi-cuenta.plan", "Plan")}</th>
+                  <th className="px-4 py-3 font-semibold">{t("admin-invites.created", "Creado")}</th>
+                  <th className="px-4 py-3 font-semibold">{t("admin-invites.used-col", "Usado")}</th>
+                  <th className="px-4 py-3 font-semibold">{t("admin-invites.actions", "Acciones")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -301,9 +312,13 @@ const AdminInvites = () => {
                     <td className="px-4 py-3 font-mono font-semibold tracking-wide text-neon-cyan">{c.code}</td>
                     <td className="px-4 py-3">
                       {c.used ? (
-                        <span className="rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-2 py-0.5 text-[11px] font-semibold text-neon-cyan">Usado</span>
+                        <span className="rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-2 py-0.5 text-[11px] font-semibold text-neon-cyan">
+                          {t("admin-invites.used-col", "Usado")}
+                        </span>
                       ) : (
-                        <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">Pendiente</span>
+                        <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+                          {t("admin-invites.pending-single", "Pendiente")}
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -311,8 +326,8 @@ const AdminInvites = () => {
                         {PLAN_LABEL[c.planType]}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-white/60">{fmt(c.createdAtUtc)}</td>
-                    <td className="px-4 py-3 text-white/60">{fmt(c.usedAtUtc)}</td>
+                    <td className="px-4 py-3 text-white/60">{fmt(c.createdAtUtc, lang)}</td>
+                    <td className="px-4 py-3 text-white/60">{fmt(c.usedAtUtc, lang)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <button
@@ -320,14 +335,14 @@ const AdminInvites = () => {
                           className="flex items-center gap-1.5 text-xs text-white/60 transition hover:text-white"
                         >
                           {copied === c.link ? <Check className="h-3.5 w-3.5 text-neon-cyan" /> : <Copy className="h-3.5 w-3.5" />}
-                          {copied === c.link ? "Copiado" : "Link"}
+                          {copied === c.link ? t("clip.copied-short", "Copiado") : t("admin-invites.link", "Link")}
                         </button>
                         <button
                           onClick={() => remove(c)}
                           className="flex items-center gap-1.5 text-xs text-white/50 transition hover:text-red-400"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                          Eliminar
+                          {t("common.delete", "Eliminar")}
                         </button>
                       </div>
                     </td>

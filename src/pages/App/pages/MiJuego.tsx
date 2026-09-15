@@ -6,6 +6,8 @@ import { useApi } from "../../../lib/hooks/useApi"
 import { getStats } from "../../../lib/api/history"
 import { renderMiJuegoStory } from "../../../lib/miJuegoStory"
 import { useAuth } from "../../../lib/auth/store"
+import { useI18n } from "../../../lib/i18n/store"
+import { pickText } from "../../../lib/i18n/content"
 
 /**
  * MiJuego — Actividad real de aprendizaje (§13). Consume GET /api/history/stats.
@@ -13,7 +15,7 @@ import { useAuth } from "../../../lib/auth/store"
  * vistos, conceptos y bloques más trabajados).
  */
 
-type Rank = { name: string; count: number }
+type Rank = { name: string; nameEn: string; count: number }
 
 const MEDAL_COLOR = ["text-amber-300", "text-slate-300", "text-orange-400"]
 
@@ -40,12 +42,14 @@ const RankBadge = ({ rank }: { rank: number }) =>
     <span className="w-6 shrink-0 text-center text-sm font-semibold text-white/40">{rank}</span>
   )
 
-const RankRow = ({ rank, item, max }: { rank: number; item: Rank; max: number }) => (
+const RankRow = ({ rank, item, max }: { rank: number; item: Rank; max: number }) => {
+  const { lang } = useI18n()
+  return (
   <div className="flex items-center gap-3">
     <RankBadge rank={rank} />
     <div className="flex-1">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-white">{item.name}</span>
+        <span className="text-sm font-medium text-white">{pickText(item.name, item.nameEn, lang)}</span>
         <span className="text-sm text-neon-cyan">
           {item.count} {item.count === 1 ? "clip" : "clips"}
         </span>
@@ -55,9 +59,11 @@ const RankRow = ({ rank, item, max }: { rank: number; item: Rank; max: number })
       </div>
     </div>
   </div>
-)
+  )
+}
 
 const RankPanel = ({ title, items }: { title: string; items: Rank[] }) => {
+  const { t } = useI18n()
   const max = items[0]?.count ?? 0
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
@@ -66,7 +72,7 @@ const RankPanel = ({ title, items }: { title: string; items: Rank[] }) => {
         <Info className="h-4 w-4 text-white/30" />
       </div>
       {items.length === 0 ? (
-        <p className="text-sm text-white/40">Aún no hay datos.</p>
+        <p className="text-sm text-white/40">{t("mi-juego.no-data", "Aún no hay datos.")}</p>
       ) : (
         <div className="space-y-4">
           {items.map((item, i) => (
@@ -89,9 +95,10 @@ const StoryCard = ({
   block: string
   name?: string
 }) => {
-  const month = new Date().toLocaleDateString("es-ES", { month: "long", year: "numeric" })
+  const { t, lang } = useI18n()
+  const month = new Date().toLocaleDateString(lang === "en" ? "en-US" : "es-ES", { month: "long", year: "numeric" })
   const monthLabel = month.charAt(0).toUpperCase() + month.slice(1)
-  const displayName = name?.trim() || "Tu resumen"
+  const displayName = name?.trim() || t("mi-juego.story.default-name", "Tu resumen")
   const topConcepts = concepts.slice(0, 3)
 
   return (
@@ -127,11 +134,11 @@ const StoryCard = ({
           {monthLabel}
         </p>
         <p className="font-display text-7xl font-bold leading-none text-white">{minutes}</p>
-        <p className="mt-1 text-sm font-bold uppercase tracking-wide text-white">Min aprendiendo</p>
+        <p className="mt-1 text-sm font-bold uppercase tracking-wide text-white">{t("mi-juego.story.minutes-label", "Min aprendiendo")}</p>
 
         {topConcepts.length > 0 && (
           <div className="mt-3 w-full rounded-xl border border-neon-cyan/40 px-3 py-2.5">
-            <p className="text-xs font-bold uppercase tracking-wide text-neon-cyan">Conceptos más trabajados</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-neon-cyan">{t("mi-juego.top-concepts", "Conceptos más trabajados")}</p>
             <div className="mt-1.5 divide-y divide-neon-cyan/20">
               {topConcepts.map((c) => (
                 <p key={c} className="py-1.5 font-display text-base font-bold uppercase text-white">
@@ -144,7 +151,7 @@ const StoryCard = ({
 
         {block && (
           <div className="mt-2.5 w-full rounded-xl border border-neon-cyan/40 px-3 py-2.5">
-            <p className="text-xs font-bold uppercase tracking-wide text-neon-cyan">Bloque principal</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-neon-cyan">{t("mi-juego.top-block", "Bloque principal")}</p>
             <p className="mt-1 line-clamp-2 font-display text-base font-bold uppercase leading-snug text-white">{block}</p>
           </div>
         )}
@@ -165,6 +172,7 @@ const ShareSummaryButton = ({
   block: string
   name?: string
 }) => {
+  const { t } = useI18n()
   const [busy, setBusy] = useState(false)
   const canShareImage = useMemo(() => {
     try {
@@ -177,7 +185,15 @@ const ShareSummaryButton = ({
   const onClick = async () => {
     setBusy(true)
     try {
-      const blob = await renderMiJuegoStory({ minutes, concepts, block, name })
+      const blob = await renderMiJuegoStory({
+        minutes,
+        concepts,
+        block,
+        name,
+        minutesLabel: t("mi-juego.story.minutes-label", "Min aprendiendo").toUpperCase(),
+        conceptsLabel: t("mi-juego.top-concepts", "Conceptos más trabajados").toUpperCase(),
+        blockLabel: t("mi-juego.top-block", "Bloque principal").toUpperCase(),
+      })
       const file = new File([blob], "mi-juego-pfr.png", { type: "image/png" })
       if (canShareImage && navigator.canShare?.({ files: [file] })) {
         try {
@@ -211,56 +227,68 @@ const ShareSummaryButton = ({
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-neon-cyan/50 py-3 text-sm font-semibold text-neon-cyan transition hover:bg-neon-cyan/10 disabled:opacity-60"
       >
         {canShareImage ? <Share2 className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-        {busy ? "Generando…" : canShareImage ? "Compartir en Instagram" : "Descargar imagen"}
+        {busy
+          ? t("mi-juego.share.generating", "Generando…")
+          : canShareImage
+            ? t("mi-juego.share.instagram", "Compartir en Instagram")
+            : t("mi-juego.share.download", "Descargar imagen")}
       </button>
       <p className="mt-3 text-center text-xs text-white/50">
-        {canShareImage ? "Se abrirá tu app para compartir la Story." : "Descárgala y compártela donde quieras."}
+        {canShareImage
+          ? t("mi-juego.share.hint-share", "Se abrirá tu app para compartir la Story.")
+          : t("mi-juego.share.hint-download", "Descárgala y compártela donde quieras.")}
       </p>
     </>
   )
 }
 
-const EmptyState = () => (
-  <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
-    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-neon-cyan">
-      <LineChart className="h-6 w-6" />
+const EmptyState = () => {
+  const { t } = useI18n()
+  return (
+    <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-neon-cyan">
+        <LineChart className="h-6 w-6" />
+      </div>
+      <h2 className="mt-5 text-xl font-bold text-white">{t("mi-juego.empty.title", "Todavía no hay actividad suficiente")}</h2>
+      <p className="mt-2 max-w-sm text-sm text-white/60">
+        {t("mi-juego.empty.subtitle", "Empieza a ver clips y análisis para construir tu historial de aprendizaje.")}
+      </p>
+      <div className="mt-6 flex gap-3">
+        <Link
+          to="/app/inicio"
+          className="rounded-lg border border-white/15 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/5"
+        >
+          {t("mi-lista.empty.go-home", "Ir a Inicio")}
+        </Link>
+        <Link
+          to="/app/explorar"
+          className="flex items-center gap-2 rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
+        >
+          <Compass className="h-4 w-4" />
+          {t("mi-lista.empty.go-explore", "Ir a Explorar")}
+        </Link>
+      </div>
     </div>
-    <h2 className="mt-5 text-xl font-bold text-white">Todavía no hay actividad suficiente</h2>
-    <p className="mt-2 max-w-sm text-sm text-white/60">
-      Empieza a ver clips y análisis para construir tu historial de aprendizaje.
-    </p>
-    <div className="mt-6 flex gap-3">
-      <Link
-        to="/app/inicio"
-        className="rounded-lg border border-white/15 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/5"
-      >
-        Ir a Inicio
-      </Link>
-      <Link
-        to="/app/explorar"
-        className="flex items-center gap-2 rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
-      >
-        <Compass className="h-4 w-4" />
-        Ir a Explorar
-      </Link>
-    </div>
-  </div>
-)
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Página
 // ---------------------------------------------------------------------------
 
 const MiJuego = () => {
+  const { t, lang } = useI18n()
   const { data: stats, loading, error } = useApi(getStats, [])
   const { user } = useAuth()
   const name = user?.displayName ?? undefined
 
-  if (loading) return <main className="w-full py-8 text-sm text-white/40">Cargando...</main>
+  if (loading) return <main className="w-full py-8 text-sm text-white/40">{t("common.loading", "Cargando...")}</main>
   if (error)
     return (
       <main className="w-full py-8">
-        <p className="text-sm text-red-400/80">No se pudo cargar Mi Juego ({error}). ¿Has iniciado sesión?</p>
+        <p className="text-sm text-red-400/80">
+          {t("mi-juego.load-error", "No se pudo cargar Mi Juego ({error}). ¿Has iniciado sesión?", { error })}
+        </p>
       </main>
     )
   if (!stats) return null
@@ -271,8 +299,8 @@ const MiJuego = () => {
     <main className="w-full py-8">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">Mi Juego</h1>
-          <p className="mt-2 text-sm text-white/60">Tu actividad y progreso de aprendizaje.</p>
+          <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">{t("header.nav.mi-juego", "Mi Juego")}</h1>
+          <p className="mt-2 text-sm text-white/60">{t("mi-juego.subtitle", "Tu actividad y progreso de aprendizaje.")}</p>
         </div>
         {hasActivity && (
           <a
@@ -280,7 +308,7 @@ const MiJuego = () => {
             className="flex shrink-0 items-center gap-2 rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-4 py-2 text-sm font-semibold text-neon-cyan transition hover:bg-neon-cyan/20"
           >
             <Share2 className="h-4 w-4" />
-            Compartir story
+            {t("mi-juego.share-story", "Compartir story")}
           </a>
         )}
       </div>
@@ -291,14 +319,14 @@ const MiJuego = () => {
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-3">
-              <StatCard icon={Clock} value={stats.minutes} label="min aprendiendo" />
-              <StatCard icon={Clapperboard} value={stats.clipsViewed} label="clips vistos" />
-              <StatCard icon={LineChart} value={stats.analysesViewed} label="análisis vistos" />
+              <StatCard icon={Clock} value={stats.minutes} label={t("mi-juego.stat.minutes", "min aprendiendo")} />
+              <StatCard icon={Clapperboard} value={stats.clipsViewed} label={t("mi-juego.stat.clips", "clips vistos")} />
+              <StatCard icon={LineChart} value={stats.analysesViewed} label={t("mi-juego.stat.analyses", "análisis vistos")} />
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <RankPanel title="Conceptos más trabajados" items={stats.concepts} />
-              <RankPanel title="Bloques más trabajados" items={stats.blocks} />
+              <RankPanel title={t("mi-juego.top-concepts", "Conceptos más trabajados")} items={stats.concepts} />
+              <RankPanel title={t("mi-juego.top-blocks", "Bloques más trabajados")} items={stats.blocks} />
             </div>
 
             <div className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
@@ -306,24 +334,25 @@ const MiJuego = () => {
                 <Info className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-sm font-semibold text-white">¿Qué significa esto?</p>
+                <p className="text-sm font-semibold text-white">{t("mi-juego.explainer.title", "¿Qué significa esto?")}</p>
                 <p className="mt-1 text-sm leading-relaxed text-white/60">
-                  "Vistos" cuenta todo lo que has empezado a ver (no hace falta acabarlo), y "min
-                  aprendiendo" suma el tiempo reproducido de todo ello. Los rankings de conceptos y
-                  bloques se calculan igual: cuanto más contenido consumas, más preciso será tu resumen.
+                  {t(
+                    "mi-juego.explainer.body",
+                    "\"Vistos\" cuenta todo lo que has empezado a ver (no hace falta acabarlo), y \"min aprendiendo\" suma el tiempo reproducido de todo ello. Los rankings de conceptos y bloques se calculan igual: cuanto más contenido consumas, más preciso será tu resumen.",
+                  )}
                 </p>
               </div>
             </div>
           </div>
 
           <aside id="resumen-story" className="scroll-mt-20 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-            <h2 className="text-lg font-bold text-white">Tu resumen de aprendizaje</h2>
-            <p className="mt-1 text-sm text-white/50">Vista previa (formato story)</p>
+            <h2 className="text-lg font-bold text-white">{t("mi-juego.story-heading", "Tu resumen de aprendizaje")}</h2>
+            <p className="mt-1 text-sm text-white/50">{t("mi-juego.story-preview", "Vista previa (formato story)")}</p>
             <div className="mt-4">
               <StoryCard
                 minutes={stats.minutes}
-                concepts={stats.concepts.slice(0, 3).map((c) => c.name)}
-                block={stats.blocks[0]?.name ?? ""}
+                concepts={stats.concepts.slice(0, 3).map((c) => pickText(c.name, c.nameEn, lang))}
+                block={pickText(stats.blocks[0]?.name ?? "", stats.blocks[0]?.nameEn, lang)}
                 name={name}
               />
             </div>

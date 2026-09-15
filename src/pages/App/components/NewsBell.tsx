@@ -1,20 +1,22 @@
 import { useEffect, useRef, useState } from "react"
 import { Bell, ChevronDown, History } from "lucide-react"
 import { getNews, markAllNewsRead, type NewsItem } from "../../../lib/api/news"
+import { useI18n, type TFunc } from "../../../lib/i18n/store"
 
 /** "Hace X" relativo, mismo criterio que el backend usa para comentarios (Ago en ContentMapper). */
-const fmt = (iso: string) => {
+const fmt = (iso: string, t: TFunc, lang: string) => {
   const d = new Date(iso.endsWith("Z") ? iso : `${iso}Z`)
   if (Number.isNaN(d.getTime())) return ""
   const diffMin = (Date.now() - d.getTime()) / 60000
-  if (diffMin < 1) return "Justo ahora"
-  if (diffMin < 60) return `Hace ${Math.floor(diffMin)} min`
-  if (diffMin < 60 * 24) return `Hace ${Math.floor(diffMin / 60)} h`
-  return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short" })
+  if (diffMin < 1) return t("news-bell.time.now", "Justo ahora")
+  if (diffMin < 60) return t("news-bell.time.minutes", "Hace {min} min", { min: Math.floor(diffMin) })
+  if (diffMin < 60 * 24) return t("news-bell.time.hours", "Hace {hours} h", { hours: Math.floor(diffMin / 60) })
+  return d.toLocaleDateString(lang === "en" ? "en-US" : "es-ES", { day: "2-digit", month: "short" })
 }
 
 /** Campana de noticias en el header: contador de no leídas + panel desplegable. */
 const NewsBell = () => {
+  const { t, lang } = useI18n()
   const [items, setItems] = useState<NewsItem[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loaded, setLoaded] = useState(false)
@@ -82,7 +84,7 @@ const NewsBell = () => {
     <div className="relative" ref={rootRef}>
       <button
         onClick={toggle}
-        aria-label="Noticias"
+        aria-label={t("news-bell.title", "Noticias")}
         className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:text-white"
       >
         <Bell className="h-5 w-5" />
@@ -99,11 +101,11 @@ const NewsBell = () => {
               queda a su derecha (el panel no está pegado al borde de la pantalla) — por eso se ancla
               al viewport con `fixed` hasta `sm`, donde ya sobra espacio para el `absolute right-0`. */}
           <div className="fixed inset-x-3 top-16 z-40 max-h-[70vh] overflow-y-auto rounded-xl border border-white/10 bg-midnight p-2 shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-80">
-            <p className="border-b border-white/10 px-3 py-2 text-sm font-semibold text-white">Noticias</p>
+            <p className="border-b border-white/10 px-3 py-2 text-sm font-semibold text-white">{t("news-bell.title", "Noticias")}</p>
             {!loaded ? (
-              <p className="px-3 py-6 text-center text-sm text-white/40">Cargando...</p>
+              <p className="px-3 py-6 text-center text-sm text-white/40">{t("common.loading", "Cargando...")}</p>
             ) : items.length === 0 ? (
-              <p className="px-3 py-6 text-center text-sm text-white/40">Todavía no hay noticias.</p>
+              <p className="px-3 py-6 text-center text-sm text-white/40">{t("news-bell.empty", "Todavía no hay noticias.")}</p>
             ) : (
               <>
                 {(() => {
@@ -117,12 +119,12 @@ const NewsBell = () => {
                             <div key={n.id} className="rounded-lg px-3 py-2.5 transition hover:bg-white/5">
                               <p className="text-sm font-semibold text-white">{n.title}</p>
                               <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-white/60">{n.body}</p>
-                              <p className="mt-1.5 text-[11px] text-white/35">{fmt(n.createdAtUtc)}</p>
+                              <p className="mt-1.5 text-[11px] text-white/35">{fmt(n.createdAtUtc, t, lang)}</p>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="px-3 py-6 text-center text-sm text-white/40">No hay noticias nuevas.</p>
+                        <p className="px-3 py-6 text-center text-sm text-white/40">{t("news-bell.empty-fresh", "No hay noticias nuevas.")}</p>
                       )}
 
                       {old.length > 0 && (
@@ -133,7 +135,7 @@ const NewsBell = () => {
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-white/50 transition hover:text-white/80"
                           >
                             <History className="h-3.5 w-3.5" />
-                            Leídas anteriormente ({old.length})
+                            {t("news-bell.read-earlier", "Leídas anteriormente ({count})", { count: old.length })}
                             <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform ${readOpen ? "rotate-180" : ""}`} />
                           </button>
 
@@ -143,7 +145,7 @@ const NewsBell = () => {
                                 <div key={n.id} className="rounded-lg px-3 py-2.5 opacity-60 transition hover:bg-white/5 hover:opacity-100">
                                   <p className="text-sm font-semibold text-white">{n.title}</p>
                                   <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-white/60">{n.body}</p>
-                                  <p className="mt-1.5 text-[11px] text-white/35">{fmt(n.createdAtUtc)}</p>
+                                  <p className="mt-1.5 text-[11px] text-white/35">{fmt(n.createdAtUtc, t, lang)}</p>
                                 </div>
                               ))}
                             </div>

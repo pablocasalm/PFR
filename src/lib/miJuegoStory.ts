@@ -3,7 +3,17 @@
  * compartir en Stories. Se dibuja en un canvas 1080×1920 con la identidad de PFR,
  * replicando la vista previa (StoryCard). Devuelve un PNG (Blob).
  */
-export type StoryData = { minutes: number; concepts: string[]; block: string; name?: string }
+export type StoryData = {
+  minutes: number
+  concepts: string[]
+  block: string
+  name?: string
+  // Textos ya traducidos por el llamante (i18n) — con default en español para no romper
+  // si algún caller antiguo no los pasa.
+  minutesLabel?: string
+  conceptsLabel?: string
+  blockLabel?: string
+}
 
 const CYAN = "#28f0e0"
 
@@ -66,7 +76,15 @@ function wrapLines(ctx: CanvasRenderingContext2D, text: string, weight: number, 
   return { lines, size }
 }
 
-export async function renderMiJuegoStory({ minutes, concepts, block, name }: StoryData): Promise<Blob> {
+export async function renderMiJuegoStory({
+  minutes,
+  concepts,
+  block,
+  name,
+  minutesLabel = "MIN APRENDIENDO",
+  conceptsLabel = "CONCEPTOS MÁS TRABAJADOS",
+  blockLabel = "BLOQUE PRINCIPAL",
+}: StoryData): Promise<Blob> {
   const W = 1080
   const H = 1920
   const canvas = document.createElement("canvas")
@@ -239,7 +257,7 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
   const subSize = 48
   const subBaseline = y + capH(subSize)
   ctx.font = `700 ${subSize}px 'Space Grotesk', sans-serif`
-  ctx.fillText("MIN APRENDIENDO", cx, subBaseline)
+  ctx.fillText(minutesLabel, cx, subBaseline)
   y = subBaseline + descH(subSize) + 50
 
   // --- Caja: conceptos más trabajados ---
@@ -260,7 +278,7 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
 
     ctx.fillStyle = CYAN
     ctx.font = `700 ${labelSize}px 'Space Grotesk', sans-serif`
-    ctx.fillText("CONCEPTOS MÁS TRABAJADOS", cx, y + labelSize * 1.7)
+    ctx.fillText(conceptsLabel, cx, y + labelSize * 1.7)
 
     let rowY = y + labelAreaH
     topList.forEach((c, i) => {
@@ -302,7 +320,7 @@ export async function renderMiJuegoStory({ minutes, concepts, block, name }: Sto
 
     ctx.fillStyle = CYAN
     ctx.font = `700 ${labelSize}px 'Space Grotesk', sans-serif`
-    ctx.fillText("BLOQUE PRINCIPAL", cx, y + labelSize * 1.7)
+    ctx.fillText(blockLabel, cx, y + labelSize * 1.7)
 
     ctx.font = `700 ${size}px 'Space Grotesk', sans-serif`
     ctx.fillStyle = "#fff"

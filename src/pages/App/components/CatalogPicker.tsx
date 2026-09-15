@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { X, Plus } from "lucide-react"
 import { lookup, type CatalogType } from "../../../lib/api/admin"
+import { useI18n } from "../../../lib/i18n/store"
 
 /**
  * Buscador genérico reutilizable (jugadores / sedes / categorías / conceptos). El front manda
@@ -35,13 +36,14 @@ const CatalogPicker = ({
   block?: string // para type="concept": filtra sugerencias por bloque
   extraSuggestions?: string[] // ver comentario de arriba
 }) => {
+  const { t } = useI18n()
   const [q, setQ] = useState("")
   const [serverSuggestions, setServerSuggestions] = useState<string[]>([])
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
     let active = true
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       try {
         const res = await lookup(type, q, block)
         if (active) setServerSuggestions(res)
@@ -51,7 +53,7 @@ const CatalogPicker = ({
     }, 200)
     return () => {
       active = false
-      clearTimeout(t)
+      clearTimeout(timer)
     }
   }, [q, type, block])
 
@@ -135,7 +137,7 @@ const CatalogPicker = ({
                     onClick={() => add(q)}
                     className="flex w-full items-center gap-2 border-t border-white/10 px-4 py-2 text-left text-sm text-neon-cyan transition hover:bg-white/5"
                   >
-                    <Plus className="h-3.5 w-3.5" /> Crear «{q.trim()}»
+                    <Plus className="h-3.5 w-3.5" /> {t("catalog-picker.create", "Crear")} «{q.trim()}»
                   </button>
                 )}
               </div>
