@@ -138,18 +138,18 @@ const ContinueCard = ({ item }: { item: ContentItem }) => {
   return (
     <Link
       to={watchHref(item)}
-      className="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition hover:border-white/20 sm:flex-row"
+      className="flex w-[85vw] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition hover:border-white/20 sm:w-80 sm:flex-row"
     >
-      <div className="relative w-full shrink-0 sm:w-56">
-        <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-full sm:h-full sm:min-h-[150px]" />
+      <div className="relative w-full shrink-0 sm:w-32">
+        <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-full sm:h-full sm:min-h-[120px]" />
         <span className="absolute inset-0 flex items-center justify-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-white/80 bg-black/30 backdrop-blur-sm">
-            <Play className="h-5 w-5 text-white" fill="currentColor" />
+          <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/80 bg-black/30 backdrop-blur-sm sm:h-14 sm:w-14">
+            <Play className="h-4 w-4 text-white sm:h-5 sm:w-5" fill="currentColor" />
           </span>
         </span>
       </div>
-      <div className="flex flex-1 flex-col justify-center gap-4 p-4 sm:p-6">
-        <h3 className="text-base font-medium leading-snug text-white">{pickText(item.title, item.titleEn, lang)}</h3>
+      <div className="flex flex-1 flex-col justify-center gap-3 p-4">
+        <h3 className="line-clamp-2 text-sm font-medium leading-snug text-white">{pickText(item.title, item.titleEn, lang)}</h3>
         <div>
           <p className="mb-2 text-sm text-neon-cyan">
             {formatDuration(current)} / {formatDuration(item.durationSeconds)}
@@ -268,7 +268,10 @@ const Inicio = () => {
       {continueWatching.length > 0 && (
         <section>
           <SectionHeading title={t("inicio.section.continue", "Continúa viendo")} />
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          {/* Fila de ancho fijo, nunca en rejilla: con el límite del backend (5) cabe entera sin
+              scroll en escritorio; en pantallas más pequeñas (táctiles) se desliza en horizontal
+              en vez de apilarse en vertical (§reporte de beta). */}
+          <div className="flex snap-x snap-mandatory gap-5 overflow-x-auto scrollbar-hide pb-1">
             {continueWatching.map((item) => (
               <ContinueCard key={item.id} item={item} />
             ))}
