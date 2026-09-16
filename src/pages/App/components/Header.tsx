@@ -28,14 +28,6 @@ const Header = () => {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const { user } = useAuth()
   const { t } = useI18n()
-  // Admin tiene 4 pestañas más que un usuario normal (Publicar, Invitaciones, Reportes,
-  // Noticias) y no cabían ya en el punto de corte "xl" (1280px) pensado para las 5 base.
-  // "2xl" (1536px) se probó primero pero es más ancho que la ventana de Safari a pantalla
-  // completa en portátiles normales (13"/14"), así que Admin veía el menú inferior incluso
-  // maximizado — 1460px es el mínimo real medido para que quepan las 9 pestañas + buscador
-  // sin solaparse (§reporte de beta #52, regresión tras el primer arreglo).
-  const navBp = isAdmin(user) ? "min-[1460px]" : "xl"
-
   const submitSearch = () => {
     const q = query.trim()
     if (q) navigate(`/app/search?q=${encodeURIComponent(q)}`)
@@ -58,8 +50,12 @@ const Header = () => {
         </div>
       </Link>
 
-      {/* Nav (solo escritorio; en móvil/tablet se usa la barra inferior) */}
-      <nav className={`hidden shrink-0 items-center gap-5 ${navBp === "xl" ? "xl:flex" : "min-[1460px]:flex"}`}>
+      {/* Nav (solo escritorio; en móvil/tablet se usa la barra inferior). Las pestañas
+          exclusivas de Admin (Invitaciones/Reportes/Noticias) NO están aquí — viven solo en
+          el desplegable del avatar (SessionControl), para que el nav de Admin ocupe lo mismo
+          que el de un usuario normal y no dependa de la resolución (§reporte de beta: en
+          portátil se veía "como en tablet" por falta de espacio con las 4 pestañas de más). */}
+      <nav className="hidden shrink-0 items-center gap-5 xl:flex">
         {NAV_ITEMS.map(({ key, label, to }) => (
           <NavLink
             key={to}
@@ -94,51 +90,10 @@ const Header = () => {
             {t("header.nav.publicar", "Publicar")}
           </NavLink>
         )}
-        {isAdmin(user) && (
-          <NavLink
-            to="/app/admin/invitaciones"
-            className={({ isActive }) =>
-              `flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                isActive ? "text-neon-cyan" : "text-white/60 hover:text-white"
-              }`
-            }
-          >
-            <Ticket className="h-4 w-4" />
-            {t("admin-invites.title", "Invitaciones")}
-          </NavLink>
-        )}
-        {isAdmin(user) && (
-          <NavLink
-            to="/app/admin/reportes"
-            className={({ isActive }) =>
-              `flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                isActive ? "text-neon-cyan" : "text-white/60 hover:text-white"
-              }`
-            }
-          >
-            <Inbox className="h-4 w-4" />
-            {t("admin-feedback.title", "Reportes")}
-          </NavLink>
-        )}
-        {isAdmin(user) && (
-          <NavLink
-            to="/app/admin/noticias"
-            className={({ isActive }) =>
-              `flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                isActive ? "text-neon-cyan" : "text-white/60 hover:text-white"
-              }`
-            }
-          >
-            <Megaphone className="h-4 w-4" />
-            {t("header.nav.noticias", "Noticias")}
-          </NavLink>
-        )}
       </nav>
 
       {/* Buscador (escritorio) */}
-      <div
-        className={`ml-auto hidden max-w-xl flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 ${navBp === "xl" ? "xl:flex" : "min-[1460px]:flex"}`}
-      >
+      <div className="ml-auto hidden max-w-xl flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 xl:flex">
         <Search className="h-4 w-4 text-white/40" />
         <input
           value={query}
@@ -152,7 +107,7 @@ const Header = () => {
       {/* Buscar (móvil/tablet): abre el overlay de búsqueda, no navega directo */}
       <button
         onClick={() => setMobileSearchOpen(true)}
-        className={`ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:text-white ${navBp === "xl" ? "xl:hidden" : "min-[1460px]:hidden"}`}
+        className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:text-white xl:hidden"
         aria-label="Buscar"
       >
         <Search className="h-5 w-5" />

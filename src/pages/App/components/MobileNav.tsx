@@ -1,13 +1,12 @@
 import { NavLink } from "react-router-dom"
 import { Home, Compass, Bookmark, BarChart2, BookOpen } from "lucide-react"
 import { useI18n } from "../../../lib/i18n/store"
-import { useAuth, isAdmin } from "../../../lib/auth/store"
 
 /**
  * Barra de navegación inferior — móvil y tablet (xl:hidden; el nav de escritorio del
- * Header no cabe bien por debajo de 1280px, ni siquiera en iPad). Para Admin, que tiene 4
- * pestañas más en el Header, el corte se retrasa a 2xl (§reporte de beta #52) — mismo
- * punto que usa Header.tsx, para que ninguno de los dos deje un hueco sin nav.
+ * Header no cabe bien por debajo de 1280px, ni siquiera en iPad). Mismo punto de corte
+ * para todos los roles: las pestañas de Admin ya no viven en el nav de escritorio (solo
+ * en el desplegable del avatar), así que no hace falta un caso especial aquí tampoco.
  *
  * Sin "Buscar": la lupa vive ahora en el Header (junto al avatar, como en escritorio) y
  * abre el overlay de búsqueda en vez de ser una pestaña propia — antes navegaba directo a
@@ -25,13 +24,8 @@ const ITEMS = [
 
 const MobileNav = () => {
   const { t } = useI18n()
-  const { user } = useAuth()
-  // Mismo punto de corte que Header.tsx — ver ahí el porqué de 1460px para Admin.
-  const navBp = isAdmin(user) ? "min-[1460px]" : "xl"
   return (
-    <nav
-      className={`fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-white/10 bg-black/80 px-1 py-2 backdrop-blur-md ${navBp === "xl" ? "xl:hidden" : "min-[1460px]:hidden"}`}
-    >
+    <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-white/10 bg-black/80 px-1 py-2 backdrop-blur-md xl:hidden">
       {ITEMS.map(({ to, key, label, icon: Icon }) => (
         <NavLink
           key={to}
