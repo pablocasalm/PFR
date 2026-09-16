@@ -14,13 +14,13 @@ import { getAnalysisDetail } from "../../../lib/api/analyses"
 import type { AnalysisDetail, Chapter, Comment, ContentItem } from "../../../lib/api/types"
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
 import { useSavedItems, isSaved, toggleSavedItem } from "../../../lib/saved/store"
-import HlsPlayer from "../../../lib/player/VideoPlayer"
+import HlsPlayer, { type VideoPlayerHandle } from "../../../lib/player/VideoPlayer"
 import { NextUpCard, pickNextRelated, useAutoplay } from "../../../lib/player/NextUp"
 import { saveProgress } from "../../../lib/api/history"
 import { toggleLike, addComment } from "../../../lib/api/social"
 import { useShare } from "../../../lib/share"
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import EditContentLink from "../components/EditContentLink"
 import WatchedBadge from "../components/WatchedBadge"
 import { useAuth } from "../../../lib/auth/store"
@@ -56,7 +56,15 @@ const myInitials = (email: string, displayName?: string | null) => {
 // Player (placeholder hasta el bloque 6)
 // ---------------------------------------------------------------------------
 
-const VideoPlayer = ({ video, endSlot }: { video: AnalysisDetail; endSlot?: (dismiss: () => void) => React.ReactNode }) => {
+const VideoPlayer = ({
+  video,
+  endSlot,
+  playerRef,
+}: {
+  video: AnalysisDetail
+  endSlot?: (dismiss: () => void) => React.ReactNode
+  playerRef?: React.Ref<VideoPlayerHandle>
+}) => {
   const { lang } = useI18n()
   // Los títulos de los marcadores de capítulo (tooltip sobre la barra de progreso) dependen del
   // idioma de la interfaz, no del idioma del audio que se esté reproduciendo (§reporte de beta):
@@ -64,6 +72,7 @@ const VideoPlayer = ({ video, endSlot }: { video: AnalysisDetail; endSlot?: (dis
   const chapters = video.chapters.map((ch) => ({ startSeconds: ch.startSeconds, title: pickText(ch.title, ch.titleEn, lang) }))
   return (
     <HlsPlayer
+      ref={playerRef}
       src={video.videoUrl}
       srcEn={video.videoUrlEn ?? undefined}
       poster={video.thumbnailUrl}
@@ -127,7 +136,7 @@ const SaveAction = ({ item }: { item: ContentItem }) => {
   )
 }
 
-const ChaptersPanel = ({ video }: { video: AnalysisDetail }) => {
+const ChaptersPanel = ({ video, onChapterClick }: { video: AnalysisDetail; onChapterClick: (seconds: number) => void }) => {
   const { t, lang } = useI18n()
   return (
   <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
@@ -140,18 +149,26 @@ const ChaptersPanel = ({ video }: { video: AnalysisDetail }) => {
     <div className="space-y-1">
       {video.chapters.map((ch: Chapter, i) =>
         i === 0 ? (
-          <div key={i} className="flex items-center gap-3 rounded-xl border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-3">
+          <button
+            key={i}
+            onClick={() => onChapterClick(ch.startSeconds)}
+            className="flex w-full items-center gap-3 rounded-xl border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-3 text-left transition hover:bg-neon-cyan/15"
+          >
             <span className="w-12 shrink-0 text-xs font-semibold tabular-nums text-neon-cyan">{formatDuration(ch.startSeconds)}</span>
-            <span className="flex-1 text-sm font-semibold text-white">{pickText(ch.title, ch.titleEn, lang)}</span>
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-neon-cyan text-midnight">
+            <span className="line-clamp-2 flex-1 text-sm font-semibold text-white">{pickText(ch.title, ch.titleEn, lang)}</span>
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neon-cyan text-midnight">
               <Play className="h-3.5 w-3.5" fill="currentColor" />
             </span>
-          </div>
+          </button>
         ) : (
-          <button key={i} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5">
+          <button
+            key={i}
+            onClick={() => onChapterClick(ch.startSeconds)}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5"
+          >
             <Play className="h-2.5 w-2.5 shrink-0 text-white/30" fill="currentColor" />
             <span className="w-12 shrink-0 text-xs tabular-nums text-white/50">{formatDuration(ch.startSeconds)}</span>
-            <span className="flex-1 truncate text-sm text-white/90">{pickText(ch.title, ch.titleEn, lang)}</span>
+            <span className="line-clamp-2 flex-1 text-sm text-white/90">{pickText(ch.title, ch.titleEn, lang)}</span>
           </button>
         )
       )}
@@ -335,6 +352,7 @@ const Video = () => {
   const id = params.get("v") ?? ""
   const { data: video, loading, error } = useApi(() => getAnalysisDetail(id), [id])
   const [autoplay, setAutoplay] = useAutoplay()
+  const playerRef = useRef<VideoPlayerHandle>(null)
 
   if (loading) return <main className="w-full py-8 text-sm text-white/40">{t("watch.loading-analysis", "Cargando análisis...")}</main>
   if (error || !video)
@@ -357,6 +375,7 @@ const Video = () => {
         <div className="space-y-6">
           <VideoPlayer
             video={video}
+            playerRef={playerRef}
             endSlot={
               nextAnalysis
                 ? (dismiss: () => void) => (
@@ -398,7 +417,9 @@ const Video = () => {
 
         {/* Rail derecho */}
         <aside className="space-y-6">
-          {video.chapters.length > 0 && <ChaptersPanel video={video} />}
+          {video.chapters.length > 0 && (
+            <ChaptersPanel video={video} onChapterClick={(seconds) => playerRef.current?.seekTo(seconds)} />
+          )}
           <KeepLearningPanel next={video.related[0]} />
         </aside>
       </div>

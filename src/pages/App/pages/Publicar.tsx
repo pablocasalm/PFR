@@ -76,7 +76,7 @@ const resolveConceptCode = (code: string): { block: string; concept: string } | 
 }
 
 type ImportChapter = { time: string; title: string; title_en?: string }
-type ImportClip = { clip_id?: string; title: string; title_en?: string; description?: string; description_en?: string; concepts?: string[] }
+type ImportClip = { clip_id?: string; title: string; title_en?: string; description?: string; description_en?: string; tags?: string[] }
 type ImportJson = {
   match_id?: string
   title: string
@@ -187,7 +187,7 @@ const Publicar = () => {
 
     const newClips: ClipDraft[] = json.clips.map((c) => {
       const byBlock = new Map<string, string[]>()
-      for (const code of c.concepts ?? []) {
+      for (const code of c.tags ?? []) {
         const resolved = resolveConceptCode(code)
         if (!resolved) {
           warnings.push(t("publicar.import.bad-code", 'Código de concepto no reconocido: "{code}" (clip "{title}")', { code, title: c.title }))

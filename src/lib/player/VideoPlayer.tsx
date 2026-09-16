@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
 import Hls from "hls.js"
 import { Play, Pause, Volume2, VolumeX, Maximize, Settings, Captions } from "lucide-react"
 import { formatDuration } from "../format"
@@ -14,6 +14,10 @@ import { useI18n } from "../i18n/store"
  */
 
 export type PlayerChapter = { startSeconds: number; title: string }
+
+/** API imperativa expuesta vía ref — permite saltar a un momento del vídeo desde fuera
+ * (p. ej. al hacer clic en un capítulo listado en un panel aparte, §reporte de beta). */
+export type VideoPlayerHandle = { seekTo: (seconds: number) => void }
 
 // Safari en iPhone no soporta Fullscreen API sobre el contenedor (solo en iPad, iPadOS 16.4+):
 // hay que usar el método nativo del propio <video>, que además dispara sus propios eventos
@@ -45,7 +49,7 @@ type Props = {
   endSlot?: (dismiss: () => void) => React.ReactNode
 }
 
-const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initialPosition, onProgress, onEnded, endSlot }: Props) => {
+const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, chapters = [], aspect = "16:9", initialPosition, onProgress, onEnded, endSlot }, ref) => {
   const { t } = useI18n()
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -56,6 +60,7 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
   const durationRef = useRef(0)
   const lastReportRef = useRef(0)
   const resumedRef = useRef(false)
+  const scrubbingRef = useRef(false)
   // Al cambiar de idioma (§HeyGen), se guarda aquí el punto/estado de reproducción justo antes
   // de recargar la fuente, para restaurarlo cuando el nuevo manifiesto esté listo — si no, cambiar
   // de idioma volvería siempre al minuto 0.
@@ -201,10 +206,27 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
     if (v) v.currentTime = Math.max(0, Math.min(seconds, duration || seconds))
   }
 
-  const onScrub = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const ratio = (e.clientX - rect.left) / rect.width
+  useImperativeHandle(ref, () => ({ seekTo }))
+
+  // Pointer Events (no onClick/onDrag): unifica ratón y táctil, y permite arrastrar continuo
+  // para avanzar/retroceder, no solo un tap puntual (§reporte de beta — en móvil no se podía
+  // "arrastrar el cursor" para buscar, solo tocar servía como único punto, si es que llegaba
+  // a registrarse el toque en vez de interpretarse como scroll de la página).
+  const scrubToClientX = (clientX: number, rect: DOMRect) => {
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
     seekTo(ratio * duration)
+  }
+  const onScrubStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    scrubbingRef.current = true
+    scrubToClientX(e.clientX, e.currentTarget.getBoundingClientRect())
+  }
+  const onScrubMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!scrubbingRef.current) return
+    scrubToClientX(e.clientX, e.currentTarget.getBoundingClientRect())
+  }
+  const onScrubEnd = () => {
+    scrubbingRef.current = false
   }
 
   const toggleMute = () => {
@@ -357,12 +379,22 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
 
       {/* Barra de controles */}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-12 opacity-0 transition group-hover:opacity-100">
-        {/* Progreso con marcadores de capítulo */}
-        <div className="relative mb-3 h-1.5 w-full cursor-pointer rounded-full bg-white/20" onClick={onScrub}>
+        {/* Progreso con marcadores de capítulo. touch-none evita que el gesto de arrastrar se
+            interprete como scroll de la página en móvil — sin esto, el primer intento de
+            arrastre se lo quedaba el navegador en vez de la barra. */}
+        <div
+          className="relative -my-2 flex h-5 w-full cursor-pointer touch-none items-center"
+          onPointerDown={onScrubStart}
+          onPointerMove={onScrubMove}
+          onPointerUp={onScrubEnd}
+          onPointerCancel={onScrubEnd}
+        >
+        <div className="relative h-1.5 w-full rounded-full bg-white/20">
           <div className="h-full rounded-full bg-neon-cyan" style={{ width: `${pct}%` }} />
           {chapters.map((ch) => (
             <button
               key={ch.startSeconds}
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation()
                 seekTo(ch.startSeconds)
@@ -372,6 +404,7 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
               style={{ left: `${duration > 0 ? (ch.startSeconds / duration) * 100 : 0}%` }}
             />
           ))}
+        </div>
         </div>
 
         <div className="flex items-center gap-3 text-white">
@@ -529,6 +562,6 @@ const VideoPlayer = ({ src, srcEn, poster, chapters = [], aspect = "16:9", initi
       </div>
     </div>
   )
-}
+})
 
 export default VideoPlayer
