@@ -9,6 +9,7 @@ import { Skeleton, CardGridSkeleton } from "../../../lib/ui/Skeleton"
 import CardRow from "../../../lib/ui/CardRow"
 import WatchedBadge from "../components/WatchedBadge"
 import EnglishBadge from "../components/EnglishBadge"
+import { TOUR_OPEN_FEEDBACK_EVENT } from "../components/FeedbackButton"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
 
@@ -83,50 +84,30 @@ const SectionHeading = ({ title, to }: { title: string; to?: string }) => {
   )
 }
 
-const Hero = ({ item }: { item: ContentItem | null }) => {
-  const { t, lang } = useI18n()
-  const title = item ? pickText(item.title, item.titleEn, lang) : t("inicio.hero.default-title", "Bienvenido a Padel Film Room")
-  const subtitle = item?.block
-    ? pickText(item.block, item.blockEn, lang)
-    : t("inicio.hero.default-subtitle", "Explora clips y análisis tácticos para mejorar tu juego.")
-  const concepts = item ? pickList(item.concepts, item.conceptsEn, lang) : []
+/**
+ * Banner de beta (§reporte de beta #58): sustituye al antiguo Hero a pantalla completa, que
+ * con el catálogo todavía pequeño solía salir vacío/negro y no aportaba nada. Abre el mismo
+ * modal de feedback que el botón flotante global, sin duplicar esa lógica.
+ *
+ * Para el lanzamiento oficial: no se ha borrado el diseño de Hero (recuperable del historial
+ * de git), pero el plan acordado es sustituirlo por una promo estática (título/subtítulo/CTA
+ * fijos en el código, editables a mano, sin fila en BD) en vez de traerlo de vuelta.
+ */
+const BetaBanner = () => {
+  const { t } = useI18n()
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/10">
-      <Thumb src={item?.thumbnailUrl} hue={205} className="absolute inset-0" />
-      <div className="absolute inset-0 bg-gradient-to-r from-midnight via-midnight/80 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-midnight/60 to-transparent" />
-
-      <div className="relative flex min-h-[260px] flex-col justify-center gap-4 p-6 sm:p-8 md:min-h-[360px] md:gap-5 md:p-12">
-        <span className="w-fit rounded-md bg-neon-cyan px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-midnight">
-          {t("inicio.hero.featured", "Destacado")}
-        </span>
-        <h1 className="max-w-md font-display text-3xl font-bold leading-[1.1] text-white sm:text-4xl md:text-6xl md:leading-[1.05]">
-          {title}
-        </h1>
-        <p className="max-w-sm text-sm leading-relaxed text-white/70">{subtitle}</p>
-        {item && item.type === "clip" && concepts.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {concepts.map((c) => (
-              <span
-                key={c}
-                className="rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-1 text-xs font-medium text-neon-cyan"
-              >
-                #{c}
-              </span>
-            ))}
-          </div>
-        )}
-        <div className="mt-2 flex items-center gap-3 sm:gap-5">
-          <Link
-            to={item ? watchHref(item) : "/app/explorar"}
-            className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-neon-cyan px-4 py-3 text-sm font-semibold text-midnight transition hover:brightness-110 sm:px-6"
-          >
-            <Play className="h-4 w-4" fill="currentColor" />
-            {t("inicio.hero.cta", "Ver contenido")}
-          </Link>
-          {item && <SaveButton item={item} variant="pill" />}
-        </div>
-      </div>
+    <section className="flex items-center gap-3.5 rounded-xl border border-white/15 border-l-[3px] border-l-neon-cyan bg-gradient-to-r from-neon-cyan/[0.08] to-transparent px-4 py-3.5 sm:gap-4">
+      <span className="h-2 w-2 shrink-0 rounded-full bg-neon-cyan shadow-[0_0_0_4px_rgba(40,240,224,0.14)]" />
+      <p className="flex-1 text-sm text-white">
+        <span className="font-semibold">{t("inicio.beta-banner.badge", "Beta")}</span>{" "}
+        {t("inicio.beta-banner.message", "— si ves algo que no cuadra o falta, cuéntanoslo.")}
+      </p>
+      <button
+        onClick={() => window.dispatchEvent(new CustomEvent(TOUR_OPEN_FEEDBACK_EVENT, { detail: true }))}
+        className="shrink-0 whitespace-nowrap rounded-full bg-neon-cyan px-4 py-2 text-xs font-bold text-midnight transition hover:brightness-110"
+      >
+        {t("inicio.beta-banner.cta", "Reportar")}
+      </button>
     </section>
   )
 }
@@ -262,7 +243,7 @@ const Inicio = () => {
 
   return (
     <main className="w-full space-y-12 py-8">
-      <Hero item={home?.hero ?? null} />
+      <BetaBanner />
 
       {/* Continúa viendo — solo si hay contenido iniciado y no completado */}
       {continueWatching.length > 0 && (
