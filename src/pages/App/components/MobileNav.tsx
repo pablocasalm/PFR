@@ -26,10 +26,11 @@ const ITEMS = [
 const MobileNav = () => {
   const { t } = useI18n()
   const { user } = useAuth()
-  const navBp = isAdmin(user) ? "2xl" : "xl"
+  // Mismo punto de corte que Header.tsx — ver ahí el porqué de 1460px para Admin.
+  const navBp = isAdmin(user) ? "min-[1460px]" : "xl"
   return (
     <nav
-      className={`fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-white/10 bg-black/80 px-1 py-2 backdrop-blur-md ${navBp === "2xl" ? "2xl:hidden" : "xl:hidden"}`}
+      className={`fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-white/10 bg-black/80 px-1 py-2 backdrop-blur-md ${navBp === "xl" ? "xl:hidden" : "min-[1460px]:hidden"}`}
     >
       {ITEMS.map(({ to, key, label, icon: Icon }) => (
         <NavLink
