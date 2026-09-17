@@ -171,6 +171,26 @@ export const getVideoStatus = (uid: string) =>
   apiGet<VideoStatus>(`/api/admin/videos/${uid}/status`)
 
 /**
+ * Espera a que Cloudflare termine de procesar un vídeo (duración real ya calculada, listo
+ * para reproducir) antes de seguir. Mientras un vídeo está "a medio procesar", Cloudflare no
+ * conoce aún su duración real y parece reservar minutos contra el plan a partir de una
+ * estimación provisional (a ojo, muy por encima de la real) — si se lanzan varias subidas
+ * seguidas sin esperar a que cada una termine de procesarse, esas reservas provisionales se
+ * acumulan y pueden superar el límite del plan aunque el contenido real esté muy por debajo
+ * (§ error 413 al publicar varios clips seguidos). Esperar uno a uno lo evita.
+ */
+export async function waitForVideoReady(uid: string, opts?: { timeoutMs?: number; intervalMs?: number }): Promise<void> {
+  const timeoutMs = opts?.timeoutMs ?? 5 * 60 * 1000
+  const intervalMs = opts?.intervalMs ?? 3000
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    const status = await getVideoStatus(uid).catch(() => null)
+    if (status?.ready) return
+    await new Promise((resolve) => setTimeout(resolve, intervalMs))
+  }
+}
+
+/**
  * Sube el fichero directo a Cloudflare con el protocolo tus (subida resumible), que admite
  * archivos grandes (>200 MB, límite de la subida básica que daba error 413) y reintentos.
  * La subida ya está creada en el backend, así que aquí solo se envían los datos (uploadUrl).

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Plus, Trash2, X, CheckCircle2 } from "lucide-react"
-import { createDirectUpload, uploadToCloudflare, uploadCaptions, readVideoDuration, publish, getConcepts, createPublishToken, type PublishChapterInput, type ConceptOption } from "../../../lib/api/admin"
+import { createDirectUpload, uploadToCloudflare, uploadCaptions, readVideoDuration, publish, getConcepts, createPublishToken, waitForVideoReady, type PublishChapterInput, type ConceptOption } from "../../../lib/api/admin"
 import { getBlocks } from "../../../lib/api/blocks"
 import { useApi } from "../../../lib/hooks/useApi"
 import CatalogPicker from "../components/CatalogPicker"
@@ -290,6 +290,11 @@ const Publicar = () => {
       const aDur = await readVideoDuration(aFile!)
       const aUp = await createDirectUpload(aTitle || aFile!.name, aFile!.size, publishToken)
       await uploadToCloudflare(aUp.uploadURL, aFile!, (p) => setProgress({ label: t("publicar.progress.analysis", "Subiendo análisis…"), percent: p }))
+      // Se espera a que Cloudflare termine de procesarlo (no solo de recibir los bytes) antes
+      // de lanzar la siguiente subida — ver waitForVideoReady, evita el 413 por minutos
+      // reservados de más mientras varios vídeos están a medio procesar a la vez.
+      setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
+      await waitForVideoReady(aUp.uid)
 
       let aUidEn: string | undefined
       if (aFileEn) {
@@ -297,6 +302,8 @@ const Publicar = () => {
         setProgress({ label: labelEnAnalysis, percent: 0 })
         const aUpEn = await createDirectUpload(`${aTitle || aFile!.name} (EN)`, aFileEn.size, publishToken)
         await uploadToCloudflare(aUpEn.uploadURL, aFileEn, (p) => setProgress({ label: labelEnAnalysis, percent: p }))
+        setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
+        await waitForVideoReady(aUpEn.uid)
         aUidEn = aUpEn.uid
       }
       // Los subtítulos no dependen del doblaje: se suben al vídeo español siempre y, si además
@@ -317,6 +324,10 @@ const Publicar = () => {
         const dur = await readVideoDuration(c.file!)
         const up = await createDirectUpload(c.title || c.file!.name, c.file!.size, publishToken)
         await uploadToCloudflare(up.uploadURL, c.file!, (p) => setProgress({ label, percent: p }))
+        // Ver comentario en la subida del análisis: se espera a que termine de procesarse antes
+        // de pedir la siguiente subida, para no acumular reservas provisionales de minutos.
+        setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
+        await waitForVideoReady(up.uid)
 
         let uidEn: string | undefined
         if (c.fileEn) {
@@ -324,6 +335,8 @@ const Publicar = () => {
           setProgress({ label: labelEn, percent: 0 })
           const upEn = await createDirectUpload(`${c.title || c.file!.name} (EN)`, c.fileEn.size, publishToken)
           await uploadToCloudflare(upEn.uploadURL, c.fileEn, (p) => setProgress({ label: labelEn, percent: p }))
+          setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
+          await waitForVideoReady(upEn.uid)
           uidEn = upEn.uid
         }
         // Los subtítulos no dependen del doblaje: se suben al vídeo español siempre y, si además
