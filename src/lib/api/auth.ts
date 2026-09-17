@@ -13,6 +13,8 @@ export type AuthResponse = {
   trialEndsAtUtc?: string | null
   subscriptionStatus?: string // "None" | "Trialing" | "Active" | "PastDue" | "Canceled"
   subscriptionCurrentPeriodEndUtc?: string | null
+  preferredLanguage?: string // "es" | "en"
+  subtitlesDefaultOn?: boolean
 }
 
 /**

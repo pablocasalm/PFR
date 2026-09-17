@@ -52,6 +52,9 @@ const AdminInvites = () => {
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState<string | null>(null)
   const [filter, setFilter] = useState<Filter>("all")
+  // Idioma del email de invitación (y preferido del usuario al canjearla) — se aplica a todo
+  // el lote que se genere/envíe, tanto desde el textarea como desde "Invitar" en una solicitud.
+  const [inviteLang, setInviteLang] = useState<"es" | "en">("es")
 
   // Solicitudes pendientes (formulario público de la landing o "pedir otro código").
   const [requests, setRequests] = useState<InviteRequestItem[]>([])
@@ -96,7 +99,7 @@ const AdminInvites = () => {
     setError(null)
     setNotice(null)
     try {
-      await generateInvites([email])
+      await generateInvites([email], inviteLang)
       setNotice(t("admin-invites.notice.sent-one", "Invitación generada y enviada a {email}.", { email }))
       await Promise.all([refresh(), refreshRequests()])
     } catch (err) {
@@ -123,7 +126,7 @@ const AdminInvites = () => {
     setError(null)
     setNotice(null)
     try {
-      const res = await generateInvites(emails)
+      const res = await generateInvites(emails, inviteLang)
       setNotice(
         res.length === 1
           ? t("admin-invites.notice.sent-singular", "1 invitación generada y enviada.")
@@ -213,6 +216,23 @@ const AdminInvites = () => {
           </p>
         </div>
 
+        <div>
+          <span className="mb-2 block text-sm font-medium text-white">{t("admin-invites.language-label", "Idioma del email")}</span>
+          <div className="inline-flex rounded-lg border border-white/10 bg-white/5 p-1">
+            {(["es", "en"] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => setInviteLang(l)}
+                className={`rounded-md px-4 py-1.5 text-xs font-semibold transition ${
+                  inviteLang === l ? "bg-neon-cyan text-midnight" : "text-white/60 hover:text-white"
+                }`}
+              >
+                {l === "es" ? "Español" : "English"}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
         {notice && <p className="rounded-lg bg-neon-cyan/10 px-3 py-2 text-sm text-neon-cyan">{notice}</p>}
 
@@ -300,6 +320,7 @@ const AdminInvites = () => {
                   <th className="px-4 py-3 font-semibold">{t("admin-invites.code", "Código")}</th>
                   <th className="px-4 py-3 font-semibold">{t("mi-cuenta.status", "Estado")}</th>
                   <th className="px-4 py-3 font-semibold">{t("mi-cuenta.plan", "Plan")}</th>
+                  <th className="px-4 py-3 font-semibold">{t("admin-invites.language", "Idioma")}</th>
                   <th className="px-4 py-3 font-semibold">{t("admin-invites.created", "Creado")}</th>
                   <th className="px-4 py-3 font-semibold">{t("admin-invites.used-col", "Usado")}</th>
                   <th className="px-4 py-3 font-semibold">{t("admin-invites.actions", "Acciones")}</th>
@@ -326,6 +347,7 @@ const AdminInvites = () => {
                         {PLAN_LABEL[c.planType]}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-white/60 uppercase">{c.language}</td>
                     <td className="px-4 py-3 text-white/60">{fmt(c.createdAtUtc, lang)}</td>
                     <td className="px-4 py-3 text-white/60">{fmt(c.usedAtUtc, lang)}</td>
                     <td className="px-4 py-3">

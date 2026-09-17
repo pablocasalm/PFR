@@ -1,9 +1,9 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Navigate, useNavigate, useSearchParams, useLocation } from "react-router-dom"
 import { useAuth } from "./store"
 import { requestInvite } from "../api/invites"
 import { requestPasswordReset } from "../api/auth"
-import { useI18n } from "../i18n/store"
+import { useI18n, setLanguage } from "../i18n/store"
 
 /**
  * Pantalla de acceso (login / registro / solicitar código / recuperar contraseña). Es la puerta
@@ -34,6 +34,14 @@ const LoginPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  // El link de invitación lleva "lang" (§ idiomas preferidos): antes incluso de tener cuenta,
+  // la pantalla de registro arranca ya en el idioma en que se invitó a esta persona.
+  useEffect(() => {
+    const langFromUrl = params.get("lang")
+    if (langFromUrl === "es" || langFromUrl === "en") setLanguage(langFromUrl)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (isAuthenticated) return <Navigate to="/app/inicio" replace />
 

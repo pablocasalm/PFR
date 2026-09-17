@@ -59,8 +59,16 @@ export function refreshAccessToken(): Promise<boolean> {
             trialEndsAtUtc: data.trialEndsAtUtc,
             subscriptionStatus: data.subscriptionStatus,
             subscriptionCurrentPeriodEndUtc: data.subscriptionCurrentPeriodEndUtc,
+            preferredLanguage: data.preferredLanguage,
+            subtitlesDefaultOn: data.subtitlesDefaultOn,
           }),
         )
+        // El idioma preferido vive en BD (por cuenta): en caso de conflicto con lo que ya
+        // hubiera elegido este dispositivo, gana la cuenta — igual que en login/register
+        // (auth/store.ts), pero escrito aquí directo a localStorage (sin importar i18n/store
+        // ni auth/store, para no crear un ciclo de imports con este fichero).
+        if (data.preferredLanguage === "es" || data.preferredLanguage === "en")
+          localStorage.setItem("lang", data.preferredLanguage)
         return true
       } catch {
         return false

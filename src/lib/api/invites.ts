@@ -11,11 +11,11 @@ export const requestInvite = (email: string) =>
 export type BillingPlan = "Free" | "TrialThenPaid" | "Discounted"
 
 /** Invitación generada por el admin: email al que se emitió, su código y el link de registro. */
-export type GeneratedInvite = { email: string; code: string; link: string; planType: BillingPlan }
+export type GeneratedInvite = { email: string; code: string; link: string; planType: BillingPlan; language: string }
 
-/** POST /api/admin/invites (Admin) → genera un código por email, lo envía y devuelve el mapeo. */
-export const generateInvites = (emails: string[]) =>
-  apiPost<GeneratedInvite[]>("/api/admin/invites", { emails })
+/** POST /api/admin/invites (Admin) → genera un código por email, lo envía (en `language`) y devuelve el mapeo. */
+export const generateInvites = (emails: string[], language: string) =>
+  apiPost<GeneratedInvite[]>("/api/admin/invites", { emails, language })
 
 /** Un código de invitación con su estado (para la gestión del admin). */
 export type InviteCode = {
@@ -26,6 +26,7 @@ export type InviteCode = {
   usedAtUtc: string | null
   createdAtUtc: string
   planType: BillingPlan
+  language: string
   link: string
 }
 

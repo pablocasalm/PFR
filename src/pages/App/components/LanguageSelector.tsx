@@ -1,14 +1,21 @@
 import { useEffect, useRef, useState } from "react"
 import { Globe } from "lucide-react"
 import { useI18n } from "../../../lib/i18n/store"
+import { useAuth } from "../../../lib/auth/store"
+import { updateMyPreferences } from "../../../lib/api/profile"
 
 /**
  * Selector de idioma de la interfaz (§i18n). Solo se muestra si hay más de un idioma
  * activo (hoy es/en, sembrados por la migración) — con uno solo no aporta nada.
  * Mismo patrón de dropdown + cierre al clicar fuera que SessionControl en este archivo.
+ *
+ * El idioma preferido vive en BD, no solo en este dispositivo: si hay sesión, el cambio
+ * manual también se guarda ahí (§ idiomas preferidos) — si no, la próxima vez que inicie
+ * sesión en cualquier sitio, la cuenta "revertiría" la elección que acaba de hacer aquí.
  */
 const LanguageSelector = () => {
   const { lang, languages, setLanguage } = useI18n()
+  const { isAuthenticated } = useAuth()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -42,6 +49,7 @@ const LanguageSelector = () => {
               onClick={() => {
                 setOpen(false)
                 setLanguage(l.code)
+                if (isAuthenticated) updateMyPreferences({ preferredLanguage: l.code }).catch(() => {})
               }}
               className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition hover:bg-white/5 ${
                 l.code === lang ? "text-neon-cyan" : "text-white/80"

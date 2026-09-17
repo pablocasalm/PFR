@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { UserCircle } from "lucide-react"
 import { useAuth, setLocalDisplayName } from "../../../lib/auth/store"
-import { getMyProfile, updateProfile, changePassword, type ProfileResponse } from "../../../lib/api/profile"
+import { getMyProfile, updateProfile, changePassword, updateMyPreferences, type ProfileResponse } from "../../../lib/api/profile"
 import { createPortalSession } from "../../../lib/api/billing"
-import { useI18n, type TFunc } from "../../../lib/i18n/store"
+import { useI18n, setLanguage, type TFunc } from "../../../lib/i18n/store"
 
 /**
  * Mi cuenta — autogestión básica del perfil (§MVP): ver email/plan/rol, cambiar nombre visible
@@ -71,6 +71,9 @@ const MiCuenta = () => {
   const [portalLoading, setPortalLoading] = useState(false)
   const [portalError, setPortalError] = useState<string | null>(null)
 
+  const [prefSaving, setPrefSaving] = useState(false)
+  const [prefError, setPrefError] = useState<string | null>(null)
+
   const openPortal = async () => {
     if (portalLoading) return
     setPortalLoading(true)
@@ -93,6 +96,38 @@ const MiCuenta = () => {
       .catch((err) => setLoadError(err instanceof Error ? err.message : t("mi-cuenta.error.load", "No se pudieron cargar los datos de la cuenta.")))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // El idioma preferido vive en BD (§ idiomas preferidos): guarda ahí y cambia la interfaz al
+  // momento, sin esperar a la próxima vez que se inicie sesión.
+  const changeLanguage = async (l: "es" | "en") => {
+    if (prefSaving || !profile || profile.preferredLanguage === l) return
+    setPrefSaving(true)
+    setPrefError(null)
+    try {
+      await updateMyPreferences({ preferredLanguage: l })
+      setLanguage(l)
+      setProfile((p) => (p ? { ...p, preferredLanguage: l } : p))
+    } catch (err) {
+      setPrefError(err instanceof Error ? err.message : t("mi-cuenta.error.preferences", "No se pudo guardar la preferencia."))
+    } finally {
+      setPrefSaving(false)
+    }
+  }
+
+  const toggleSubtitlesDefault = async () => {
+    if (prefSaving || !profile) return
+    const next = !profile.subtitlesDefaultOn
+    setPrefSaving(true)
+    setPrefError(null)
+    try {
+      await updateMyPreferences({ subtitlesDefaultOn: next })
+      setProfile((p) => (p ? { ...p, subtitlesDefaultOn: next } : p))
+    } catch (err) {
+      setPrefError(err instanceof Error ? err.message : t("mi-cuenta.error.preferences", "No se pudo guardar la preferencia."))
+    } finally {
+      setPrefSaving(false)
+    }
+  }
 
   const saveName = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -178,6 +213,51 @@ const MiCuenta = () => {
             </dd>
           </div>
         </dl>
+      </section>
+
+      {/* Preferencias: idioma y subtítulos por defecto */}
+      <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/70">{t("mi-cuenta.preferences", "Preferencias")}</h2>
+
+        {prefError && <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{prefError}</p>}
+
+        <div className="mb-4">
+          <span className="mb-2 block text-sm text-white">{t("mi-cuenta.language", "Idioma")}</span>
+          <div className="inline-flex rounded-lg border border-white/10 bg-white/5 p-1">
+            {(["es", "en"] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => changeLanguage(l)}
+                disabled={prefSaving}
+                className={`rounded-md px-4 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                  (profile?.preferredLanguage ?? lang) === l ? "bg-neon-cyan text-midnight" : "text-white/60 hover:text-white"
+                }`}
+              >
+                {l === "es" ? "Español" : "English"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <label className="flex items-center justify-between gap-3">
+          <span className="text-sm text-white">{t("mi-cuenta.subtitles-default", "Activar subtítulos automáticamente")}</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={profile?.subtitlesDefaultOn ?? false}
+            onClick={toggleSubtitlesDefault}
+            disabled={prefSaving || !profile}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              profile?.subtitlesDefaultOn ? "bg-neon-cyan" : "bg-white/15"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                profile?.subtitlesDefaultOn ? "translate-x-[22px]" : "translate-x-0.5"
+              }`}
+            />
+          </button>
+        </label>
       </section>
 
       {/* Mi suscripción */}

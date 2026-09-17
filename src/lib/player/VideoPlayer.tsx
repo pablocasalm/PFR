@@ -47,15 +47,20 @@ type Props = {
    * fullscreen. Recibe `dismiss` para poder cerrar la tarjeta y quedarse en el vídeo actual
    * (p. ej. al cancelar el autoplay) sin tener que ir al siguiente ni salir de la página. */
   endSlot?: (dismiss: () => void) => React.ReactNode
+  /** Preferencia de cuenta (Mi Cuenta): si hay subtítulos disponibles, se activa la primera
+   * pista sola en cuanto se conocen, sin esperar a que el usuario abra el menú. */
+  subtitlesDefaultOn?: boolean
 }
 
-const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, chapters = [], aspect = "16:9", initialPosition, onProgress, onEnded, endSlot }, ref) => {
+const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, chapters = [], aspect = "16:9", initialPosition, onProgress, onEnded, endSlot, subtitlesDefaultOn = false }, ref) => {
   const { t } = useI18n()
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hlsRef = useRef<Hls | null>(null)
   const onProgressRef = useRef(onProgress)
   onProgressRef.current = onProgress
+  const subtitlesDefaultOnRef = useRef(subtitlesDefaultOn)
+  subtitlesDefaultOnRef.current = subtitlesDefaultOn
   const currentRef = useRef(0)
   const durationRef = useRef(0)
   const lastReportRef = useRef(0)
@@ -130,12 +135,15 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       // aparte del manifiesto principal) — llega en este evento, no en MANIFEST_PARSED, si no
       // el array todavía está vacío y el selector de subtítulos nunca aparece.
       hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
-        setSubtitleTracks(
-          hls.subtitleTracks.map((track, i) => ({
-            index: i,
-            label: track.name || t("video-player.subtitle-track", "Subtítulos {n}", { n: i + 1 }),
-          })),
-        )
+        const tracks = hls.subtitleTracks.map((track, i) => ({
+          index: i,
+          label: track.name || t("video-player.subtitle-track", "Subtítulos {n}", { n: i + 1 }),
+        }))
+        setSubtitleTracks(tracks)
+        // Preferencia de cuenta (Mi Cuenta): si hay pistas y el usuario quiere subtítulos por
+        // defecto, se activa la primera sola — cada vez que carga una fuente nueva (también al
+        // cambiar de audio ES/EN), igual que se resetea subtitleTrack a -1 arriba.
+        if (subtitlesDefaultOnRef.current && tracks.length > 0) selectSubtitle(tracks[0].index)
       })
       return () => {
         hls.destroy()

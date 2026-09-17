@@ -66,6 +66,7 @@ const VideoPlayer = ({
   playerRef?: React.Ref<VideoPlayerHandle>
 }) => {
   const { lang } = useI18n()
+  const { user } = useAuth()
   // Los títulos de los marcadores de capítulo (tooltip sobre la barra de progreso) dependen del
   // idioma de la interfaz, no del idioma del audio que se esté reproduciendo (§reporte de beta):
   // se puede ver el vídeo en español con la interfaz en inglés, o al revés.
@@ -82,6 +83,7 @@ const VideoPlayer = ({
         saveProgress("analysis", video.id, p, d).catch(() => {})
       }}
       endSlot={endSlot}
+      subtitlesDefaultOn={user?.subtitlesDefaultOn}
     />
   )
 }

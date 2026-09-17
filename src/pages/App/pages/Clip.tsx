@@ -410,20 +410,26 @@ const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; v
 // Players (placeholder hasta el bloque 6)
 // ---------------------------------------------------------------------------
 
-const VideoPlayer = ({ clip, endSlot }: { clip: ClipDetail; endSlot?: (dismiss: () => void) => React.ReactNode }) => (
-  <HlsPlayer
-    src={clip.videoUrl}
-    srcEn={clip.videoUrlEn ?? undefined}
-    poster={clip.thumbnailUrl}
-    initialPosition={clip.resumeSeconds}
-    onProgress={(p, d) => {
-      saveProgress("clip", clip.id, p, d).catch(() => {})
-    }}
-    endSlot={endSlot}
-  />
-)
+const VideoPlayer = ({ clip, endSlot }: { clip: ClipDetail; endSlot?: (dismiss: () => void) => React.ReactNode }) => {
+  const { user } = useAuth()
+  return (
+    <HlsPlayer
+      src={clip.videoUrl}
+      srcEn={clip.videoUrlEn ?? undefined}
+      poster={clip.thumbnailUrl}
+      initialPosition={clip.resumeSeconds}
+      onProgress={(p, d) => {
+        saveProgress("clip", clip.id, p, d).catch(() => {})
+      }}
+      endSlot={endSlot}
+      subtitlesDefaultOn={user?.subtitlesDefaultOn}
+    />
+  )
+}
 
-const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: ClipSocial; endSlot?: (dismiss: () => void) => React.ReactNode }) => (
+const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: ClipSocial; endSlot?: (dismiss: () => void) => React.ReactNode }) => {
+  const { user } = useAuth()
+  return (
   <div className="relative mx-auto w-full max-w-[420px]">
     <HlsPlayer
       src={clip.videoUrl}
@@ -435,6 +441,7 @@ const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: C
         saveProgress("clip", clip.id, p, d).catch(() => {})
       }}
       endSlot={endSlot}
+      subtitlesDefaultOn={user?.subtitlesDefaultOn}
     />
 
     {/* Rail de acciones sociales superpuesto (estilo móvil vertical) */}
@@ -450,7 +457,8 @@ const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: C
       <SaveActionRail item={clipToItem(clip)} />
     </div>
   </div>
-)
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Layouts

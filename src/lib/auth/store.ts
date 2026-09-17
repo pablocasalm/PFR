@@ -3,6 +3,7 @@ import { apiLogin, apiRegister, apiLogout, markOnboardingSeen } from "../api/aut
 import { refreshAccessToken } from "../api/client"
 import { clearSaved } from "../saved/store"
 import { invalidateApiCache } from "../hooks/useApi"
+import { setLanguage } from "../i18n/store"
 
 /**
  * Estado de sesión sin provider global (coherente con el README): un store de módulo
@@ -22,6 +23,8 @@ export type AuthUser = {
   trialEndsAtUtc?: string | null
   subscriptionStatus?: SubscriptionStatus
   subscriptionCurrentPeriodEndUtc?: string | null
+  preferredLanguage?: string // "es" | "en"
+  subtitlesDefaultOn?: boolean
 }
 type AuthState = { token: string | null; user: AuthUser | null }
 
@@ -92,17 +95,29 @@ function toAuthUser(res: Awaited<ReturnType<typeof apiLogin>>, fallbackEmail: st
     trialEndsAtUtc: res.trialEndsAtUtc,
     subscriptionStatus: res.subscriptionStatus as SubscriptionStatus | undefined,
     subscriptionCurrentPeriodEndUtc: res.subscriptionCurrentPeriodEndUtc,
+    preferredLanguage: res.preferredLanguage,
+    subtitlesDefaultOn: res.subtitlesDefaultOn,
   }
+}
+
+// El idioma preferido vive en BD (por cuenta), no solo en localStorage (por dispositivo): en
+// caso de conflicto gana la cuenta, así que cada vez que llega un AuthResult fresco (login,
+// registro) se sincroniza el idioma de la interfaz con él, aunque este dispositivo ya tuviera
+// otro elegido a mano.
+function syncLanguageFromAccount(res: { preferredLanguage?: string }) {
+  if (res.preferredLanguage) setLanguage(res.preferredLanguage)
 }
 
 export async function login(email: string, password: string) {
   const res = await apiLogin(email, password)
   setState({ token: res.token ?? null, user: toAuthUser(res, email) })
+  syncLanguageFromAccount(res)
 }
 
 export async function register(email: string, password: string, displayName?: string, inviteCode?: string) {
   const res = await apiRegister(email, password, displayName, inviteCode)
   setState({ token: res.token ?? null, user: toAuthUser(res, email) })
+  syncLanguageFromAccount(res)
 }
 
 /** Refresca los datos de suscripción del usuario tras volver de Stripe Checkout, sin esperar al
