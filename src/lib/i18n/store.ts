@@ -93,6 +93,9 @@ function translate(dict: Record<string, string>, key: string, fallback?: string,
 /** Fuera de React (p. ej. un mensaje en un catch): usa el diccionario tal como esté en ese momento. */
 export const t = (key: string, fallback?: string, params?: I18nParams) => translate(state.dict, key, fallback, params)
 
+/** Idioma activo en este momento, fuera de React (p. ej. el tour de bienvenida). */
+export const getLanguage = () => state.lang
+
 /** Hook de i18n: { t, lang, languages, ready, setLanguage }. Re-renderiza al cambiar de idioma. */
 export function useI18n() {
   const s = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
