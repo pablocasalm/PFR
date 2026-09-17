@@ -104,20 +104,24 @@ function toAuthUser(res: Awaited<ReturnType<typeof apiLogin>>, fallbackEmail: st
 // caso de conflicto gana la cuenta, así que cada vez que llega un AuthResult fresco (login,
 // registro) se sincroniza el idioma de la interfaz con él, aunque este dispositivo ya tuviera
 // otro elegido a mano.
-function syncLanguageFromAccount(res: { preferredLanguage?: string }) {
-  if (res.preferredLanguage) setLanguage(res.preferredLanguage)
+async function syncLanguageFromAccount(res: { preferredLanguage?: string }) {
+  if (res.preferredLanguage) await setLanguage(res.preferredLanguage)
 }
 
 export async function login(email: string, password: string) {
   const res = await apiLogin(email, password)
   setState({ token: res.token ?? null, user: toAuthUser(res, email) })
-  syncLanguageFromAccount(res)
+  // Se espera a que cargue el diccionario del idioma de la cuenta antes de devolver el control:
+  // el onboarding (que arranca justo después de que `user` esté listo) usa textos ya traducidos
+  // desde su primer popover, en vez de arrancar en español y quedarse así (driver.js no reacciona
+  // a que el diccionario cambie más tarde, sus textos se fijan una vez al construir el tour).
+  await syncLanguageFromAccount(res)
 }
 
 export async function register(email: string, password: string, displayName?: string, inviteCode?: string) {
   const res = await apiRegister(email, password, displayName, inviteCode)
   setState({ token: res.token ?? null, user: toAuthUser(res, email) })
-  syncLanguageFromAccount(res)
+  await syncLanguageFromAccount(res)
 }
 
 /** Refresca los datos de suscripción del usuario tras volver de Stripe Checkout, sin esperar al

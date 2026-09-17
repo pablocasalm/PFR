@@ -33,6 +33,7 @@ const LanguageSelector = () => {
   return (
     <div className="relative" ref={rootRef}>
       <button
+        id="tour-language-selector"
         onClick={() => setOpen((v) => !v)}
         className="flex h-10 items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 text-sm font-medium text-white/70 transition hover:text-white"
         aria-label="Idioma"
