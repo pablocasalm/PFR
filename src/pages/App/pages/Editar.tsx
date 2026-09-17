@@ -8,6 +8,7 @@ import {
   patchAnalysis,
   createDirectUpload,
   uploadToCloudflare,
+  waitForVideoReady,
   setClipVideoEn,
   setAnalysisVideoEn,
   uploadClipCaptionsEn,
@@ -198,6 +199,11 @@ const Editar = () => {
         const publishToken = await createPublishToken()
         const up = await createDirectUpload(`${title || "video"} (EN)`, enFile.size, publishToken)
         await uploadToCloudflare(up.uploadURL, enFile, (p) => setEnProgress({ label: labelEn, percent: p }))
+        // Ver Publicar.tsx: mientras Cloudflare procesa el vídeo reserva minutos de más contra
+        // el plan a partir de una estimación provisional — si se edita otro clip justo después
+        // sin esperar aquí, esas reservas de varias ediciones seguidas podrían acumularse igual.
+        setEnProgress({ label: t("editar.en.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
+        await waitForVideoReady(up.uid)
         if (isClip) await setClipVideoEn(id, up.uid)
         else await setAnalysisVideoEn(id, up.uid)
         setStreamUidEn(up.uid)
