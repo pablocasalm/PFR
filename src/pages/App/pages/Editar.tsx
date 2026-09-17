@@ -12,6 +12,7 @@ import {
   setAnalysisVideoEn,
   uploadClipCaptionsEn,
   uploadAnalysisCaptionsEn,
+  createPublishToken,
   getConcepts,
   type BlockConceptsInput,
   type ConceptOption,
@@ -192,7 +193,10 @@ const Editar = () => {
       if (enFile) {
         const labelEn = t("editar.en.progress.video", "Subiendo vídeo en inglés…")
         setEnProgress({ label: labelEn, percent: 0 })
-        const up = await createDirectUpload(`${title || "video"} (EN)`, enFile.size)
+        // Token de publicación (§ larga duración): direct-upload lo exige siempre, aunque aquí
+        // solo se suba un vídeo (se pide igual, es una llamada rápida).
+        const publishToken = await createPublishToken()
+        const up = await createDirectUpload(`${title || "video"} (EN)`, enFile.size, publishToken)
         await uploadToCloudflare(up.uploadURL, enFile, (p) => setEnProgress({ label: labelEn, percent: p }))
         if (isClip) await setClipVideoEn(id, up.uid)
         else await setAnalysisVideoEn(id, up.uid)

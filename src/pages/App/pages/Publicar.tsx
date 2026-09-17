@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Plus, Trash2, X, CheckCircle2 } from "lucide-react"
-import { createDirectUpload, uploadToCloudflare, uploadCaptions, readVideoDuration, publish, getConcepts, type PublishChapterInput, type ConceptOption } from "../../../lib/api/admin"
+import { createDirectUpload, uploadToCloudflare, uploadCaptions, readVideoDuration, publish, getConcepts, createPublishToken, type PublishChapterInput, type ConceptOption } from "../../../lib/api/admin"
 import { getBlocks } from "../../../lib/api/blocks"
 import { useApi } from "../../../lib/hooks/useApi"
 import CatalogPicker from "../components/CatalogPicker"
@@ -280,16 +280,22 @@ const Publicar = () => {
     setBusy(true)
     setProgress({ label: t("publicar.progress.analysis", "Subiendo análisis…"), percent: 0 })
     try {
+      // Token de publicación (§ larga duración): se pide aquí, justo al pulsar "Publicar", no
+      // al entrar en la pantalla — así solo existe cuando de verdad se va a usar. Dura 24h,
+      // para que una publicación larga (varios vídeos grandes en los dos idiomas) no se corte
+      // aunque la sesión normal caduque a mitad de subida.
+      const publishToken = await createPublishToken()
+
       // 1) Subir el vídeo del análisis
       const aDur = await readVideoDuration(aFile!)
-      const aUp = await createDirectUpload(aTitle || aFile!.name, aFile!.size)
+      const aUp = await createDirectUpload(aTitle || aFile!.name, aFile!.size, publishToken)
       await uploadToCloudflare(aUp.uploadURL, aFile!, (p) => setProgress({ label: t("publicar.progress.analysis", "Subiendo análisis…"), percent: p }))
 
       let aUidEn: string | undefined
       if (aFileEn) {
         const labelEnAnalysis = t("publicar.progress.analysis-en", "Subiendo vídeo en inglés del análisis…")
         setProgress({ label: labelEnAnalysis, percent: 0 })
-        const aUpEn = await createDirectUpload(`${aTitle || aFile!.name} (EN)`, aFileEn.size)
+        const aUpEn = await createDirectUpload(`${aTitle || aFile!.name} (EN)`, aFileEn.size, publishToken)
         await uploadToCloudflare(aUpEn.uploadURL, aFileEn, (p) => setProgress({ label: labelEnAnalysis, percent: p }))
         aUidEn = aUpEn.uid
       }
@@ -297,8 +303,8 @@ const Publicar = () => {
       // hay vídeo en inglés, también ahí — así se puede ver con cualquiera de los dos audios.
       if (aCaptionsEn) {
         setProgress({ label: t("publicar.progress.captions", "Subiendo subtítulos…"), percent: 100 })
-        const targets = [uploadCaptions(aUp.uid, aCaptionsEn)]
-        if (aUidEn) targets.push(uploadCaptions(aUidEn, aCaptionsEn))
+        const targets = [uploadCaptions(aUp.uid, aCaptionsEn, publishToken)]
+        if (aUidEn) targets.push(uploadCaptions(aUidEn, aCaptionsEn, publishToken))
         await Promise.all(targets)
       }
 
@@ -309,14 +315,14 @@ const Publicar = () => {
         const label = t("publicar.progress.clip", "Subiendo clip {n} de {total}…", { n: i + 1, total: validClips.length })
         setProgress({ label, percent: 0 })
         const dur = await readVideoDuration(c.file!)
-        const up = await createDirectUpload(c.title || c.file!.name, c.file!.size)
+        const up = await createDirectUpload(c.title || c.file!.name, c.file!.size, publishToken)
         await uploadToCloudflare(up.uploadURL, c.file!, (p) => setProgress({ label, percent: p }))
 
         let uidEn: string | undefined
         if (c.fileEn) {
           const labelEn = t("publicar.progress.clip-en", "Subiendo vídeo en inglés del clip {n}…", { n: i + 1 })
           setProgress({ label: labelEn, percent: 0 })
-          const upEn = await createDirectUpload(`${c.title || c.file!.name} (EN)`, c.fileEn.size)
+          const upEn = await createDirectUpload(`${c.title || c.file!.name} (EN)`, c.fileEn.size, publishToken)
           await uploadToCloudflare(upEn.uploadURL, c.fileEn, (p) => setProgress({ label: labelEn, percent: p }))
           uidEn = upEn.uid
         }
@@ -324,8 +330,8 @@ const Publicar = () => {
         // hay vídeo en inglés, también ahí — así se puede ver con cualquiera de los dos audios.
         if (c.captionsEn) {
           setProgress({ label: t("publicar.progress.captions", "Subiendo subtítulos…"), percent: 100 })
-          const targets = [uploadCaptions(up.uid, c.captionsEn)]
-          if (uidEn) targets.push(uploadCaptions(uidEn, c.captionsEn))
+          const targets = [uploadCaptions(up.uid, c.captionsEn, publishToken)]
+          if (uidEn) targets.push(uploadCaptions(uidEn, c.captionsEn, publishToken))
           await Promise.all(targets)
         }
 
@@ -366,7 +372,7 @@ const Publicar = () => {
         },
         clips: clipInputs,
         conceptTranslations: Object.keys(translationsToSend).length > 0 ? translationsToSend : undefined,
-      })
+      }, publishToken)
 
       setDone(
         t(

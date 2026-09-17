@@ -112,8 +112,8 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}, isRetry 
 
 export const apiGet = <T>(endpoint: string) => apiFetch<T>(endpoint)
 
-export const apiPost = <T>(endpoint: string, body?: unknown) =>
-  apiFetch<T>(endpoint, { method: "POST", body: body ? JSON.stringify(body) : undefined })
+export const apiPost = <T>(endpoint: string, body?: unknown, headers?: HeadersInit) =>
+  apiFetch<T>(endpoint, { method: "POST", body: body ? JSON.stringify(body) : undefined, headers })
 
 export const apiPatch = <T>(endpoint: string, body?: unknown) =>
   apiFetch<T>(endpoint, { method: "PATCH", body: body ? JSON.stringify(body) : undefined })
@@ -161,8 +161,8 @@ async function apiFetchRaw(endpoint: string, options: RequestInit = {}, isRetry 
 }
 
 /** POST multipart/form-data (subida de ficheros) — el navegador pone el Content-Type/boundary. */
-export const apiPostForm = async <T>(endpoint: string, formData: FormData): Promise<T> => {
-  const res = await apiFetchRaw(endpoint, { method: "POST", body: formData })
+export const apiPostForm = async <T>(endpoint: string, formData: FormData, headers?: HeadersInit): Promise<T> => {
+  const res = await apiFetchRaw(endpoint, { method: "POST", body: formData, headers })
   const text = await res.text()
   return text ? (JSON.parse(text) as T) : ({} as T)
 }

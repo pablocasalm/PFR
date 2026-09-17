@@ -9,8 +9,15 @@ import { apiGet, apiPost, apiPatch, apiPostForm } from "./client"
 
 export type DirectUpload = { uploadURL: string; uid: string }
 
-export const createDirectUpload = (name: string, size: number) =>
-  apiPost<DirectUpload>("/api/admin/videos/direct-upload", { name, size })
+/** Cabecera con el token de publicación (§ larga duración) — nunca Authorization, ver backend. */
+const publishTokenHeader = (publishToken: string): HeadersInit => ({ "X-Publish-Token": publishToken })
+
+/** POST /api/admin/publish-token → token de 24h para el flujo de publicar (subir vídeos/
+ * subtítulos + el POST final). Pídelo justo al pulsar "Publicar", no al entrar en la pantalla. */
+export const createPublishToken = () => apiPost<{ token: string }>("/api/admin/publish-token").then((r) => r.token)
+
+export const createDirectUpload = (name: string, size: number, publishToken: string) =>
+  apiPost<DirectUpload>("/api/admin/videos/direct-upload", { name, size }, publishTokenHeader(publishToken))
 
 // --- Publicación combinada: un análisis + sus clips (§ proceso de publicación) ---
 
@@ -51,8 +58,8 @@ export type PublishInput = {
   conceptTranslations?: Record<string, string>
 }
 
-export const publish = (input: PublishInput) =>
-  apiPost<{ ok: boolean; analysisId: string; clipIds: string[] }>("/api/admin/publish", input)
+export const publish = (input: PublishInput, publishToken: string) =>
+  apiPost<{ ok: boolean; analysisId: string; clipIds: string[] }>("/api/admin/publish", input, publishTokenHeader(publishToken))
 
 // --- Edición de contenido ya publicado (v1 básica: título/descripción/bloques/conceptos;
 // sin reasignar a qué análisis "aparece" un clip ni tocar el vídeo — queda para "Estudio") ---
@@ -128,10 +135,10 @@ export const setClipVideoEn = (id: string, uid: string) =>
 export const setAnalysisVideoEn = (id: string, uid: string) =>
   apiPatch<{ ok: boolean }>(`/api/admin/analyses/${id}/video-en`, { uid })
 
-export const uploadCaptions = (uid: string, file: File) => {
+export const uploadCaptions = (uid: string, file: File, publishToken: string) => {
   const fd = new FormData()
   fd.append("file", file)
-  return apiPostForm<{ ok: boolean }>(`/api/admin/videos/${uid}/captions`, fd)
+  return apiPostForm<{ ok: boolean }>(`/api/admin/videos/${uid}/captions`, fd, publishTokenHeader(publishToken))
 }
 
 // Para contenido YA PUBLICADO (Editar): suben el mismo VTT al vídeo en español y, si existe,
