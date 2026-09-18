@@ -43,7 +43,7 @@ export function refreshAccessToken(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/auth/refresh`, { method: "POST", credentials: "include" })
+        const res = await fetchWithRetry(`${API_BASE}/api/auth/refresh`, { method: "POST", credentials: "include" })
         if (!res.ok) return false
         const data = await res.json()
         if (!data?.token) return false
@@ -80,9 +80,26 @@ export function refreshAccessToken(): Promise<boolean> {
   return refreshPromise
 }
 
+/**
+ * Reintenta UNA vez, tras una breve espera, si `fetch` falla a nivel de red (no llega ninguna
+ * respuesta — TypeError, p. ej. ERR_HTTP2_PROTOCOL_ERROR). En este hosting compartido, si el
+ * proceso llevaba un rato inactivo, la primera petición que llega puede pillarlo reiniciándose
+ * y la conexión se corta a medio camino; casi siempre ya está listo un segundo después, y así
+ * se resuelve solo sin que la persona tenga que reintentar a mano. Un 4xx/5xx normal SÍ llega
+ * como respuesta (no lanza aquí), así que esto no interfiere con esos casos.
+ */
+async function fetchWithRetry(url: string, options: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, options)
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, 1200))
+    return fetch(url, options)
+  }
+}
+
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}, isRetry = false): Promise<T> {
   const token = localStorage.getItem("token")
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const res = await fetchWithRetry(`${API_BASE}${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -134,7 +151,7 @@ export const apiPostAuth = <T>(endpoint: string, body?: unknown) =>
  */
 async function apiFetchRaw(endpoint: string, options: RequestInit = {}, isRetry = false): Promise<Response> {
   const token = localStorage.getItem("token")
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const res = await fetchWithRetry(`${API_BASE}${endpoint}`, {
     ...options,
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
