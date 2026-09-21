@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react"
 import Hls from "hls.js"
 import { Play, Pause, Volume2, VolumeX, Maximize, Settings, Captions } from "lucide-react"
 import { formatDuration } from "../format"
@@ -79,13 +79,55 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   const [fullscreen, setFullscreen] = useState(false)
   const [levels, setLevels] = useState<{ height: number; index: number }[]>([])
   const [qualityLevel, setQualityLevel] = useState(-1) // -1 = auto (ABR)
-  const [qualityOpen, setQualityOpen] = useState(false)
   const [ended, setEnded] = useState(false)
   const [loading, setLoading] = useState(false)
   const [lang, setLang] = useState<"es" | "en">("es")
   const [subtitleTracks, setSubtitleTracks] = useState<{ index: number; label: string }[]>([])
   const [subtitleTrack, setSubtitleTrack] = useState(-1) // -1 = desactivados
-  const [subtitlesMenuOpen, setSubtitlesMenuOpen] = useState(false)
+  // Un único menú abierto a la vez (subtítulos y ajustes son excluyentes). La posición se calcula
+  // en JS y se aplica con `position: fixed` en vez de `absolute` anclado al contenedor: así el
+  // menú no se recorta contra el `overflow-hidden` del player cuando es más alto de lo normal
+  // (p. ej. Idioma + varias resoluciones de Calidad juntos).
+  const [openMenu, setOpenMenu] = useState<"subtitles" | "settings" | null>(null)
+  const [menuPos, setMenuPos] = useState<{ bottom: number; right: number } | null>(null)
+  const subtitlesBtnRef = useRef<HTMLButtonElement>(null)
+  const settingsBtnRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // El menú se coloca por encima del botón que lo abre — en un player pegado a la parte de
+  // arriba de la pantalla (móvil, poca altura) puede llegar a sobresalir por encima del propio
+  // viewport. Tras montarse, si se sale, se baja lo justo para que quede entero visible.
+  useLayoutEffect(() => {
+    if (!openMenu || !menuRef.current) return
+    const margin = 8
+    const rect = menuRef.current.getBoundingClientRect()
+    if (rect.top < margin) {
+      const overflow = margin - rect.top
+      setMenuPos((pos) => (pos ? { ...pos, bottom: Math.max(margin, pos.bottom - overflow) } : pos))
+    }
+  }, [openMenu])
+
+  const toggleMenu = (menu: "subtitles" | "settings", btnRef: React.RefObject<HTMLButtonElement | null>) => {
+    setOpenMenu((current) => {
+      if (current === menu) return null
+      const rect = btnRef.current?.getBoundingClientRect()
+      if (rect) setMenuPos({ bottom: window.innerHeight - rect.top + 8, right: window.innerWidth - rect.right })
+      return menu
+    })
+  }
+
+  // Si la página hace scroll o cambia de tamaño con el menú abierto, mejor cerrarlo a dejarlo
+  // flotando en una posición ya incorrecta (la posición se calculó una vez, al abrirlo).
+  useEffect(() => {
+    if (!openMenu) return
+    const close = () => setOpenMenu(null)
+    window.addEventListener("scroll", close, true)
+    window.addEventListener("resize", close)
+    return () => {
+      window.removeEventListener("scroll", close, true)
+      window.removeEventListener("resize", close)
+    }
+  }, [openMenu])
 
   const activeSrc = lang === "en" && srcEn ? srcEn : src
 
@@ -96,7 +138,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     if (next === lang) return
     switchStateRef.current = { time: currentRef.current, wasPlaying: playing }
     setLang(next)
-    setQualityOpen(false)
+    setOpenMenu(null)
   }
 
   // Cargar la fuente HLS (hls.js o nativo).
@@ -273,7 +315,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     const hls = hlsRef.current
     if (hls) hls.currentLevel = index // -1 = auto (ABR)
     setQualityLevel(index)
-    setQualityOpen(false)
+    setOpenMenu(null)
   }
 
   const selectSubtitle = (index: number) => {
@@ -283,7 +325,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       hls.subtitleDisplay = index !== -1 // hls.js no pinta las cues por defecto
     }
     setSubtitleTrack(index)
-    setSubtitlesMenuOpen(false)
+    setOpenMenu(null)
   }
 
   // Con una sola pista (el caso normal: un idioma de subtítulos por vídeo) el botón dedicado
@@ -292,7 +334,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   const toggleSubtitles = () => {
     if (subtitleTracks.length === 0) return
     if (subtitleTracks.length > 1) {
-      setSubtitlesMenuOpen((v) => !v)
+      toggleMenu("subtitles", subtitlesBtnRef)
       return
     }
     selectSubtitle(subtitleTrack === -1 ? subtitleTracks[0].index : -1)
@@ -443,6 +485,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
           <div className="ml-auto flex items-center gap-3">
             <div className="relative flex items-center">
               <button
+                ref={subtitlesBtnRef}
                 onClick={toggleSubtitles}
                 disabled={subtitleTracks.length === 0}
                 className={`transition ${
@@ -461,10 +504,14 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
               >
                 <Captions className="h-5 w-5" />
               </button>
-              {subtitlesMenuOpen && subtitleTracks.length > 1 && (
+              {openMenu === "subtitles" && subtitleTracks.length > 1 && menuPos && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setSubtitlesMenuOpen(false)} />
-                  <div className="absolute bottom-9 right-0 z-20 min-w-[190px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl">
+                  <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />
+                  <div
+                    ref={menuRef}
+                    style={{ bottom: menuPos.bottom, right: menuPos.right }}
+                    className="fixed z-20 min-w-[190px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl"
+                  >
                     <button
                       onClick={() => selectSubtitle(-1)}
                       className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${subtitleTrack === -1 ? "text-neon-cyan" : "text-white"}`}
@@ -488,17 +535,22 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
             </div>
             <div className="relative flex items-center">
               <button
-                onClick={() => setQualityOpen((v) => !v)}
-                className={`transition hover:text-neon-cyan ${qualityOpen ? "text-neon-cyan" : ""}`}
+                ref={settingsBtnRef}
+                onClick={() => toggleMenu("settings", settingsBtnRef)}
+                className={`transition hover:text-neon-cyan ${openMenu === "settings" ? "text-neon-cyan" : ""}`}
                 aria-label={t("video-player.settings", "Ajustes")}
               >
                 <Settings className="h-5 w-5" />
               </button>
-              {qualityOpen && (
+              {openMenu === "settings" && menuPos && (
                 <>
                   {/* Capa para cerrar al hacer clic fuera */}
-                  <div className="fixed inset-0 z-10" onClick={() => setQualityOpen(false)} />
-                  <div className="absolute bottom-9 right-0 z-20 min-w-[190px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl">
+                  <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />
+                  <div
+                    ref={menuRef}
+                    style={{ bottom: menuPos.bottom, right: menuPos.right }}
+                    className="fixed z-20 min-w-[190px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl"
+                  >
                     {/* Idioma (§9.1/§10.1): vídeo doblado al inglés (HeyGen), si existe. */}
                     <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">{t("video-player.language-title", "Idioma")}</p>
                     {srcEn ? (
