@@ -1,6 +1,24 @@
 import { useEffect, useRef } from "react"
 import { Link } from "react-router-dom"
 import { useI18n } from "../../../lib/i18n/store"
+import { pickText } from "../../../lib/i18n/content"
+
+/**
+ * Bloques y conceptos de ejemplo de esta página: son los reales del catálogo (mismos nombres
+ * que usa Publicar.tsx), así que enlazan a Search con esos mismos filtros. La traducción al
+ * inglés reutiliza la que ya usa el contenido real (Explorar/Clip), no una nueva — con el
+ * mismo "aplastado sin espacios" que ya tenía el ejemplo en español, para que #Hashtag siga
+ * pareciendo un hashtag en los dos idiomas.
+ */
+const CONCEPT_EXAMPLES = {
+  globo: { es: "Globo", en: "Lob", real: "Globo" },
+  bajarRitmo: { es: "BajarRitmo", en: "SlowThePace", real: "Bajar ritmo" },
+  timing: { es: "Timing", en: "Timing", real: "Timing" },
+  decisiones: { es: "Decisiones", en: "DecisionMaking", real: "Decisiones" },
+  lectura: { es: "Lectura", en: "Reading", real: "Lectura" },
+  presion: { es: "Presión", en: "Pressure", real: "Presión" },
+  sincronia: { es: "Sincronía", en: "Synchronization", real: "Sincronía" },
+}
 
 /**
  * Cómo funciona — página explicativa del método de Padel Film Room.
@@ -308,7 +326,11 @@ const css = `
 `
 
 const ComoFunciona = () => {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
+  const concept = (key: keyof typeof CONCEPT_EXAMPLES) => {
+    const c = CONCEPT_EXAMPLES[key]
+    return { label: pickText(c.es, c.en, lang), href: `/app/search?concept=${encodeURIComponent(c.real)}` }
+  }
   const rootRef = useRef<HTMLDivElement>(null)
   const heroRef = useRef<HTMLElement>(null)
 
@@ -407,12 +429,12 @@ const ComoFunciona = () => {
                   <div className="branch" style={{ "--c": "#28f0e0" } as React.CSSProperties}>
                     <span className="block">{t("como-funciona.block.globo", "Uso del globo")}</span>
                     <span className="arrow">→</span>
-                    <span className="concept">#Globo</span>
+                    <span className="concept">#{concept("globo").label}</span>
                   </div>
                   <div className="branch" style={{ "--c": "#5b8cff" } as React.CSSProperties}>
                     <span className="block">{t("como-funciona.block.ritmo", "Gestión del ritmo del punto")}</span>
                     <span className="arrow">→</span>
-                    <span className="concept">#BajarRitmo</span>
+                    <span className="concept">#{concept("bajarRitmo").label}</span>
                   </div>
                 </div>
                 <p className="caption">
@@ -442,14 +464,30 @@ const ComoFunciona = () => {
                   </p>
                 </div>
                 <div className="chip-grid">
-                  <span className="chip">{t("como-funciona.block.fondo", "Juego desde el fondo")}</span>
-                  <span className="chip">{t("como-funciona.block.transicion", "Transición defensa-ataque")}</span>
-                  <span className="chip">{t("como-funciona.block.red", "Juego en la red")}</span>
-                  <span className="chip">{t("como-funciona.block.globo", "Uso del globo")}</span>
-                  <span className="chip">{t("como-funciona.block.ritmo", "Gestión del ritmo del punto")}</span>
-                  <span className="chip">{t("como-funciona.block.lectura", "Lectura táctica del rival")}</span>
-                  <span className="chip">{t("como-funciona.block.golpes", "Uso táctico de golpes")}</span>
-                  <span className="chip">{t("como-funciona.block.pareja", "Juego en pareja")}</span>
+                  <Link className="chip" to={`/app/search?block=${encodeURIComponent("Juego desde el fondo")}`}>
+                    {t("como-funciona.block.fondo", "Juego desde el fondo")}
+                  </Link>
+                  <Link className="chip" to={`/app/search?block=${encodeURIComponent("Transición defensa-ataque")}`}>
+                    {t("como-funciona.block.transicion", "Transición defensa-ataque")}
+                  </Link>
+                  <Link className="chip" to={`/app/search?block=${encodeURIComponent("Juego en la red")}`}>
+                    {t("como-funciona.block.red", "Juego en la red")}
+                  </Link>
+                  <Link className="chip" to={`/app/search?block=${encodeURIComponent("Uso del globo")}`}>
+                    {t("como-funciona.block.globo", "Uso del globo")}
+                  </Link>
+                  <Link className="chip" to={`/app/search?block=${encodeURIComponent("Gestión del ritmo del punto")}`}>
+                    {t("como-funciona.block.ritmo", "Gestión del ritmo del punto")}
+                  </Link>
+                  <Link className="chip" to={`/app/search?block=${encodeURIComponent("Lectura táctica del rival")}`}>
+                    {t("como-funciona.block.lectura", "Lectura táctica del rival")}
+                  </Link>
+                  <Link className="chip" to={`/app/search?block=${encodeURIComponent("Uso táctico de golpes")}`}>
+                    {t("como-funciona.block.golpes", "Uso táctico de golpes")}
+                  </Link>
+                  <Link className="chip" to={`/app/search?block=${encodeURIComponent("Juego en pareja")}`}>
+                    {t("como-funciona.block.pareja", "Juego en pareja")}
+                  </Link>
                 </div>
                 <p className="caption" style={{ marginTop: "0.4rem" }}>
                   {t(
@@ -474,11 +512,14 @@ const ComoFunciona = () => {
               <p className="lead">{t("como-funciona.s03.lead", "Detrás de situaciones diferentes hay ideas que se repiten. Las llamamos conceptos.")}</p>
             </div>
             <div className="chip-grid reveal">
-              <span className="chip-tag">#Timing</span>
-              <span className="chip-tag">#Decisiones</span>
-              <span className="chip-tag">#Lectura</span>
-              <span className="chip-tag">#Presión</span>
-              <span className="chip-tag">#Sincronía</span>
+              {(["timing", "decisiones", "lectura", "presion", "sincronia"] as const).map((key) => {
+                const c = concept(key)
+                return (
+                  <Link key={key} className="chip-tag" to={c.href}>
+                    #{c.label}
+                  </Link>
+                )
+              })}
               <span className="chip-tag" style={{ opacity: 0.5 }}>
                 …
               </span>
@@ -498,10 +539,10 @@ const ComoFunciona = () => {
             </div>
             <div className="chain-tags reveal">
               <span className="tagline-item">
-                <b>{t("como-funciona.block.globo", "Uso del globo")}</b> · #Globo
+                <b>{t("como-funciona.block.globo", "Uso del globo")}</b> · #{concept("globo").label}
               </span>
               <span className="tagline-item">
-                <b>{t("como-funciona.block.ritmo", "Gestión del ritmo del punto")}</b> · #BajarRitmo
+                <b>{t("como-funciona.block.ritmo", "Gestión del ritmo del punto")}</b> · #{concept("bajarRitmo").label}
               </span>
             </div>
             <p className="caption reveal">
