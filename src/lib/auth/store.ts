@@ -14,12 +14,16 @@ import { setLanguage } from "../i18n/store"
 export type UserRole = "User" | "Admin" | "ContentCreator"
 export type BillingPlan = "Free" | "TrialThenPaid" | "Discounted"
 export type SubscriptionStatus = "None" | "Trialing" | "Active" | "PastDue" | "Canceled"
+/** Nivel de suscripción (§Stripe 3 planes) — independiente de BillingPlan (categoría de
+ * facturación) y de Role (permisos). Lo fija el webhook de Stripe según el Price comprado. */
+export type PlanTier = "Starter" | "Club" | "Coach"
 export type AuthUser = {
   email: string
   displayName?: string | null
   role?: UserRole
   hasSeenOnboarding?: boolean
   planType?: BillingPlan
+  planTier?: PlanTier
   trialEndsAtUtc?: string | null
   subscriptionStatus?: SubscriptionStatus
   subscriptionCurrentPeriodEndUtc?: string | null
@@ -45,6 +49,22 @@ export function hasActiveSubscription(user: AuthUser | null): boolean {
   if (user.planType === "Free") return true
   if (user.trialEndsAtUtc && new Date(user.trialEndsAtUtc) > new Date()) return true
   return user.subscriptionStatus === "Trialing" || user.subscriptionStatus === "Active"
+}
+
+/** Funciones nuevas por tier (§Stripe 3 planes). El catálogo/Mi Lista/Mi Juego los dan los tres
+ * tiers por igual, así que hasActiveSubscription (arriba) no cambia — esto es solo para lo nuevo
+ * del hub "Club" (sesiones, preguntas, recomendado, análisis personalizado). */
+export type PlanFeature = "sessions" | "sessionQuestions" | "monthlyPicks" | "personalAnalysis"
+
+const TIER_FEATURES: Record<PlanTier, PlanFeature[]> = {
+  Starter: [],
+  Club: ["sessions", "sessionQuestions", "monthlyPicks"],
+  Coach: ["sessions", "sessionQuestions", "monthlyPicks", "personalAnalysis"],
+}
+
+export function hasFeature(user: AuthUser | null, feature: PlanFeature): boolean {
+  if (!user?.planTier) return false
+  return TIER_FEATURES[user.planTier].includes(feature)
 }
 
 const TOKEN_KEY = "token"
