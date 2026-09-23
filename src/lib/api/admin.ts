@@ -61,6 +61,25 @@ export type PublishInput = {
 export const publish = (input: PublishInput, publishToken: string) =>
   apiPost<{ ok: boolean; analysisId: string; clipIds: string[] }>("/api/admin/publish", input, publishTokenHeader(publishToken))
 
+// --- Sesiones tácticas mensuales grabadas (§Club hub, Fase 2) — mismo ciclo de subida que
+// análisis/clips (createDirectUpload/waitForVideoReady/uploadCaptions de arriba/abajo), pero un
+// único vídeo sin bloques/conceptos. Reutiliza PublishChapterInput tal cual. ---
+
+export type CreateSessionInput = {
+  uid: string
+  uidEn?: string
+  month: string // "yyyy-MM"
+  title: string
+  titleEn?: string
+  description?: string
+  descriptionEn?: string
+  durationSeconds?: number
+  chapters: PublishChapterInput[]
+}
+
+export const createSession = (input: CreateSessionInput, publishToken: string) =>
+  apiPost<{ ok: boolean; sessionId: number }>("/api/admin/sessions", input, publishTokenHeader(publishToken))
+
 // --- Edición de contenido ya publicado (v1 básica: título/descripción/bloques/conceptos;
 // sin reasignar a qué análisis "aparece" un clip ni tocar el vídeo — queda para "Estudio") ---
 

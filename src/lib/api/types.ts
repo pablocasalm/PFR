@@ -133,6 +133,38 @@ export type AnalysisDetail = {
   likedByMe?: boolean
 }
 
+/**
+ * Sesión táctica mensual grabada (§Club hub, Fase 2). Sin concepts/blocks/related — no forma
+ * parte del catálogo táctico. §Fase n+2 (pendiente a propósito): "clips/análisis relacionados"
+ * se añadirá aquí como `related?: ContentItem[]` cuando se decida esa pantalla, sin romper nada
+ * de lo de ahora.
+ */
+export type SessionSummary = {
+  id: number
+  month: string // "yyyy-MM"
+  title: string
+  titleEn: string
+  thumbnailUrl: string
+  durationSeconds: number
+  publishedAtUtc: string
+  completed: boolean
+}
+
+export type SessionDetail = {
+  id: number
+  month: string
+  title: string
+  titleEn: string
+  description: string
+  descriptionEn: string
+  durationSeconds: number
+  thumbnailUrl: string
+  videoUrl: string
+  videoUrlEn?: string | null
+  resumeSeconds: number
+  chapters: Chapter[]
+}
+
 // ---------------------------------------------------------------------------
 // Respuestas con forma de pantalla (BFF) — definidas por el frontend
 // ---------------------------------------------------------------------------

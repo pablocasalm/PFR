@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
-import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles } from "lucide-react"
+import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard } from "lucide-react"
 import { useAuth, canPublish, isAdmin, hasFeature, type AuthUser } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import SearchOverlay from "./SearchOverlay"
@@ -205,6 +205,16 @@ const SessionControl = () => {
               >
                 <UploadCloud className="h-4 w-4" />
                 {t("header.nav.publicar", "Publicar")}
+              </Link>
+            )}
+            {canPublish(user) && (
+              <Link
+                to="/app/admin/sesiones"
+                onClick={() => setMenuOpen(false)}
+                className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
+              >
+                <Clapperboard className="h-4 w-4" />
+                {t("admin-sesiones.title", "Sesiones")}
               </Link>
             )}
             {isAdmin(user) && (
