@@ -20,11 +20,14 @@ const Editar = lazy(() => import("../../pages/App/pages/Editar"))
 const AdminInvites = lazy(() => import("../../pages/App/pages/AdminInvites"))
 const AdminFeedback = lazy(() => import("../../pages/App/pages/AdminFeedback"))
 const AdminNoticias = lazy(() => import("../../pages/App/pages/AdminNoticias"))
+const Club = lazy(() => import("../../pages/App/pages/Club"))
+const AdminRecomendado = lazy(() => import("../../pages/App/pages/AdminRecomendado"))
 
 const RequireAuth = lazy(() => import("../../lib/auth/RequireAuth"))
 const RequirePublisher = lazy(() => import("../../lib/auth/RequirePublisher"))
 const RequireAdmin = lazy(() => import("../../lib/auth/RequireAdmin"))
 const RequireSubscription = lazy(() => import("../../lib/auth/RequireSubscription"))
+const RequireFeature = lazy(() => import("../../lib/auth/RequireFeature"))
 
 const loadingFallback = <LoadingScreen />
 
@@ -64,6 +67,8 @@ const router = createBrowserRouter([
       { path: "admin/invitaciones", element: withSuspense(<RequireAdmin><AdminInvites /></RequireAdmin>) },
       { path: "admin/reportes", element: withSuspense(<RequireAdmin><AdminFeedback /></RequireAdmin>) },
       { path: "admin/noticias", element: withSuspense(<RequireAdmin><AdminNoticias /></RequireAdmin>) },
+      { path: "admin/recomendado", element: withSuspense(<RequireAdmin><AdminRecomendado /></RequireAdmin>) },
+      { path: "club", element: withSuspense(<RequireFeature feature="monthlyPicks"><Club /></RequireFeature>) },
     ],
   },
   { path: "*", element: <Navigate to="/app/inicio" replace /> },

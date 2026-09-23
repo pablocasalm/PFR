@@ -122,7 +122,7 @@ export const getAnalysisForEdit = (id: string) => apiGet<AnalysisForEdit>(`/api/
 
 // --- Catálogo de conceptos (§ traducción de contenido): para detectar en Publicar/Editar
 // qué conceptos seleccionados todavía no tienen NameEn y pedir su traducción en el formulario. ---
-export type ConceptOption = { nameEs: string; nameEn: string | null }
+export type ConceptOption = { id: number; nameEs: string; nameEn: string | null }
 export const getConcepts = () => apiGet<ConceptOption[]>("/api/admin/concepts")
 
 // --- Versión en inglés (HeyGen): vídeo doblado + subtítulos. El vídeo se sube igual que el

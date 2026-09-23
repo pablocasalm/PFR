@@ -3,15 +3,16 @@ import type { LucideIcon } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getHome } from "../../../lib/api/home"
+import { getMonthlyPick } from "../../../lib/api/club"
 import type { ContentItem, PopularConcept } from "../../../lib/api/types"
-import SaveButton from "../../../lib/saved/SaveButton"
+import { useAuth, hasFeature } from "../../../lib/auth/store"
+import { formatDuration, hueFor, watchHref } from "../../../lib/format"
 import { Skeleton, CardGridSkeleton } from "../../../lib/ui/Skeleton"
 import CardRow from "../../../lib/ui/CardRow"
-import WatchedBadge from "../components/WatchedBadge"
-import EnglishBadge from "../components/EnglishBadge"
+import ContentCard, { Thumb } from "../components/ContentCard"
 import { TOUR_OPEN_FEEDBACK_EVENT } from "../components/FeedbackButton"
 import { useI18n } from "../../../lib/i18n/store"
-import { pickText, pickList } from "../../../lib/i18n/content"
+import { pickText } from "../../../lib/i18n/content"
 
 /**
  * Inicio — Dashboard principal. Consume GET /api/home (endpoint con forma de pantalla).
@@ -19,52 +20,6 @@ import { pickText, pickList } from "../../../lib/i18n/content"
  */
 
 const CONCEPT_ICONS: LucideIcon[] = [LayoutGrid, Tag, Target, Users, BarChart3, Flame]
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-const thumbStyle = (hue: number) => ({
-  background: `linear-gradient(135deg, hsl(${hue}, 42%, 24%), hsl(${hue + 20}, 45%, 9%))`,
-})
-
-const formatDuration = (seconds: number) => {
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  const s = seconds % 60
-  const mm = String(m).padStart(2, "0")
-  const ss = String(s).padStart(2, "0")
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`
-}
-
-// Hash estable id → tono, para el degradado de fondo cuando no hay miniatura.
-const hueFor = (seed: string) => {
-  let h = 0
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 360
-  return 200 + (h % 60)
-}
-
-const watchHref = (item: ContentItem) =>
-  item.type === "analysis" ? `/app/watch?v=${item.id}` : `/app/watch?c=${item.id}`
-
-const Thumb = ({ src, hue, className = "" }: { src?: string; hue: number; className?: string }) => (
-  <div className={`relative overflow-hidden ${className}`} style={thumbStyle(hue)}>
-    {src && <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />}
-  </div>
-)
-
-const TypeBadge = ({ type }: { type: ContentItem["type"] }) => {
-  const { t } = useI18n()
-  return type === "analysis" ? (
-    <span className="rounded border border-violet-400/40 bg-violet-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-300">
-      {t("content-card.type-analysis", "Análisis")}
-    </span>
-  ) : (
-    <span className="rounded border border-neon-cyan/40 bg-neon-cyan/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neon-cyan">
-      {t("content-card.type-clip", "Clip")}
-    </span>
-  )
-}
 
 // ---------------------------------------------------------------------------
 // Subcomponentes
@@ -144,44 +99,6 @@ const ContinueCard = ({ item }: { item: ContentItem }) => {
   )
 }
 
-const ContentCard = ({ item, rank }: { item: ContentItem; rank?: number }) => {
-  const { lang } = useI18n()
-  const concepts = pickList(item.concepts, item.conceptsEn, lang)
-  return (
-    <Link to={watchHref(item)} className="group block w-full cursor-pointer">
-      <div className="relative overflow-hidden rounded-xl border border-white/10">
-        <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-full" />
-        {item.completed && <WatchedBadge />}
-        {item.hasEnglishVersion && rank == null && <EnglishBadge />}
-        {rank != null && (
-          <span className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-neon-cyan text-sm font-bold text-midnight">
-            {rank}
-          </span>
-        )}
-        <span className="absolute right-2 top-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white">
-          {formatDuration(item.durationSeconds)}
-        </span>
-        <span className="absolute bottom-2 right-2">
-          <SaveButton item={item} variant="icon" />
-        </span>
-      </div>
-      <div className="mt-2.5">
-        <TypeBadge type={item.type} />
-      </div>
-      <p className="mt-2 text-sm font-medium leading-snug text-white">{pickText(item.title, item.titleEn, lang)}</p>
-      {item.type === "clip" && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {concepts.slice(0, 3).map((c) => (
-            <span key={c} className="text-[11px] text-neon-cyan/80">
-              #{c}
-            </span>
-          ))}
-        </div>
-      )}
-    </Link>
-  )
-}
-
 const ConceptoCard = ({ concept, icon: Icon }: { concept: PopularConcept; icon: LucideIcon }) => {
   const { lang } = useI18n()
   return (
@@ -223,7 +140,15 @@ const InicioSkeleton = () => (
 
 const Inicio = () => {
   const { t } = useI18n()
+  const { user } = useAuth()
   const { data, loading, error } = useApi(getHome, [], "home")
+  // Solo Club/Coach (§Stripe 3 planes) — para Starter, ni se llama al endpoint.
+  const canSeeMonthlyPick = hasFeature(user, "monthlyPicks")
+  const { data: monthlyPick } = useApi(
+    () => (canSeeMonthlyPick ? getMonthlyPick() : Promise.resolve(null)),
+    [canSeeMonthlyPick],
+    "monthly-pick",
+  )
 
   if (loading) return <InicioSkeleton />
   if (error)
@@ -257,6 +182,20 @@ const Inicio = () => {
               <ContinueCard key={item.id} item={item} />
             ))}
           </div>
+        </section>
+      )}
+
+      {/* Recomendado del mes (§Club hub, Fase 1) — solo Club/Coach y si hay pick publicado este
+          mes. Acento visual (borde/fondo neon-cyan) para distinguirla de una fila cualquiera;
+          la versión completa (con la nota de Guille) vive en /app/club. */}
+      {monthlyPick && monthlyPick.items.length > 0 && (
+        <section className="rounded-2xl border border-neon-cyan/30 bg-neon-cyan/[0.04] p-4 sm:p-5">
+          <SectionHeading title={t("inicio.section.monthly-pick", "Recomendado para ti este mes")} to="/app/club" />
+          <CardRow>
+            {monthlyPick.items.map((item) => (
+              <ContentCard key={item.id} item={item} />
+            ))}
+          </CardRow>
         </section>
       )}
 

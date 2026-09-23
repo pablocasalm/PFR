@@ -41,6 +41,19 @@ export type ContentItem = {
 /** Concepto popular (chip con contador), para Inicio y Explorar. */
 export type PopularConcept = { name: string; nameEn: string; clipCount: number }
 
+/** Nombre de concepto en los dos idiomas, sin contador — para MonthlyPick (§Club hub). */
+export type ConceptName = { name: string; nameEn: string }
+
+/** GET /api/club/monthly-pick → "Recomendado del mes" vigente (§Club hub, Fase 1). */
+export type MonthlyPick = {
+  id: number
+  month: string // "yyyy-MM"
+  note?: string | null
+  noteEn?: string | null
+  items: ContentItem[]
+  concepts: ConceptName[]
+}
+
 /** Comentario (plano en el MVP). `likes` opcional según diseño. */
 export type Comment = {
   id: string

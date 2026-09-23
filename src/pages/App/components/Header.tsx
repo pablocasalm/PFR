@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
-import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox, Megaphone, UserCircle } from "lucide-react"
-import { useAuth, canPublish, isAdmin, type AuthUser } from "../../../lib/auth/store"
+import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles } from "lucide-react"
+import { useAuth, canPublish, isAdmin, hasFeature, type AuthUser } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import SearchOverlay from "./SearchOverlay"
 import NewsBell from "./NewsBell"
@@ -88,6 +88,21 @@ const Header = () => {
           >
             <UploadCloud className="h-4 w-4" />
             {t("header.nav.publicar", "Publicar")}
+          </NavLink>
+        )}
+        {/* Solo Club/Coach (§Stripe 3 planes) — sin sitio en el MobileNav de 5 iconos fijos, así
+            que en móvil se llega vía la tarjeta destacada de Inicio, no desde aquí. */}
+        {hasFeature(user, "monthlyPicks") && (
+          <NavLink
+            to="/app/club"
+            className={({ isActive }) =>
+              `flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                isActive ? "text-neon-cyan" : "text-white/60 hover:text-white"
+              }`
+            }
+          >
+            <Crown className="h-4 w-4" />
+            {t("header.nav.club", "Club")}
           </NavLink>
         )}
       </nav>
@@ -220,6 +235,16 @@ const SessionControl = () => {
               >
                 <Megaphone className="h-4 w-4" />
                 {t("header.nav.noticias", "Noticias")}
+              </Link>
+            )}
+            {isAdmin(user) && (
+              <Link
+                to="/app/admin/recomendado"
+                onClick={() => setMenuOpen(false)}
+                className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
+              >
+                <Sparkles className="h-4 w-4" />
+                {t("admin-recomendado.title", "Recomendado del mes")}
               </Link>
             )}
             <button
