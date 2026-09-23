@@ -150,6 +150,20 @@ export type SessionSummary = {
   completed: boolean
 }
 
+/** Análisis táctico personalizado (§Club hub, Fase 5, plan Coach). */
+export type PersonalAnalysisStatus = "Submitted" | "InReview" | "Delivered"
+
+export type PersonalAnalysisItem = {
+  id: number
+  status: PersonalAnalysisStatus
+  submittedAtUtc: string
+  uploadedVideoUrl: string
+  userNote?: string | null
+  deliveredVideoUrl?: string | null
+  deliveredPlanText?: string | null
+  deliveredAtUtc?: string | null
+}
+
 export type SessionDetail = {
   id: number
   month: string

@@ -267,6 +267,16 @@ const SessionControl = () => {
                 {t("admin-preguntas.title", "Preguntas")}
               </Link>
             )}
+            {isAdmin(user) && (
+              <Link
+                to="/app/admin/coach"
+                onClick={() => setMenuOpen(false)}
+                className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
+              >
+                <Sparkles className="h-4 w-4" />
+                {t("admin-coach.title", "Análisis personalizado")}
+              </Link>
+            )}
             <button
               onClick={() => {
                 setMenuOpen(false)
