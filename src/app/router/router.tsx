@@ -23,6 +23,7 @@ const AdminNoticias = lazy(() => import("../../pages/App/pages/AdminNoticias"))
 const Club = lazy(() => import("../../pages/App/pages/Club"))
 const AdminRecomendado = lazy(() => import("../../pages/App/pages/AdminRecomendado"))
 const AdminSesiones = lazy(() => import("../../pages/App/pages/AdminSesiones"))
+const AdminPreguntas = lazy(() => import("../../pages/App/pages/AdminPreguntas"))
 
 const RequireAuth = lazy(() => import("../../lib/auth/RequireAuth"))
 const RequirePublisher = lazy(() => import("../../lib/auth/RequirePublisher"))
@@ -70,6 +71,7 @@ const router = createBrowserRouter([
       { path: "admin/noticias", element: withSuspense(<RequireAdmin><AdminNoticias /></RequireAdmin>) },
       { path: "admin/recomendado", element: withSuspense(<RequireAdmin><AdminRecomendado /></RequireAdmin>) },
       { path: "admin/sesiones", element: withSuspense(<RequirePublisher><AdminSesiones /></RequirePublisher>) },
+      { path: "admin/preguntas", element: withSuspense(<RequireAdmin><AdminPreguntas /></RequireAdmin>) },
       { path: "club", element: withSuspense(<RequireFeature feature="monthlyPicks"><Club /></RequireFeature>) },
     ],
   },

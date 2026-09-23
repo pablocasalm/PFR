@@ -1,8 +1,10 @@
-import { Crown, Play } from "lucide-react"
+import { useState } from "react"
+import { Crown, Play, Send } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getMonthlyPick } from "../../../lib/api/club"
 import { getSessionsArchive } from "../../../lib/api/sessions"
+import { getMyQuestions, sendQuestion, type MySessionQuestion } from "../../../lib/api/sessionQuestions"
 import type { SessionSummary } from "../../../lib/api/types"
 import { formatDuration, hueFor } from "../../../lib/format"
 import { CardGridSkeleton } from "../../../lib/ui/Skeleton"
@@ -16,10 +18,79 @@ import { pickText } from "../../../lib/i18n/content"
  * Club — hub de las funciones de los planes Club/Coach (§Stripe 3 planes). El acceso ya lo
  * filtra RequireFeature en el router; aquí se asume que quien llega tiene el tier necesario.
  *
- * Fase 1: "Recomendado del mes". Fase 2: Sesiones grabadas. Preguntas (Fase 3) y el análisis
- * personalizado de Coach (Fase 5) se añaden como secciones nuevas más adelante, sin tocar esta
- * estructura.
+ * Fase 1: "Recomendado del mes". Fase 2: Sesiones grabadas. Fase 3: Preguntas para la sesión.
+ * El análisis personalizado de Coach (Fase 5) se añade como sección nueva más adelante, sin
+ * tocar esta estructura.
  */
+
+/** Tarjeta pequeña de preguntas — no es pantalla propia, vive junto a Sesiones. */
+const QuestionsCard = () => {
+  const { t } = useI18n()
+  const { data, loading } = useApi(getMyQuestions, [], "my-questions")
+  const [items, setItems] = useState<MySessionQuestion[] | null>(null)
+  const [text, setText] = useState("")
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const list = items ?? data ?? []
+
+  const submit = async () => {
+    const message = text.trim()
+    if (!message || sending) return
+    setSending(true)
+    setError(null)
+    try {
+      const created = await sendQuestion(message)
+      setItems([created, ...list])
+      setText("")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("club.questions.error", "No se pudo enviar la pregunta."))
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+      <h2 className="mb-3 text-sm font-bold uppercase tracking-[0.12em] text-white">{t("club.questions.title", "Preguntas para la próxima sesión")}</h2>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={2}
+          placeholder={t("club.questions.placeholder", "¿Qué quieres que Guille trate en la próxima sesión?")}
+          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
+        />
+        <button
+          onClick={submit}
+          disabled={!text.trim() || sending}
+          className="flex items-center justify-center gap-1.5 rounded-lg bg-neon-cyan px-4 py-2.5 text-sm font-semibold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        >
+          <Send className="h-4 w-4" />
+          {t("club.questions.send", "Enviar")}
+        </button>
+      </div>
+      {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
+
+      {!loading && list.length > 0 && (
+        <ul className="mt-4 space-y-2 border-t border-white/5 pt-4">
+          {list.map((q) => (
+            <li key={q.id} className="flex items-start justify-between gap-3 text-sm">
+              <span className="text-white/80">{q.message}</span>
+              <span
+                className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+                  q.answered ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" : "border-amber-400/40 bg-amber-400/10 text-amber-300"
+                }`}
+              >
+                {q.answered ? t("club.questions.answered", "Respondida") : t("club.questions.pending", "Pendiente")}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
 
 /** Tarjeta de sesión — como ContentCard pero sin fila de conceptos (una sesión no los tiene). */
 const SessionCard = ({ session }: { session: SessionSummary }) => {
@@ -76,6 +147,8 @@ const Club = () => {
           </div>
         )}
       </section>
+
+      <QuestionsCard />
 
       <section>
         <h2 className="mb-4 text-sm font-bold uppercase tracking-[0.12em] text-white">
