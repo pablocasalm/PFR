@@ -177,6 +177,9 @@ export type SessionDetail = {
   videoUrlEn?: string | null
   resumeSeconds: number
   chapters: Chapter[]
+  likes: number
+  likedByMe: boolean
+  comments: Comment[]
 }
 
 // ---------------------------------------------------------------------------
