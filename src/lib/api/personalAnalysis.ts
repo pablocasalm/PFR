@@ -37,6 +37,12 @@ export const getMyPersonalAnalysis = () => apiGet<MyPersonalAnalysis>("/api/club
 export const submitPersonalAnalysis = (uid: string, durationSeconds: number, note?: string) =>
   apiPost<PersonalAnalysisItem>("/api/club/personal-analysis", { uid, durationSeconds, note })
 
+/** PATCH /api/club/personal-analysis/{id} → corrige un envío propio (vídeo y/o nota) mientras
+ * siga en cola ("Submitted"); el backend lo rechaza en cuanto pasa a "en revisión". Todo
+ * opcional: solo se manda lo que se quiere cambiar. */
+export const editPersonalAnalysis = (id: number, changes: { uid?: string; durationSeconds?: number; note?: string }) =>
+  apiPatch<PersonalAnalysisItem>(`/api/club/personal-analysis/${id}`, changes)
+
 /* ---- Gestión (solo Admin) ---- */
 
 export type AdminPersonalAnalysisItem = PersonalAnalysisItem & { userId: number; userEmail: string | null; userName: string | null }

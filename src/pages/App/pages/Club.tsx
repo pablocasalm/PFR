@@ -1,143 +1,36 @@
 import { useState } from "react"
-import { Crown, Play, Send, UploadCloud, Sparkles } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Crown, Send, ArrowRight } from "lucide-react"
+import { Link, Navigate } from "react-router-dom"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getMonthlyPick } from "../../../lib/api/club"
 import { getSessionsArchive } from "../../../lib/api/sessions"
 import { getMyQuestions, sendQuestion, type MySessionQuestion } from "../../../lib/api/sessionQuestions"
-import {
-  getMyPersonalAnalysis,
-  createDirectUpload,
-  waitForVideoReady,
-  submitPersonalAnalysis,
-  type MyPersonalAnalysis,
-} from "../../../lib/api/personalAnalysis"
-import { readVideoDuration, uploadToCloudflare } from "../../../lib/api/admin"
-import type { SessionSummary } from "../../../lib/api/types"
-import { formatDuration, hueFor } from "../../../lib/format"
 import { CardGridSkeleton } from "../../../lib/ui/Skeleton"
 import CardRow from "../../../lib/ui/CardRow"
-import ContentCard, { Thumb } from "../components/ContentCard"
-import WatchedBadge from "../components/WatchedBadge"
-import FileDrop from "../components/FileDrop"
-import HlsPlayer from "../../../lib/player/VideoPlayer"
+import ContentCard from "../components/ContentCard"
+import SessionCard from "../components/SessionCard"
 import { useAuth, hasFeature } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
 
 /**
- * Club — hub de las funciones de los planes Club/Coach (§Stripe 3 planes). El acceso ya lo
- * filtra RequireFeature en el router; aquí se asume que quien llega tiene el tier necesario.
+ * Club — hub de las funciones del plan Club (§Stripe 3 planes, §rediseño Club/Coach). Quien no
+ * llega a Club se manda directo a /app/precios (ver el guard al principio de Club) — antes se
+ * dejaba entrar a los 3 tiers con cada sección borrosa, pero se veía mal y se abandonó ese
+ * enfoque; el único sitio que sigue mostrando un escaparate borroso es el banner de Inicio.
+ * "Mi análisis" (Coach) vive aparte, en Coach.tsx.
+ *
+ * Layout en dos columnas desde `lg`: columna principal con Recomendado del mes y una fila
+ * ACOTADA de sesiones (nunca el grid completo — eso crece sin tope mes a mes, ver
+ * SesionesArchivo.tsx) + columna lateral fija con Preguntas, que al ser una acción puntual (no
+ * contenido que se acumula) no debe depender de cuánto haya crecido lo demás para seguir
+ * visible sin desplazarse.
  *
  * Fase 1: "Recomendado del mes". Fase 2: Sesiones grabadas. Fase 3: Preguntas para la sesión.
- * Fase 5: Mi análisis (Coach).
  */
 
-/** "Mi análisis" — solo Coach. Sube el propio partido, ve el estado, y el análisis entregado. */
-const PersonalAnalysisSection = () => {
-  const { t, lang } = useI18n()
-  const { data } = useApi(getMyPersonalAnalysis, [], "my-personal-analysis")
-  const [override, setOverride] = useState<MyPersonalAnalysis | null>(null)
-  const [file, setFile] = useState<File | null>(null)
-  const [note, setNote] = useState("")
-  const [busy, setBusy] = useState(false)
-  const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  const current = override ?? data
-  const request = current?.request ?? null
-  const canSubmit = current?.canSubmit ?? false
-
-  const submit = async () => {
-    if (!file || busy) return
-    setBusy(true)
-    setError(null)
-    setProgress({ label: t("club.personal-analysis.uploading", "Subiendo tu partido…"), percent: 0 })
-    try {
-      const dur = await readVideoDuration(file)
-      const up = await createDirectUpload(file.name, file.size)
-      await uploadToCloudflare(up.uploadURL, file, (p) => setProgress({ label: t("club.personal-analysis.uploading", "Subiendo tu partido…"), percent: p }))
-      setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
-      await waitForVideoReady(up.uid)
-      const created = await submitPersonalAnalysis(up.uid, dur, note.trim() || undefined)
-      setOverride({ canSubmit: false, request: created })
-      setFile(null)
-      setNote("")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("club.personal-analysis.error", "No se pudo enviar el partido."))
-    } finally {
-      setBusy(false)
-      setProgress(null)
-    }
-  }
-
-  const fmt = (iso: string) =>
-    new Date(iso).toLocaleDateString(lang === "en" ? "en-US" : "es-ES", { day: "2-digit", month: "long" })
-
-  return (
-    <section className="rounded-2xl border border-neon-cyan/20 bg-neon-cyan/[0.03] p-4">
-      <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.12em] text-white">
-        <Sparkles className="h-4 w-4 text-neon-cyan" />
-        {t("club.personal-analysis.title", "Mi análisis personalizado")}
-      </h2>
-
-      {/* Último entregado, si lo hay */}
-      {request?.status === "Delivered" && request.deliveredVideoUrl && (
-        <div className="mb-5 space-y-3">
-          <div className="overflow-hidden rounded-xl border border-white/10">
-            <HlsPlayer src={request.deliveredVideoUrl} aspect="16:9" />
-          </div>
-          {request.deliveredPlanText && (
-            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-              <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-white/50">{t("club.personal-analysis.plan", "Plan de acción")}</p>
-              <p className="whitespace-pre-wrap text-sm text-white/80">{request.deliveredPlanText}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Formulario de envío, si toca */}
-      {canSubmit && (
-        <div className="space-y-3">
-          <FileDrop file={file} onFile={setFile} label={t("club.personal-analysis.upload-label", "Sube 20 min de uno de tus partidos")} />
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={2}
-            placeholder={t("club.personal-analysis.note-placeholder", "¿Qué quieres que mire Guille? (opcional)")}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
-          />
-          {error && <p className="text-xs text-red-300">{error}</p>}
-          {progress && (
-            <div>
-              <p className="mb-1 text-xs text-white/50">{progress.label}</p>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-neon-cyan transition-all" style={{ width: `${progress.percent}%` }} />
-              </div>
-            </div>
-          )}
-          <button
-            onClick={submit}
-            disabled={!file || busy}
-            className="flex items-center justify-center gap-2 rounded-lg bg-neon-cyan px-4 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <UploadCloud className="h-4 w-4" />
-            {busy ? t("club.personal-analysis.sending", "Enviando…") : t("club.personal-analysis.send", "Enviar partido")}
-          </button>
-        </div>
-      )}
-
-      {/* En curso, todavía no entregado */}
-      {!canSubmit && request && request.status !== "Delivered" && (
-        <p className="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-sm text-white/70">
-          {request.status === "InReview"
-            ? t("club.personal-analysis.in-review", "Recibido el {date} — Guille lo está revisando.", { date: fmt(request.submittedAtUtc) })
-            : t("club.personal-analysis.submitted", "Recibido el {date} — en la cola de Guille.", { date: fmt(request.submittedAtUtc) })}
-        </p>
-      )}
-    </section>
-  )
-}
+/** Cuántas sesiones caben en la fila del hub antes de mandar al archivo completo. */
+const SESSIONS_PREVIEW_COUNT = 6
 
 /** Tarjeta pequeña de preguntas — no es pantalla propia, vive junto a Sesiones. */
 const QuestionsCard = () => {
@@ -169,18 +62,21 @@ const QuestionsCard = () => {
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
       <h2 className="mb-3 text-sm font-bold uppercase tracking-[0.12em] text-white">{t("club.questions.title", "Preguntas para la próxima sesión")}</h2>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      {/* Siempre en columna, nunca lado a lado: esta tarjeta vive en una barra lateral estrecha
+          (320px), no a lo ancho — un `sm:flex-row` respondería al ancho del viewport, no al del
+          contenedor, y quedaría apretado igualmente aquí. */}
+      <div className="flex flex-col gap-2">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          rows={2}
-          placeholder={t("club.questions.placeholder", "¿Qué quieres que Guille trate en la próxima sesión?")}
-          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
+          rows={3}
+          placeholder={t("club.questions.placeholder", "¿Qué quieres que tratemos en la próxima sesión?")}
+          className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
         />
         <button
           onClick={submit}
           disabled={!text.trim() || sending}
-          className="flex items-center justify-center gap-1.5 rounded-lg bg-neon-cyan px-4 py-2.5 text-sm font-semibold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          className="flex items-center justify-center gap-1.5 rounded-lg bg-neon-cyan px-4 py-2.5 text-sm font-semibold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Send className="h-4 w-4" />
           {t("club.questions.send", "Enviar")}
@@ -208,33 +104,23 @@ const QuestionsCard = () => {
   )
 }
 
-/** Tarjeta de sesión — como ContentCard pero sin fila de conceptos (una sesión no los tiene). */
-const SessionCard = ({ session }: { session: SessionSummary }) => {
-  const { lang } = useI18n()
-  return (
-    <Link to={`/app/watch?s=${session.id}`} className="group block w-full cursor-pointer">
-      <div className="relative overflow-hidden rounded-xl border border-white/10">
-        <Thumb src={session.thumbnailUrl} hue={hueFor(String(session.id))} className="aspect-video w-full" />
-        {session.completed && <WatchedBadge />}
-        <span className="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm">
-            <Play className="h-4 w-4 text-white" fill="currentColor" />
-          </span>
-        </span>
-        <span className="absolute right-2 top-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white">
-          {formatDuration(session.durationSeconds)}
-        </span>
-      </div>
-      <p className="mt-2.5 text-sm font-medium leading-snug text-white">{pickText(session.title, session.titleEn, lang)}</p>
-    </Link>
-  )
-}
-
 const Club = () => {
   const { t, lang } = useI18n()
   const { user } = useAuth()
-  const { data: monthlyPick, loading } = useApi(getMonthlyPick, [], "monthly-pick")
-  const { data: sessions, loading: sessionsLoading } = useApi(getSessionsArchive, [], "club-sessions")
+  const hasClub = hasFeature(user, "monthlyPicks")
+
+  // Si no llega a Club, ni se piden estos datos: el backend los rechazaría igual (RequireTier),
+  // pero así no se dispara la llamada justo antes de redirigir.
+  const { data: monthlyPick, loading } = useApi(() => (hasClub ? getMonthlyPick() : Promise.resolve(null)), [hasClub], "monthly-pick")
+  const { data: sessions, loading: sessionsLoading } = useApi(
+    () => (hasClub ? getSessionsArchive() : Promise.resolve(null)),
+    [hasClub],
+    "club-sessions",
+  )
+
+  if (!hasClub) return <Navigate to="/app/precios" replace />
+
+  const sessionsPreview = sessions?.slice(0, SESSIONS_PREVIEW_COUNT) ?? []
 
   return (
     <main className="w-full space-y-8 py-8">
@@ -248,60 +134,79 @@ const Club = () => {
         </div>
       </div>
 
-      {hasFeature(user, "personalAnalysis") && <PersonalAnalysisSection />}
+      <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+        {/* Columna principal: contenido que crece con el tiempo. */}
+        <div className="space-y-8">
+          {/* Recomendado del mes primero: es la pieza más editorial del hub (curada por
+              nuestro equipo), antes estaba la última, detrás de todo lo demás. */}
+          <section>
+            <h2 className="mb-4 text-sm font-bold uppercase tracking-[0.12em] text-white">
+              {t("club.monthly-pick.title", "Recomendado del mes")}
+            </h2>
 
-      <section>
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-[0.12em] text-white">{t("club.sessions.title", "Sesiones")}</h2>
-        {sessionsLoading ? (
-          <CardGridSkeleton count={4} />
-        ) : !sessions || sessions.length === 0 ? (
-          <p className="rounded-xl border border-white/10 bg-white/[0.02] p-6 text-sm text-white/50">
-            {t("club.sessions.empty", "Todavía no hay ninguna sesión grabada. Vuelve pronto.")}
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {sessions.map((s) => (
-              <SessionCard key={s.id} session={s} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <QuestionsCard />
-
-      <section>
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-[0.12em] text-white">
-          {t("club.monthly-pick.title", "Recomendado del mes")}
-        </h2>
-
-        {loading ? (
-          <CardGridSkeleton count={4} />
-        ) : !monthlyPick || monthlyPick.items.length === 0 ? (
-          <p className="rounded-xl border border-white/10 bg-white/[0.02] p-6 text-sm text-white/50">
-            {t("club.monthly-pick.empty", "Todavía no hay recomendación para este mes. Vuelve pronto.")}
-          </p>
-        ) : (
-          <>
-            {monthlyPick.note && (
-              <p className="mb-4 text-sm text-white/70">{pickText(monthlyPick.note, monthlyPick.noteEn ?? undefined, lang)}</p>
+            {loading ? (
+              <CardGridSkeleton count={4} />
+            ) : !monthlyPick || monthlyPick.items.length === 0 ? (
+              <p className="rounded-xl border border-white/10 bg-white/[0.02] p-6 text-sm text-white/50">
+                {t("club.monthly-pick.empty", "Todavía no hay recomendación para este mes. Vuelve pronto.")}
+              </p>
+            ) : (
+              <>
+                {monthlyPick.note && (
+                  <p className="mb-4 text-sm text-white/70">{pickText(monthlyPick.note, monthlyPick.noteEn ?? undefined, lang)}</p>
+                )}
+                {monthlyPick.concepts.length > 0 && (
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {monthlyPick.concepts.map((c) => (
+                      <span key={c.name} className="rounded-full border border-neon-cyan/25 bg-neon-cyan/10 px-3 py-1 text-xs font-medium text-neon-cyan">
+                        #{pickText(c.name, c.nameEn, lang)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <CardRow>
+                  {monthlyPick.items.map((item) => (
+                    <ContentCard key={item.id} item={item} />
+                  ))}
+                </CardRow>
+              </>
             )}
-            {monthlyPick.concepts.length > 0 && (
-              <div className="mb-4 flex flex-wrap gap-2">
-                {monthlyPick.concepts.map((c) => (
-                  <span key={c.name} className="rounded-full border border-neon-cyan/25 bg-neon-cyan/10 px-3 py-1 text-xs font-medium text-neon-cyan">
-                    #{pickText(c.name, c.nameEn, lang)}
-                  </span>
+          </section>
+
+          {/* Sesiones: fila ACOTADA a SESSIONS_PREVIEW_COUNT, nunca el histórico completo —
+              eso vive en /app/club/sesiones para que este hub no crezca sin tope mes a mes. */}
+          <section>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">{t("club.sessions.title", "Sesiones")}</h2>
+              {sessions && sessions.length > 0 && (
+                <Link to="/app/club/sesiones" className="flex items-center gap-1 text-xs font-medium text-neon-cyan transition hover:brightness-110">
+                  {t("club.sessions.see-all", "Ver todas")}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              )}
+            </div>
+            {sessionsLoading ? (
+              <CardGridSkeleton count={4} />
+            ) : sessionsPreview.length === 0 ? (
+              <p className="rounded-xl border border-white/10 bg-white/[0.02] p-6 text-sm text-white/50">
+                {t("club.sessions.empty", "Todavía no hay ninguna sesión grabada. Vuelve pronto.")}
+              </p>
+            ) : (
+              <CardRow cols="sm:grid-cols-3 lg:grid-cols-3">
+                {sessionsPreview.map((s) => (
+                  <SessionCard key={s.id} session={s} />
                 ))}
-              </div>
+              </CardRow>
             )}
-            <CardRow>
-              {monthlyPick.items.map((item) => (
-                <ContentCard key={item.id} item={item} />
-              ))}
-            </CardRow>
-          </>
-        )}
-      </section>
+          </section>
+        </div>
+
+        {/* Columna lateral: Preguntas es una acción puntual, no contenido que se acumula —
+            vive fija aquí para no depender de cuánto crezca la columna principal. */}
+        <aside>
+          <QuestionsCard />
+        </aside>
+      </div>
     </main>
   )
 }

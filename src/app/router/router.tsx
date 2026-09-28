@@ -21,6 +21,8 @@ const AdminInvites = lazy(() => import("../../pages/App/pages/AdminInvites"))
 const AdminFeedback = lazy(() => import("../../pages/App/pages/AdminFeedback"))
 const AdminNoticias = lazy(() => import("../../pages/App/pages/AdminNoticias"))
 const Club = lazy(() => import("../../pages/App/pages/Club"))
+const Coach = lazy(() => import("../../pages/App/pages/Coach"))
+const SesionesArchivo = lazy(() => import("../../pages/App/pages/SesionesArchivo"))
 const AdminRecomendado = lazy(() => import("../../pages/App/pages/AdminRecomendado"))
 const AdminSesiones = lazy(() => import("../../pages/App/pages/AdminSesiones"))
 const AdminPreguntas = lazy(() => import("../../pages/App/pages/AdminPreguntas"))
@@ -30,7 +32,6 @@ const RequireAuth = lazy(() => import("../../lib/auth/RequireAuth"))
 const RequirePublisher = lazy(() => import("../../lib/auth/RequirePublisher"))
 const RequireAdmin = lazy(() => import("../../lib/auth/RequireAdmin"))
 const RequireSubscription = lazy(() => import("../../lib/auth/RequireSubscription"))
-const RequireFeature = lazy(() => import("../../lib/auth/RequireFeature"))
 
 const loadingFallback = <LoadingScreen />
 
@@ -74,7 +75,12 @@ const router = createBrowserRouter([
       { path: "admin/sesiones", element: withSuspense(<RequirePublisher><AdminSesiones /></RequirePublisher>) },
       { path: "admin/preguntas", element: withSuspense(<RequireAdmin><AdminPreguntas /></RequireAdmin>) },
       { path: "admin/coach", element: withSuspense(<RequireAdmin><AdminCoach /></RequireAdmin>) },
-      { path: "club", element: withSuspense(<RequireFeature feature="monthlyPicks"><Club /></RequireFeature>) },
+      // Club/Coach (§rediseño Club/Coach): ya no van detrás de RequireFeature — se abren a los
+      // 3 tiers, y cada pantalla decide sección a sección qué mostrar entero y qué mostrar
+      // como escaparate bloqueado con CTA a precios.
+      { path: "club", element: withSuspense(<RequireSubscription><Club /></RequireSubscription>) },
+      { path: "club/sesiones", element: withSuspense(<RequireSubscription><SesionesArchivo /></RequireSubscription>) },
+      { path: "coach", element: withSuspense(<RequireSubscription><Coach /></RequireSubscription>) },
     ],
   },
   { path: "*", element: <Navigate to="/app/inicio" replace /> },

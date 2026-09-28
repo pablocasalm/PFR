@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
-import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, MessageCircleQuestion } from "lucide-react"
+import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, MessageCircleQuestion, Lock } from "lucide-react"
 import { useAuth, canPublish, isAdmin, hasFeature, type AuthUser } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import SearchOverlay from "./SearchOverlay"
@@ -90,21 +90,35 @@ const Header = () => {
             {t("header.nav.publicar", "Publicar")}
           </NavLink>
         )}
-        {/* Solo Club/Coach (§Stripe 3 planes) — sin sitio en el MobileNav de 5 iconos fijos, así
-            que en móvil se llega vía la tarjeta destacada de Inicio, no desde aquí. */}
-        {hasFeature(user, "monthlyPicks") && (
-          <NavLink
-            to="/app/club"
-            className={({ isActive }) =>
-              `flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                isActive ? "text-neon-cyan" : "text-white/60 hover:text-white"
-              }`
-            }
-          >
-            <Crown className="h-4 w-4" />
-            {t("header.nav.club", "Club")}
-          </NavLink>
-        )}
+        {/* Club/Coach (§rediseño Club/Coach): el enlace siempre está, pero quien no tiene el
+            plan que toca se manda a /app/precios en cuanto entra (Club.tsx/Coach.tsx) — el
+            candado aquí es solo el aviso antes de hacer clic. Sin sitio en el MobileNav de 5
+            iconos fijos, así que en móvil se llega vía la tarjeta destacada de Inicio o el menú
+            del avatar, no desde aquí. */}
+        <NavLink
+          to="/app/club"
+          className={({ isActive }) =>
+            `flex items-center gap-1.5 text-sm font-medium transition-colors ${
+              isActive ? "text-neon-cyan" : hasFeature(user, "monthlyPicks") ? "text-white/60 hover:text-white" : "text-white/35 hover:text-white/55"
+            }`
+          }
+        >
+          <Crown className="h-4 w-4" />
+          {t("header.nav.club", "Club")}
+          {!hasFeature(user, "monthlyPicks") && <Lock className="h-3 w-3" />}
+        </NavLink>
+        <NavLink
+          to="/app/coach"
+          className={({ isActive }) =>
+            `flex items-center gap-1.5 text-sm font-medium transition-colors ${
+              isActive ? "text-neon-cyan" : hasFeature(user, "personalAnalysis") ? "text-white/60 hover:text-white" : "text-white/35 hover:text-white/55"
+            }`
+          }
+        >
+          <Sparkles className="h-4 w-4" />
+          {t("header.nav.coach", "Coach")}
+          {!hasFeature(user, "personalAnalysis") && <Lock className="h-3 w-3" />}
+        </NavLink>
       </nav>
 
       {/* Buscador (escritorio) */}

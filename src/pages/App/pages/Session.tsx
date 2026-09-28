@@ -1,5 +1,5 @@
 import { Play, Clock, Crown, Heart, Share2, Check } from "lucide-react"
-import { useSearchParams } from "react-router-dom"
+import { Navigate, useSearchParams } from "react-router-dom"
 import { useRef, useState } from "react"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getSessionDetail } from "../../../lib/api/sessions"
@@ -10,9 +10,10 @@ import type { SessionDetail, Chapter, Comment } from "../../../lib/api/types"
 import { formatDuration, hueFor } from "../../../lib/format"
 import HlsPlayer, { type VideoPlayerHandle } from "../../../lib/player/VideoPlayer"
 import { saveProgress } from "../../../lib/api/history"
-import { useAuth } from "../../../lib/auth/store"
+import { useAuth, hasFeature } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
+import ErrorScreen from "../components/ErrorScreen"
 
 /**
  * Session — Vista de una sesión táctica mensual grabada en /app/watch?s=:id (§Club hub, Fase 2).
@@ -246,20 +247,27 @@ const Social = ({ session }: { session: SessionDetail }) => {
 
 const Session = () => {
   const { t, lang } = useI18n()
+  const { user } = useAuth()
   const [params] = useSearchParams()
   const id = params.get("s") ?? ""
-  const { data: session, loading, error } = useApi(() => getSessionDetail(id), [id])
+  // Sesiones grabadas son Club/Coach (§Stripe 3 planes) — /app/watch no está detrás de
+  // RequireFeature (es compartido con Clip/Video, que sí son de todos los tiers), así que si
+  // alguien entra a mano con la URL de una sesión sin el plan que toca, se corta aquí, igual
+  // que RequireFeature en el resto de la app, en vez de dejar que la API devuelva 402 y se vea.
+  const canWatch = hasFeature(user, "sessions")
+  const { data: session, loading, error, errorStatus } = useApi(
+    () => (canWatch ? getSessionDetail(id) : Promise.resolve(null)),
+    [id, canWatch],
+  )
   const playerRef = useRef<VideoPlayerHandle>(null)
+
+  if (!canWatch) return <Navigate to="/app/precios" replace />
 
   if (loading) return <main className="w-full py-8 text-sm text-white/40">{t("watch.loading-session", "Cargando sesión...")}</main>
   if (error || !session)
     return (
       <main className="w-full py-8">
-        <p className="text-sm text-red-400/80">
-          {t("watch.session-load-error", "No se pudo cargar la sesión ({error}). ¿Está el backend en marcha?", {
-            error: error ?? t("watch.not-found", "no encontrada"),
-          })}
-        </p>
+        <ErrorScreen status={errorStatus} />
       </main>
     )
 

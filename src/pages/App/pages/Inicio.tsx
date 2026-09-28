@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { Play, ChevronRight, LayoutGrid, Tag, Target, Users, BarChart3, Flame } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { Link } from "react-router-dom"
@@ -11,6 +12,8 @@ import { Skeleton, CardGridSkeleton } from "../../../lib/ui/Skeleton"
 import CardRow from "../../../lib/ui/CardRow"
 import ContentCard, { Thumb } from "../components/ContentCard"
 import { TOUR_OPEN_FEEDBACK_EVENT } from "../components/FeedbackButton"
+import ErrorScreen from "../components/ErrorScreen"
+import LockedTeaser from "../components/LockedTeaser"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
 
@@ -141,7 +144,7 @@ const InicioSkeleton = () => (
 const Inicio = () => {
   const { t } = useI18n()
   const { user } = useAuth()
-  const { data, loading, error } = useApi(getHome, [], "home")
+  const { data, loading, error, errorStatus } = useApi(getHome, [], "home")
   // Solo Club/Coach (§Stripe 3 planes) — para Starter, ni se llama al endpoint.
   const canSeeMonthlyPick = hasFeature(user, "monthlyPicks")
   const { data: monthlyPick } = useApi(
@@ -150,13 +153,35 @@ const Inicio = () => {
     "monthly-pick",
   )
 
+  // Escaparate borroso de "Recomendado del mes" (Starter): miniatura + título + tag reales, de
+  // "Nuevo esta semana" + "Más vistos" (contenido que sí es público para su tier), pero la
+  // miniatura de cada hueco y el texto que le acompaña salen de DOS barajados INDEPENDIENTES del
+  // mismo grupo — así el título/tag casi nunca es el que corresponde de verdad a esa miniatura,
+  // y no se puede usar para adivinar qué vídeo es. Solo se calcula una vez por carga (useMemo),
+  // no en cada render, para que no vaya cambiando solo mientras se mira la pantalla.
+  const teaserItems = useMemo(() => {
+    const pool = [...(data?.newThisWeek ?? []), ...(data?.mostViewedThisWeek ?? [])]
+    const shuffled = () => {
+      const copy = [...pool]
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[copy[i], copy[j]] = [copy[j], copy[i]]
+      }
+      return copy
+    }
+    const thumbs = shuffled().slice(0, 4)
+    const texts = shuffled()
+    return thumbs.map((item, i) => {
+      const text = texts[i % texts.length] ?? item
+      return { thumbnailUrl: item.thumbnailUrl, title: text.title, tag: text.concepts[0] }
+    })
+  }, [data])
+
   if (loading) return <InicioSkeleton />
   if (error)
     return (
       <main className="w-full py-8">
-        <p className="text-sm text-red-400/80">
-          {t("inicio.load-error", "No se pudo cargar Inicio ({error}). ¿Está el backend en marcha y expone /api/home?", { error })}
-        </p>
+        <ErrorScreen status={errorStatus} />
       </main>
     )
 
@@ -185,17 +210,27 @@ const Inicio = () => {
         </section>
       )}
 
-      {/* Recomendado del mes (§Club hub, Fase 1) — solo Club/Coach y si hay pick publicado este
-          mes. Acento visual (borde/fondo neon-cyan) para distinguirla de una fila cualquiera;
-          la versión completa (con la nota de Guille) vive en /app/club. */}
-      {monthlyPick && monthlyPick.items.length > 0 && (
+      {/* Recomendado del mes (§Club hub, Fase 1; §rediseño Club/Coach): visible siempre, incluso
+          para Starter — así se ve que existe la función, no solo cuando ya se tiene el plan.
+          Para Starter es un escaparate borroso; para Club/Coach solo aparece si hay pick
+          publicado este mes (un banner vacío en Inicio no aporta nada). Acento visual
+          (borde/fondo neon-cyan) para distinguirla de una fila cualquiera; la versión completa
+          (con la nota del equipo) vive en /app/club. */}
+      {(!canSeeMonthlyPick || (monthlyPick && monthlyPick.items.length > 0)) && (
         <section className="rounded-2xl border border-neon-cyan/30 bg-neon-cyan/[0.04] p-4 sm:p-5">
           <SectionHeading title={t("inicio.section.monthly-pick", "Recomendado para ti este mes")} to="/app/club" />
-          <CardRow>
-            {monthlyPick.items.map((item) => (
-              <ContentCard key={item.id} item={item} />
-            ))}
-          </CardRow>
+          {!canSeeMonthlyPick ? (
+            <LockedTeaser
+              message={t("club.monthly-pick.locked", "Cada mes, un pack de clips y análisis elegidos por nuestro equipo. Disponible con el plan Club.")}
+              items={teaserItems}
+            />
+          ) : (
+            <CardRow>
+              {monthlyPick!.items.map((item) => (
+                <ContentCard key={item.id} item={item} />
+              ))}
+            </CardRow>
+          )}
         </section>
       )}
 

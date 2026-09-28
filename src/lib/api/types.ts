@@ -162,6 +162,7 @@ export type PersonalAnalysisItem = {
   deliveredVideoUrl?: string | null
   deliveredPlanText?: string | null
   deliveredAtUtc?: string | null
+  cycleEndsAtUtc?: string | null
 }
 
 export type SessionDetail = {
