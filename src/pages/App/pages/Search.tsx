@@ -12,6 +12,7 @@ import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import FilterPanel, { type FilterSection } from "../components/FilterPanel"
 import WatchedBadge from "../components/WatchedBadge"
 import EnglishBadge from "../components/EnglishBadge"
+import ErrorScreen from "../components/ErrorScreen"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
 
@@ -192,7 +193,7 @@ const Search = () => {
 
   const { data: blocks } = useApi(getBlocks, [], "blocks")
 
-  const { data, loading, error } = useApi(
+  const { data, loading, error, errorStatus } = useApi(
     () => getSearch({ sort: filters.sort, feed: filters.feed }),
     [filters.sort, filters.feed],
     `search:${filters.sort}|${filters.feed}`,
@@ -378,11 +379,7 @@ const Search = () => {
           </BottomSheet>
 
           {loading && <p className="mt-6 text-sm text-white/40">{t("search.searching", "Buscando...")}</p>}
-          {error && (
-            <p className="mt-6 text-sm text-red-400/80">
-              {t("search.load-error", "No se pudo buscar ({error}). ¿Está el backend en marcha?", { error })}
-            </p>
-          )}
+          {error && <ErrorScreen status={errorStatus} className="mt-6 text-sm text-red-400/80" />}
 
           {/* Estado vacío con acciones (§11.7) */}
           {empty && (

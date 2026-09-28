@@ -13,6 +13,7 @@ import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import FilterPanel, { type FilterSection } from "../components/FilterPanel"
 import WatchedBadge from "../components/WatchedBadge"
 import EnglishBadge from "../components/EnglishBadge"
+import ErrorScreen from "../components/ErrorScreen"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
 
@@ -328,7 +329,7 @@ const ExplorarSkeleton = () => (
 const Explorar = () => {
   const { t, lang } = useI18n()
   const TYPE_LABELS = useMemo(() => typeLabels(t), [t])
-  const { data, loading, error } = useApi(getExplore, [], "explore")
+  const { data, loading, error, errorStatus } = useApi(getExplore, [], "explore")
 
   const [showFilters, setShowFilters] = useState(false)
   const [type, setType] = useState<ContentType>("all")
@@ -493,11 +494,7 @@ const Explorar = () => {
       </BottomSheet>
 
       {loading && <ExplorarSkeleton />}
-      {error && (
-        <p className="text-sm text-red-400/80">
-          {t("explorar.load-error", "No se pudo cargar Explorar ({error}). ¿Está el backend en marcha?", { error })}
-        </p>
-      )}
+      {error && <ErrorScreen status={errorStatus} />}
 
       {noResults && (
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center">

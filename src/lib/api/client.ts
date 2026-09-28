@@ -5,6 +5,17 @@ import { API_BASE } from "../config"
  * Adjunta el token JWT (si existe en localStorage) automáticamente.
  */
 
+/** Error de una petición que sí llegó a obtener respuesta del backend: conserva el código
+ * HTTP para que la UI pueda mostrar una pantalla de error simple (solo el código), en vez de
+ * adivinar la causa. */
+export class ApiError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.status = status
+  }
+}
+
 /**
  * Si tras intentar refrescar la sesión (ver refreshAccessToken) seguimos con un 401, el
  * refresh token también ha muerto de verdad — sin esto, `RequireAuth` solo comprueba que
@@ -56,6 +67,7 @@ export function refreshAccessToken(): Promise<boolean> {
             role: data.role,
             hasSeenOnboarding: data.hasSeenOnboarding,
             planType: data.planType,
+            planTier: data.planTier,
             trialEndsAtUtc: data.trialEndsAtUtc,
             subscriptionStatus: data.subscriptionStatus,
             subscriptionCurrentPeriodEndUtc: data.subscriptionCurrentPeriodEndUtc,
@@ -121,7 +133,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}, isRetry 
     } catch {
       message = text || message
     }
-    throw new Error(message)
+    throw new ApiError(message, res.status)
   }
 
   return text ? (JSON.parse(text) as T) : ({} as T)
@@ -172,7 +184,7 @@ async function apiFetchRaw(endpoint: string, options: RequestInit = {}, isRetry 
     } catch {
       message = text || message
     }
-    throw new Error(message)
+    throw new ApiError(message, res.status)
   }
   return res
 }

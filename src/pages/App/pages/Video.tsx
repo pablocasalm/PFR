@@ -23,6 +23,7 @@ import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import { useRef, useState } from "react"
 import EditContentLink from "../components/EditContentLink"
 import WatchedBadge from "../components/WatchedBadge"
+import ErrorScreen from "../components/ErrorScreen"
 import { useAuth } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
@@ -352,7 +353,7 @@ const Video = () => {
   const { t, lang } = useI18n()
   const [params] = useSearchParams()
   const id = params.get("v") ?? ""
-  const { data: video, loading, error } = useApi(() => getAnalysisDetail(id), [id])
+  const { data: video, loading, error, errorStatus } = useApi(() => getAnalysisDetail(id), [id])
   const [autoplay, setAutoplay] = useAutoplay()
   const playerRef = useRef<VideoPlayerHandle>(null)
 
@@ -360,11 +361,7 @@ const Video = () => {
   if (error || !video)
     return (
       <main className="w-full py-8">
-        <p className="text-sm text-red-400/80">
-          {t("watch.analysis-load-error", "No se pudo cargar el análisis ({error}). ¿Está el backend en marcha?", {
-            error: error ?? t("watch.not-found", "no encontrado"),
-          })}
-        </p>
+        <ErrorScreen status={errorStatus} />
       </main>
     )
 

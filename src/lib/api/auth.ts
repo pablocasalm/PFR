@@ -10,6 +10,7 @@ export type AuthResponse = {
   role?: string // "User" | "Admin" | "ContentCreator"
   hasSeenOnboarding?: boolean
   planType?: string // "Free" | "TrialThenPaid" | "Discounted"
+  planTier?: string // "Starter" | "Club" | "Coach" (§Stripe 3 planes)
   trialEndsAtUtc?: string | null
   subscriptionStatus?: string // "None" | "Trialing" | "Active" | "PastDue" | "Canceled"
   subscriptionCurrentPeriodEndUtc?: string | null

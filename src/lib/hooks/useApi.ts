@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
+import { ApiError } from "../api/client"
 
-type ApiState<T> = { data: T | null; loading: boolean; error: string | null; validating: boolean }
+type ApiState<T> = { data: T | null; loading: boolean; error: string | null; errorStatus: number | null; validating: boolean }
 
 /**
  * Caché en memoria (módulo) para las respuestas de la API. Sobrevive a los cambios de página
@@ -33,8 +34,8 @@ export function useApi<T>(fn: () => Promise<T>, deps: unknown[] = [], cacheKey?:
   const [state, setState] = useState<ApiState<T>>(() => {
     const cached = cacheKey ? cache.get(cacheKey) : undefined
     return cached
-      ? { data: cached.data as T, loading: false, error: null, validating: false }
-      : { data: null, loading: true, error: null, validating: false }
+      ? { data: cached.data as T, loading: false, error: null, errorStatus: null, validating: false }
+      : { data: null, loading: true, error: null, errorStatus: null, validating: false }
   })
 
   useEffect(() => {
@@ -44,25 +45,26 @@ export function useApi<T>(fn: () => Promise<T>, deps: unknown[] = [], cacheKey?:
     if (entry) {
       const fresh = Date.now() - entry.ts < STALE_MS
       // Mostramos lo cacheado ya; revalidamos solo si está "viejo".
-      setState({ data: entry.data as T, loading: false, error: null, validating: !fresh })
+      setState({ data: entry.data as T, loading: false, error: null, errorStatus: null, validating: !fresh })
       if (fresh) return
     } else {
-      setState({ data: null, loading: true, error: null, validating: false })
+      setState({ data: null, loading: true, error: null, errorStatus: null, validating: false })
     }
 
     fn()
       .then((data) => {
         if (cacheKey) cache.set(cacheKey, { data, ts: Date.now() })
-        if (active) setState({ data, loading: false, error: null, validating: false })
+        if (active) setState({ data, loading: false, error: null, errorStatus: null, validating: false })
       })
       .catch((e: unknown) => {
         if (!active) return
         const message = e instanceof Error ? e.message : "Error"
+        const status = e instanceof ApiError ? e.status : null
         setState((prev) =>
           // Si ya teníamos datos (revalidación fallida), los mantenemos en pantalla.
           prev.data
             ? { ...prev, validating: false }
-            : { data: null, loading: false, error: message, validating: false },
+            : { data: null, loading: false, error: message, errorStatus: status, validating: false },
         )
       })
 

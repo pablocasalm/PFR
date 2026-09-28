@@ -25,6 +25,7 @@ import { NextUpCard, pickNextRelated, useAutoplay } from "../../../lib/player/Ne
 import { saveProgress } from "../../../lib/api/history"
 import EditContentLink from "../components/EditContentLink"
 import WatchedBadge from "../components/WatchedBadge"
+import ErrorScreen from "../components/ErrorScreen"
 import { useAuth } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
@@ -559,17 +560,13 @@ const Clip = () => {
   const [params] = useSearchParams()
   const id = params.get("c") ?? ""
   const vertical = params.get("layout") === "vertical"
-  const { data: clip, loading, error } = useApi(() => getClipDetail(id), [id])
+  const { data: clip, loading, error, errorStatus } = useApi(() => getClipDetail(id), [id])
 
   if (loading) return <main className="w-full py-8 text-sm text-white/40">{t("clip.loading", "Cargando clip...")}</main>
   if (error || !clip)
     return (
       <main className="w-full py-8">
-        <p className="text-sm text-red-400/80">
-          {t("clip.load-error", "No se pudo cargar el clip ({error}). ¿Está el backend en marcha?", {
-            error: error ?? t("watch.not-found", "no encontrado"),
-          })}
-        </p>
+        <ErrorScreen status={errorStatus} />
       </main>
     )
 

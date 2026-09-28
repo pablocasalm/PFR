@@ -112,6 +112,7 @@ function toAuthUser(res: Awaited<ReturnType<typeof apiLogin>>, fallbackEmail: st
     role: res.role as UserRole | undefined,
     hasSeenOnboarding: res.hasSeenOnboarding,
     planType: res.planType as BillingPlan | undefined,
+    planTier: res.planTier as PlanTier | undefined,
     trialEndsAtUtc: res.trialEndsAtUtc,
     subscriptionStatus: res.subscriptionStatus as SubscriptionStatus | undefined,
     subscriptionCurrentPeriodEndUtc: res.subscriptionCurrentPeriodEndUtc,
