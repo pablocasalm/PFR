@@ -64,7 +64,7 @@ const PersonalAnalysisSection = () => {
       if (editFile) {
         setEditProgress({ label: t("club.personal-analysis.uploading", "Subiendo tu partido…"), percent: 0 })
         durationSeconds = await readVideoDuration(editFile)
-        const up = await createDirectUpload(editFile.name, editFile.size)
+        const up = await createDirectUpload(editFile.name, editFile.size, durationSeconds)
         await uploadToCloudflare(up.uploadURL, editFile, (p) => setEditProgress({ label: t("club.personal-analysis.uploading", "Subiendo tu partido…"), percent: p }))
         setEditProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
         await waitForVideoReady(up.uid)
@@ -90,7 +90,7 @@ const PersonalAnalysisSection = () => {
     setProgress({ label: t("club.personal-analysis.uploading", "Subiendo tu partido…"), percent: 0 })
     try {
       const dur = await readVideoDuration(file)
-      const up = await createDirectUpload(file.name, file.size)
+      const up = await createDirectUpload(file.name, file.size, dur)
       await uploadToCloudflare(up.uploadURL, file, (p) => setProgress({ label: t("club.personal-analysis.uploading", "Subiendo tu partido…"), percent: p }))
       setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
       await waitForVideoReady(up.uid)

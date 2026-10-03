@@ -10,8 +10,8 @@ import type { PersonalAnalysisItem } from "./types"
  * tiene su propio direct-upload/status en vez de reutilizar los de admin.ts.
  */
 
-export const createDirectUpload = (name: string, size: number) =>
-  apiPost<{ uploadURL: string; uid: string }>("/api/club/personal-analysis/direct-upload", { name, size })
+export const createDirectUpload = (name: string, size: number, durationSeconds?: number) =>
+  apiPost<{ uploadURL: string; uid: string }>("/api/club/personal-analysis/direct-upload", { name, size, durationSeconds })
 
 export const getUploadStatus = (uid: string) =>
   apiGet<{ state: string; ready: boolean }>(`/api/club/personal-analysis/videos/${uid}/status`)

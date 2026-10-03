@@ -1,5 +1,5 @@
 import * as tus from "tus-js-client"
-import { apiGet, apiPost, apiPatch, apiPostForm } from "./client"
+import { apiGet, apiPost, apiPatch, apiPostForm, apiDelete } from "./client"
 
 /**
  * Publicación de contenido (solo Admin/ContentCreator). Flujo Direct Creator Upload:
@@ -16,8 +16,12 @@ const publishTokenHeader = (publishToken: string): HeadersInit => ({ "X-Publish-
  * subtítulos + el POST final). Pídelo justo al pulsar "Publicar", no al entrar en la pantalla. */
 export const createPublishToken = () => apiPost<{ token: string }>("/api/admin/publish-token").then((r) => r.token)
 
-export const createDirectUpload = (name: string, size: number, publishToken: string) =>
-  apiPost<DirectUpload>("/api/admin/videos/direct-upload", { name, size }, publishTokenHeader(publishToken))
+export const createDirectUpload = (name: string, size: number, publishToken: string, durationSeconds?: number) =>
+  apiPost<DirectUpload>("/api/admin/videos/direct-upload", { name, size, durationSeconds }, publishTokenHeader(publishToken))
+
+/** DELETE /api/admin/videos/{uid} → borra un vídeo huérfano de Cloudflare (nunca subido a ningún
+ * clip/análisis) sin tener que entrar al dashboard de Cloudflare — §limpieza tras publicar fallido. */
+export const deleteVideo = (uid: string) => apiDelete<{ ok: boolean; message?: string }>(`/api/admin/videos/${uid}`)
 
 // --- Publicación combinada: un análisis + sus clips (§ proceso de publicación) ---
 

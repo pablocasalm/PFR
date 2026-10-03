@@ -116,22 +116,25 @@ const AdminSesiones = () => {
     try {
       const publishToken = await createPublishToken()
 
+      // Se suben los dos vídeos (ES y EN) seguidos, sin esperar a que Cloudflare procese el
+      // primero antes de lanzar el segundo — ver Publicar.tsx para la explicación completa.
       const dur = await readVideoDuration(file)
-      const up = await createDirectUpload(title || file.name, file.size, publishToken)
+      const up = await createDirectUpload(title || file.name, file.size, publishToken, dur)
       await uploadToCloudflare(up.uploadURL, file, (p) => setProgress({ label: t("admin-sesiones.progress.video", "Subiendo sesión…"), percent: p }))
-      setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
-      await waitForVideoReady(up.uid)
 
       let uidEn: string | undefined
       if (fileEn) {
         const labelEn = t("admin-sesiones.progress.video-en", "Subiendo doblaje en inglés…")
         setProgress({ label: labelEn, percent: 0 })
-        const upEn = await createDirectUpload(`${title || file.name} (EN)`, fileEn.size, publishToken)
+        const durEn = await readVideoDuration(fileEn)
+        const upEn = await createDirectUpload(`${title || file.name} (EN)`, fileEn.size, publishToken, durEn)
         await uploadToCloudflare(upEn.uploadURL, fileEn, (p) => setProgress({ label: labelEn, percent: p }))
-        setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
-        await waitForVideoReady(upEn.uid)
         uidEn = upEn.uid
       }
+
+      setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
+      await Promise.all([waitForVideoReady(up.uid), ...(uidEn ? [waitForVideoReady(uidEn)] : [])])
+
       if (captionsEn) {
         setProgress({ label: t("publicar.progress.captions", "Subiendo subtítulos…"), percent: 100 })
         const targets = [uploadCaptions(up.uid, captionsEn, publishToken)]

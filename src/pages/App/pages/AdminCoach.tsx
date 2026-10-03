@@ -57,8 +57,8 @@ const RequestCard = ({
     setProgress({ label: t("admin-coach.progress.video", "Subiendo el análisis…"), percent: 0 })
     try {
       const publishToken = await createPublishToken()
-      await readVideoDuration(file) // solo para consistencia con el resto de subidas, no se usa aquí
-      const up = await createDirectUpload(file.name, file.size, publishToken)
+      const dur = await readVideoDuration(file)
+      const up = await createDirectUpload(file.name, file.size, publishToken, dur)
       await uploadToCloudflare(up.uploadURL, file, (p) => setProgress({ label: t("admin-coach.progress.video", "Subiendo el análisis…"), percent: p }))
       setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
       await waitForVideoReady(up.uid)

@@ -8,6 +8,7 @@ import {
   patchAnalysis,
   createDirectUpload,
   uploadToCloudflare,
+  readVideoDuration,
   waitForVideoReady,
   setClipVideoEn,
   setAnalysisVideoEn,
@@ -197,7 +198,8 @@ const Editar = () => {
         // Token de publicación (§ larga duración): direct-upload lo exige siempre, aunque aquí
         // solo se suba un vídeo (se pide igual, es una llamada rápida).
         const publishToken = await createPublishToken()
-        const up = await createDirectUpload(`${title || "video"} (EN)`, enFile.size, publishToken)
+        const dur = await readVideoDuration(enFile)
+        const up = await createDirectUpload(`${title || "video"} (EN)`, enFile.size, publishToken, dur)
         await uploadToCloudflare(up.uploadURL, enFile, (p) => setEnProgress({ label: labelEn, percent: p }))
         // Ver Publicar.tsx: mientras Cloudflare procesa el vídeo reserva minutos de más contra
         // el plan a partir de una estimación provisional — si se edita otro clip justo después

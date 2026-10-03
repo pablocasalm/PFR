@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Plus, Trash2, X, CheckCircle2 } from "lucide-react"
-import { createDirectUpload, uploadToCloudflare, uploadCaptions, readVideoDuration, publish, getConcepts, createPublishToken, waitForVideoReady, type PublishChapterInput, type ConceptOption } from "../../../lib/api/admin"
+import { createDirectUpload, uploadToCloudflare, uploadCaptions, readVideoDuration, publish, getConcepts, createPublishToken, waitForVideoReady, deleteVideo, type PublishChapterInput, type ConceptOption } from "../../../lib/api/admin"
 import { getBlocks } from "../../../lib/api/blocks"
 import { useApi } from "../../../lib/hooks/useApi"
 import CatalogPicker from "../components/CatalogPicker"
@@ -146,6 +146,11 @@ const Publicar = () => {
 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // UIDs de Cloudflare que llegaron a crearse en el intento de publicación que acaba de fallar
+  // — no tienen Clip/Analysis asociado todavía, así que quedarían huérfanos consumiendo cuota
+  // de minutos si no se borran a mano (§limpieza tras publicar fallido).
+  const [orphanUids, setOrphanUids] = useState<string[]>([])
+  const [deletingUid, setDeletingUid] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
   const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null)
 
@@ -279,6 +284,8 @@ const Publicar = () => {
 
     setBusy(true)
     setProgress({ label: t("publicar.progress.analysis", "Subiendo análisis…"), percent: 0 })
+    setOrphanUids([])
+    const uploadedInThisAttempt: string[] = []
     try {
       // Token de publicación (§ larga duración): se pide aquí, justo al pulsar "Publicar", no
       // al entrar en la pantalla — así solo existe cuando de verdad se va a usar. Dura 24h,
@@ -286,26 +293,63 @@ const Publicar = () => {
       // aunque la sesión normal caduque a mitad de subida.
       const publishToken = await createPublishToken()
 
-      // 1) Subir el vídeo del análisis
+      // Fase 1: subir TODOS los bytes (análisis + clips, ES y EN) seguidos, SIN esperar entre
+      // medias a que Cloudflare termine de procesar cada uno. Antes se esperaba (waitForVideoReady)
+      // entre subida y subida para no acumular varias reservas de minutos infladas a la vez —
+      // eso ya no hace falta desde que CreateDirectUploadAsync manda un maxDurationSeconds preciso
+      // (duración real ×1.1, ver backend). Así el tiempo de subida de un vídeo se solapa con el
+      // procesado (en el servidor de Cloudflare, no gasta tu conexión) del anterior, en vez de
+      // dejar la conexión parada esperando.
       const aDur = await readVideoDuration(aFile!)
-      const aUp = await createDirectUpload(aTitle || aFile!.name, aFile!.size, publishToken)
+      const aUp = await createDirectUpload(aTitle || aFile!.name, aFile!.size, publishToken, aDur)
+      uploadedInThisAttempt.push(aUp.uid)
       await uploadToCloudflare(aUp.uploadURL, aFile!, (p) => setProgress({ label: t("publicar.progress.analysis", "Subiendo análisis…"), percent: p }))
-      // Se espera a que Cloudflare termine de procesarlo (no solo de recibir los bytes) antes
-      // de lanzar la siguiente subida — ver waitForVideoReady, evita el 413 por minutos
-      // reservados de más mientras varios vídeos están a medio procesar a la vez.
-      setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
-      await waitForVideoReady(aUp.uid)
 
       let aUidEn: string | undefined
       if (aFileEn) {
         const labelEnAnalysis = t("publicar.progress.analysis-en", "Subiendo vídeo en inglés del análisis…")
         setProgress({ label: labelEnAnalysis, percent: 0 })
-        const aUpEn = await createDirectUpload(`${aTitle || aFile!.name} (EN)`, aFileEn.size, publishToken)
+        const aDurEn = await readVideoDuration(aFileEn)
+        const aUpEn = await createDirectUpload(`${aTitle || aFile!.name} (EN)`, aFileEn.size, publishToken, aDurEn)
+        uploadedInThisAttempt.push(aUpEn.uid)
         await uploadToCloudflare(aUpEn.uploadURL, aFileEn, (p) => setProgress({ label: labelEnAnalysis, percent: p }))
-        setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
-        await waitForVideoReady(aUpEn.uid)
         aUidEn = aUpEn.uid
       }
+
+      type ClipUpload = { c: (typeof validClips)[number]; dur: number; uid: string; uidEn?: string }
+      const clipUploads: ClipUpload[] = []
+      for (let i = 0; i < validClips.length; i++) {
+        const c = validClips[i]
+        const label = t("publicar.progress.clip", "Subiendo clip {n} de {total}…", { n: i + 1, total: validClips.length })
+        setProgress({ label, percent: 0 })
+        const dur = await readVideoDuration(c.file!)
+        const up = await createDirectUpload(c.title || c.file!.name, c.file!.size, publishToken, dur)
+        uploadedInThisAttempt.push(up.uid)
+        await uploadToCloudflare(up.uploadURL, c.file!, (p) => setProgress({ label, percent: p }))
+
+        let uidEn: string | undefined
+        if (c.fileEn) {
+          const labelEn = t("publicar.progress.clip-en", "Subiendo vídeo en inglés del clip {n}…", { n: i + 1 })
+          setProgress({ label: labelEn, percent: 0 })
+          const durEn = await readVideoDuration(c.fileEn)
+          const upEn = await createDirectUpload(`${c.title || c.file!.name} (EN)`, c.fileEn.size, publishToken, durEn)
+          uploadedInThisAttempt.push(upEn.uid)
+          await uploadToCloudflare(upEn.uploadURL, c.fileEn, (p) => setProgress({ label: labelEn, percent: p }))
+          uidEn = upEn.uid
+        }
+        clipUploads.push({ c, dur, uid: up.uid, uidEn })
+      }
+
+      // Fase 2: ya se mandaron todos los bytes — ahora sí hay que esperar a que Cloudflare
+      // termine de procesarlos todos, pero en paralelo (esperar solo consulta el estado, no usa
+      // tu conexión, así que no hay motivo para hacerlo uno a uno).
+      setProgress({ label: t("publicar.progress.processing", "Procesando vídeos en Cloudflare…"), percent: 100 })
+      await Promise.all([
+        waitForVideoReady(aUp.uid),
+        ...(aUidEn ? [waitForVideoReady(aUidEn)] : []),
+        ...clipUploads.flatMap((cu) => [waitForVideoReady(cu.uid), ...(cu.uidEn ? [waitForVideoReady(cu.uidEn)] : [])]),
+      ])
+
       // Los subtítulos no dependen del doblaje: se suben al vídeo español siempre y, si además
       // hay vídeo en inglés, también ahí — así se puede ver con cualquiera de los dos audios.
       if (aCaptionsEn) {
@@ -315,54 +359,31 @@ const Publicar = () => {
         await Promise.all(targets)
       }
 
-      // 2) Subir cada clip
       const clipInputs = []
-      for (let i = 0; i < validClips.length; i++) {
-        const c = validClips[i]
-        const label = t("publicar.progress.clip", "Subiendo clip {n} de {total}…", { n: i + 1, total: validClips.length })
-        setProgress({ label, percent: 0 })
-        const dur = await readVideoDuration(c.file!)
-        const up = await createDirectUpload(c.title || c.file!.name, c.file!.size, publishToken)
-        await uploadToCloudflare(up.uploadURL, c.file!, (p) => setProgress({ label, percent: p }))
-        // Ver comentario en la subida del análisis: se espera a que termine de procesarse antes
-        // de pedir la siguiente subida, para no acumular reservas provisionales de minutos.
-        setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
-        await waitForVideoReady(up.uid)
-
-        let uidEn: string | undefined
-        if (c.fileEn) {
-          const labelEn = t("publicar.progress.clip-en", "Subiendo vídeo en inglés del clip {n}…", { n: i + 1 })
-          setProgress({ label: labelEn, percent: 0 })
-          const upEn = await createDirectUpload(`${c.title || c.file!.name} (EN)`, c.fileEn.size, publishToken)
-          await uploadToCloudflare(upEn.uploadURL, c.fileEn, (p) => setProgress({ label: labelEn, percent: p }))
-          setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
-          await waitForVideoReady(upEn.uid)
-          uidEn = upEn.uid
-        }
-        // Los subtítulos no dependen del doblaje: se suben al vídeo español siempre y, si además
-        // hay vídeo en inglés, también ahí — así se puede ver con cualquiera de los dos audios.
+      for (const cu of clipUploads) {
+        const c = cu.c
         if (c.captionsEn) {
           setProgress({ label: t("publicar.progress.captions", "Subiendo subtítulos…"), percent: 100 })
-          const targets = [uploadCaptions(up.uid, c.captionsEn, publishToken)]
-          if (uidEn) targets.push(uploadCaptions(uidEn, c.captionsEn, publishToken))
+          const targets = [uploadCaptions(cu.uid, c.captionsEn, publishToken)]
+          if (cu.uidEn) targets.push(uploadCaptions(cu.uidEn, c.captionsEn, publishToken))
           await Promise.all(targets)
         }
 
         clipInputs.push({
-          uid: up.uid,
-          uidEn,
+          uid: cu.uid,
+          uidEn: cu.uidEn,
           title: c.title,
           titleEn: c.titleEn.trim() || undefined,
           description: c.description,
           descriptionEn: c.descriptionEn.trim() || undefined,
-          durationSeconds: dur,
+          durationSeconds: cu.dur,
           blocks: c.groups
             .filter((g) => g.block && g.concepts.length > 0)
             .map((g) => ({ block: g.block, concepts: g.concepts })),
         })
       }
 
-      // 3) Crear análisis + clips juntos
+      // Fase 3: crear análisis + clips juntos
       setProgress({ label: t("publicar.progress.creating", "Creando contenido…"), percent: 100 })
       const translationsToSend = Object.fromEntries(
         Object.entries(conceptTranslations).filter(([, v]) => v.trim().length > 0),
@@ -415,9 +436,24 @@ const Publicar = () => {
       setImportError(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : t("publicar.error.generic", "No se pudo publicar el contenido."))
+      // Lo que ya se llegó a subir a Cloudflare en este intento no tiene Clip/Analysis
+      // asociado — se queda huérfano consumiendo cuota de minutos si no se borra a mano.
+      setOrphanUids(uploadedInThisAttempt)
     } finally {
       setBusy(false)
       setProgress(null)
+    }
+  }
+
+  const handleDeleteOrphan = async (uid: string) => {
+    setDeletingUid(uid)
+    try {
+      await deleteVideo(uid)
+      setOrphanUids((prev) => prev.filter((u) => u !== uid))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("publicar.error.delete-failed", "No se pudo borrar el vídeo de Cloudflare."))
+    } finally {
+      setDeletingUid(null)
     }
   }
 
@@ -440,6 +476,33 @@ const Publicar = () => {
         </div>
       )}
       {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+      {orphanUids.length > 0 && (
+        <div className="space-y-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <p>
+            {t(
+              "publicar.error.orphans",
+              "Estos vídeos ya se subieron a Cloudflare antes del fallo. Bórralos para no gastar cuota de minutos si no vas a reintentar con el mismo archivo:",
+            )}
+          </p>
+          <ul className="space-y-1">
+            {orphanUids.map((uid) => (
+              <li key={uid} className="flex items-center justify-between gap-2">
+                <code className="text-xs text-red-200">{uid}</code>
+                <button
+                  type="button"
+                  disabled={deletingUid === uid}
+                  onClick={() => handleDeleteOrphan(uid)}
+                  className="shrink-0 rounded bg-red-500/20 px-2 py-1 text-xs font-medium hover:bg-red-500/30 disabled:opacity-50"
+                >
+                  {deletingUid === uid
+                    ? t("publicar.error.deleting", "Borrando…")
+                    : t("publicar.error.delete", "Borrar de Cloudflare")}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* ---------- Paso 1: Análisis ---------- */}
       {step === 1 && (
