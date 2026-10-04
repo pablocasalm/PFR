@@ -50,9 +50,11 @@ const myInitials = (email: string, displayName?: string | null) => {
 const SessionPlayer = ({
   session,
   playerRef,
+  onChapterChange,
 }: {
   session: SessionDetail
   playerRef?: React.Ref<VideoPlayerHandle>
+  onChapterChange?: (index: number) => void
 }) => {
   const { lang } = useI18n()
   const { user } = useAuth()
@@ -64,6 +66,7 @@ const SessionPlayer = ({
       srcEn={session.videoUrlEn ?? undefined}
       poster={session.thumbnailUrl}
       chapters={chapters}
+      onChapterChange={onChapterChange}
       initialPosition={session.resumeSeconds}
       onProgress={(p, d) => {
         saveProgress("session", String(session.id), p, d).catch(() => {})
@@ -73,7 +76,8 @@ const SessionPlayer = ({
   )
 }
 
-const ChaptersPanel = ({ session, onChapterClick }: { session: SessionDetail; onChapterClick: (seconds: number) => void }) => {
+/** `activeIndex`: capítulo por el que va la reproducción (lo dice el player). */
+const ChaptersPanel = ({ session, activeIndex, onChapterClick }: { session: SessionDetail; activeIndex: number; onChapterClick: (seconds: number) => void }) => {
   const { t, lang } = useI18n()
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
@@ -85,11 +89,11 @@ const ChaptersPanel = ({ session, onChapterClick }: { session: SessionDetail; on
       </div>
       <div className="space-y-1">
         {session.chapters.map((ch: Chapter, i) =>
-          i === 0 ? (
+          i === activeIndex ? (
             <button
               key={i}
               onClick={() => onChapterClick(ch.startSeconds)}
-              className="flex w-full items-center gap-3 rounded-xl border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-3 text-left transition hover:bg-neon-cyan/15"
+              className="flex w-full items-center gap-3 rounded-xl border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-3 text-left hover:bg-neon-cyan/15"
             >
               <span className="w-12 shrink-0 text-xs font-semibold tabular-nums text-neon-cyan">{formatDuration(ch.startSeconds)}</span>
               <span className="line-clamp-2 flex-1 text-sm font-semibold text-white">{pickText(ch.title, ch.titleEn, lang)}</span>
@@ -101,7 +105,7 @@ const ChaptersPanel = ({ session, onChapterClick }: { session: SessionDetail; on
             <button
               key={i}
               onClick={() => onChapterClick(ch.startSeconds)}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5"
+              className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left hover:bg-white/5"
             >
               <Play className="h-2.5 w-2.5 shrink-0 text-white/30" fill="currentColor" />
               <span className="w-12 shrink-0 text-xs tabular-nums text-white/50">{formatDuration(ch.startSeconds)}</span>
@@ -260,6 +264,7 @@ const Session = () => {
     [id, canWatch],
   )
   const playerRef = useRef<VideoPlayerHandle>(null)
+  const [activeChapter, setActiveChapter] = useState(-1)
 
   if (!canWatch) return <Navigate to="/app/precios" replace />
 
@@ -275,7 +280,7 @@ const Session = () => {
     <main className="w-full py-6">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
         <div className="space-y-6">
-          <SessionPlayer session={session} playerRef={playerRef} />
+          <SessionPlayer session={session} playerRef={playerRef} onChapterChange={setActiveChapter} />
 
           <div className="flex flex-col gap-6 lg:flex-row lg:justify-between">
             <div className="space-y-2">
@@ -298,7 +303,7 @@ const Session = () => {
 
         <aside className="space-y-6">
           {session.chapters.length > 0 && (
-            <ChaptersPanel session={session} onChapterClick={(seconds) => playerRef.current?.seekTo(seconds)} />
+            <ChaptersPanel session={session} activeIndex={activeChapter} onChapterClick={(seconds) => playerRef.current?.seekTo(seconds)} />
           )}
         </aside>
       </div>

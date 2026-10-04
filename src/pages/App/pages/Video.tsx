@@ -61,10 +61,12 @@ const VideoPlayer = ({
   video,
   endSlot,
   playerRef,
+  onChapterChange,
 }: {
   video: AnalysisDetail
   endSlot?: (dismiss: () => void) => React.ReactNode
   playerRef?: React.Ref<VideoPlayerHandle>
+  onChapterChange?: (index: number) => void
 }) => {
   const { lang } = useI18n()
   const { user } = useAuth()
@@ -79,6 +81,7 @@ const VideoPlayer = ({
       srcEn={video.videoUrlEn ?? undefined}
       poster={video.thumbnailUrl}
       chapters={chapters}
+      onChapterChange={onChapterChange}
       initialPosition={video.resumeSeconds}
       onProgress={(p, d) => {
         saveProgress("analysis", video.id, p, d).catch(() => {})
@@ -139,7 +142,9 @@ const SaveAction = ({ item }: { item: ContentItem }) => {
   )
 }
 
-const ChaptersPanel = ({ video, onChapterClick }: { video: AnalysisDetail; onChapterClick: (seconds: number) => void }) => {
+/** `activeIndex`: capítulo por el que va la reproducción (lo dice el player) — es el que se pinta
+ * destacado, no siempre el primero. */
+const ChaptersPanel = ({ video, activeIndex, onChapterClick }: { video: AnalysisDetail; activeIndex: number; onChapterClick: (seconds: number) => void }) => {
   const { t, lang } = useI18n()
   return (
   <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
@@ -151,11 +156,11 @@ const ChaptersPanel = ({ video, onChapterClick }: { video: AnalysisDetail; onCha
     </div>
     <div className="space-y-1">
       {video.chapters.map((ch: Chapter, i) =>
-        i === 0 ? (
+        i === activeIndex ? (
           <button
             key={i}
             onClick={() => onChapterClick(ch.startSeconds)}
-            className="flex w-full items-center gap-3 rounded-xl border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-3 text-left transition hover:bg-neon-cyan/15"
+            className="flex w-full items-center gap-3 rounded-xl border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-3 text-left hover:bg-neon-cyan/15"
           >
             <span className="w-12 shrink-0 text-xs font-semibold tabular-nums text-neon-cyan">{formatDuration(ch.startSeconds)}</span>
             <span className="line-clamp-2 flex-1 text-sm font-semibold text-white">{pickText(ch.title, ch.titleEn, lang)}</span>
@@ -167,7 +172,7 @@ const ChaptersPanel = ({ video, onChapterClick }: { video: AnalysisDetail; onCha
           <button
             key={i}
             onClick={() => onChapterClick(ch.startSeconds)}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5"
+            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left hover:bg-white/5"
           >
             <Play className="h-2.5 w-2.5 shrink-0 text-white/30" fill="currentColor" />
             <span className="w-12 shrink-0 text-xs tabular-nums text-white/50">{formatDuration(ch.startSeconds)}</span>
@@ -356,6 +361,7 @@ const Video = () => {
   const { data: video, loading, error, errorStatus } = useApi(() => getAnalysisDetail(id), [id])
   const [autoplay, setAutoplay] = useAutoplay()
   const playerRef = useRef<VideoPlayerHandle>(null)
+  const [activeChapter, setActiveChapter] = useState(-1)
 
   if (loading) return <main className="w-full py-8 text-sm text-white/40">{t("watch.loading-analysis", "Cargando análisis...")}</main>
   if (error || !video)
@@ -375,6 +381,7 @@ const Video = () => {
           <VideoPlayer
             video={video}
             playerRef={playerRef}
+            onChapterChange={setActiveChapter}
             endSlot={
               nextAnalysis
                 ? (dismiss: () => void) => (
@@ -417,7 +424,7 @@ const Video = () => {
         {/* Rail derecho */}
         <aside className="space-y-6">
           {video.chapters.length > 0 && (
-            <ChaptersPanel video={video} onChapterClick={(seconds) => playerRef.current?.seekTo(seconds)} />
+            <ChaptersPanel video={video} activeIndex={activeChapter} onChapterClick={(seconds) => playerRef.current?.seekTo(seconds)} />
           )}
           <KeepLearningPanel next={video.related[0]} />
         </aside>

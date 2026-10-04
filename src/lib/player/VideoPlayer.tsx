@@ -35,6 +35,10 @@ type Props = {
   srcEn?: string
   poster?: string
   chapters?: PlayerChapter[]
+  /** Índice del capítulo en el que está la reproducción (-1 si va antes del primero). Solo se
+   * llama cuando cambia, no en cada tick — para que la página marque el capítulo activo en su
+   * lista sin re-renderizarse varias veces por segundo. */
+  onChapterChange?: (index: number) => void
   /** "16:9" (horizontal, por defecto) o "9:16" (experiencia vertical móvil). */
   aspect?: "16:9" | "9:16"
   /** Punto (segundos) donde reanudar al cargar (§7.2). */
@@ -52,7 +56,19 @@ type Props = {
   subtitlesDefaultOn?: boolean
 }
 
-const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, chapters = [], aspect = "16:9", initialPosition, onProgress, onEnded, endSlot, subtitlesDefaultOn = false }, ref) => {
+/**
+ * Margen que se suma al saltar a un capítulo. Los análisis vienen montados con una transición
+ * de barrido entre clip y clip (el fotograma anterior sale deslizándose hacia un lado), grabada
+ * en el propio vídeo entre 0,3 y 0,9 s DESPUÉS del inicio de cada capítulo — medido fotograma a
+ * fotograma en un análisis real. Saltando al inicio exacto se veía siempre ese barrido; con
+ * este margen se cae ya en el clip nuevo. El capítulo que empieza en 0:00 no lleva margen.
+ */
+const CHAPTER_LEAD_IN_SECONDS = 1.2
+
+/** Espera antes de enseñar el círculo de carga: un salto dentro de lo ya descargado tarda menos y no debe hacerlo parpadear. */
+const BUFFERING_DELAY_MS = 180
+
+const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, chapters = [], onChapterChange, aspect = "16:9", initialPosition, onProgress, onEnded, endSlot, subtitlesDefaultOn = false }, ref) => {
   const { t } = useI18n()
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -67,6 +83,22 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   const resumedRef = useRef(false)
   const scrubbingRef = useRef(false)
   const pendingSeekRef = useRef<number | null>(null)
+  const chaptersRef = useRef(chapters)
+  chaptersRef.current = chapters
+  const onChapterChangeRef = useRef(onChapterChange)
+  onChapterChangeRef.current = onChapterChange
+  const activeChapterRef = useRef<number | null>(null)
+
+  /** Capítulo que contiene `time`: el último cuyo inicio ya se ha alcanzado. Avisa solo si cambia. */
+  const reportChapter = (time: number) => {
+    let index = -1
+    chaptersRef.current.forEach((ch, i) => {
+      if (ch.startSeconds <= time + 0.25 && (index < 0 || ch.startSeconds >= chaptersRef.current[index].startSeconds)) index = i
+    })
+    if (index === activeChapterRef.current) return
+    activeChapterRef.current = index
+    onChapterChangeRef.current?.(index)
+  }
   // Al cambiar de idioma (§HeyGen), se guarda aquí el punto/estado de reproducción justo antes
   // de recargar la fuente, para restaurarlo cuando el nuevo manifiesto esté listo — si no, cambiar
   // de idioma volvería siempre al minuto 0.
@@ -82,6 +114,12 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   const [qualityLevel, setQualityLevel] = useState(-1) // -1 = auto (ABR)
   const [ended, setEnded] = useState(false)
   const [loading, setLoading] = useState(false)
+  // `busy`: el vídeo está buscando un punto nuevo o esperando datos (salto a capítulo, arrastre
+  // de la barra, red lenta). `buffering` es lo mismo con un pequeño retardo, y es lo que pinta
+  // el círculo de carga sobre el vídeo mientras se reproduce — sin el retardo, cada salto que
+  // se resuelve al instante haría parpadear el círculo.
+  const [busy, setBusy] = useState(false)
+  const [buffering, setBuffering] = useState(false)
   const [lang, setLang] = useState<"es" | "en">("es")
   const [subtitleTracks, setSubtitleTracks] = useState<{ index: number; label: string }[]>([])
   const [subtitleTrack, setSubtitleTrack] = useState(-1) // -1 = desactivados
@@ -129,6 +167,15 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       window.removeEventListener("resize", close)
     }
   }, [openMenu])
+
+  useEffect(() => {
+    if (!busy) {
+      setBuffering(false)
+      return
+    }
+    const timer = setTimeout(() => setBuffering(true), BUFFERING_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [busy])
 
   const activeSrc = lang === "en" && srcEn ? srcEn : src
 
@@ -262,17 +309,25 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   // empezar (póster) o con la lista de capítulos por debajo del player en móvil, el clic no
   // tenía ningún efecto visible. Si los metadatos todavía no han cargado, el salto se aplica en
   // onLoadedMetadata (con prioridad sobre la reanudación de "Continúa viendo").
-  const jumpTo = (seconds: number) => {
+  // Sin animaciones: el capítulo se marca al instante (sin esperar al primer timeupdate) y el
+  // scroll hasta el player es inmediato y solo si no está ya a la vista. Mientras el vídeo
+  // llega al punto nuevo se ve el círculo de carga (`busy`, vía onSeeking/onWaiting).
+  const jumpTo = (chapterStart: number) => {
     const v = videoRef.current
     if (!v) return
+    const seconds = chapterStart > 0 ? chapterStart + CHAPTER_LEAD_IN_SECONDS : 0
     if (v.readyState >= 1) seekTo(seconds)
     else pendingSeekRef.current = seconds
+    reportChapter(seconds)
     setEnded(false)
-    if (v.paused) {
-      setLoading(true)
-      v.play().catch(() => setLoading(false))
+    if (v.paused) v.play().catch(() => {})
+    // Scroll SOLO vertical y sin animación ("instant" anula el `scroll-behavior: smooth` global
+    // de index.css). scrollIntoView también alinea en horizontal, y con el smooth global eso se
+    // veía como el fotograma deslizándose hacia un lado al pulsar un capítulo.
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (rect && (rect.top < 0 || rect.bottom > window.innerHeight)) {
+      window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - 16), behavior: "instant" })
     }
-    containerRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
   }
 
   useImperativeHandle(ref, () => ({ seekTo: jumpTo }))
@@ -377,8 +432,21 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
           setEnded(false)
           setLoading(false)
         }}
-        onPlaying={() => setLoading(false)}
-        onWaiting={() => setLoading(true)}
+        onPlaying={() => {
+          setLoading(false)
+          setBusy(false)
+        }}
+        onWaiting={() => {
+          setLoading(true)
+          setBusy(true)
+        }}
+        onSeeking={() => setBusy(true)}
+        // Tras un salto: si ya hay datos para seguir, se acabó la espera; si no, el navegador
+        // lanza "waiting" y el círculo sigue hasta "canplay"/"playing".
+        onSeeked={(e) => {
+          if (e.currentTarget.readyState >= 3) setBusy(false)
+        }}
+        onCanPlay={() => setBusy(false)}
         onPause={() => {
           setPlaying(false)
           setLoading(false)
@@ -400,6 +468,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
           const time = e.currentTarget.currentTime
           setCurrent(time)
           currentRef.current = time
+          reportChapter(time)
           if (onProgress && time - lastReportRef.current >= 10) {
             lastReportRef.current = time
             report()
@@ -417,6 +486,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
             resumedRef.current = true
             e.currentTarget.currentTime = initialPosition
           }
+          reportChapter(e.currentTarget.currentTime)
         }}
         onVolumeChange={(e) => {
           setMuted(e.currentTarget.muted)
@@ -443,6 +513,16 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
         </button>
       )}
 
+      {/* Círculo de carga mientras se reproduce: salto a otro punto o espera de datos. Con el
+          vídeo en pausa no hace falta — ahí el propio botón central ya hace de indicador. */}
+      {playing && buffering && !ended && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center" role="status" aria-label={t("video-player.loading", "Cargando")}>
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm">
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          </span>
+        </div>
+      )}
+
       {/* Tarjeta "Siguiente" al terminar (autoplay §9.7/§10.7). Cubre el vídeo, también en fullscreen. */}
       {ended && endSlot && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
@@ -452,11 +532,12 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
 
       {/* Barra de controles */}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-12 opacity-0 transition group-hover:opacity-100">
-        {/* Progreso con marcadores de capítulo. touch-none evita que el gesto de arrastrar se
+        {/* Progreso con marcadores de capítulo. `-mt-2 mb-1.5` (antes `-my-2`): la zona táctil de
+            20px se compensa solo por arriba, para que quede aire entre la barra y los botones. touch-none evita que el gesto de arrastrar se
             interprete como scroll de la página en móvil — sin esto, el primer intento de
             arrastre se lo quedaba el navegador en vez de la barra. */}
         <div
-          className="relative -my-2 flex h-5 w-full cursor-pointer touch-none items-center"
+          className="relative -mt-2 mb-1.5 flex h-5 w-full cursor-pointer touch-none items-center"
           onPointerDown={onScrubStart}
           onPointerMove={onScrubMove}
           onPointerUp={onScrubEnd}
@@ -470,7 +551,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation()
-                seekTo(ch.startSeconds)
+                seekTo(ch.startSeconds > 0 ? ch.startSeconds + CHAPTER_LEAD_IN_SECONDS : 0)
               }}
               title={`${formatDuration(ch.startSeconds)} · ${ch.title}`}
               className="absolute top-1/2 h-3 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70 transition hover:bg-white"
@@ -496,12 +577,12 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
               step={0.05}
               value={muted ? 0 : volume}
               onChange={onVolume}
-              className="h-1 w-20 cursor-pointer accent-neon-cyan"
+              className="hidden h-1 w-20 cursor-pointer accent-neon-cyan sm:block"
               aria-label={t("video-player.volume", "Volumen")}
             />
           </div>
 
-          <span className="text-xs font-medium tabular-nums text-white/90">
+          <span className="whitespace-nowrap text-xs font-medium tabular-nums text-white/90">
             {formatDuration(Math.floor(current))} / {formatDuration(Math.floor(duration))}
           </span>
 
