@@ -23,9 +23,7 @@ const AdminNoticias = lazy(() => import("../../pages/App/pages/AdminNoticias"))
 const Club = lazy(() => import("../../pages/App/pages/Club"))
 const Coach = lazy(() => import("../../pages/App/pages/Coach"))
 const SesionesArchivo = lazy(() => import("../../pages/App/pages/SesionesArchivo"))
-const AdminRecomendado = lazy(() => import("../../pages/App/pages/AdminRecomendado"))
 const AdminSesiones = lazy(() => import("../../pages/App/pages/AdminSesiones"))
-const AdminPreguntas = lazy(() => import("../../pages/App/pages/AdminPreguntas"))
 const AdminCoach = lazy(() => import("../../pages/App/pages/AdminCoach"))
 
 const RequireAuth = lazy(() => import("../../lib/auth/RequireAuth"))
@@ -71,9 +69,10 @@ const router = createBrowserRouter([
       { path: "admin/invitaciones", element: withSuspense(<RequireAdmin><AdminInvites /></RequireAdmin>) },
       { path: "admin/reportes", element: withSuspense(<RequireAdmin><AdminFeedback /></RequireAdmin>) },
       { path: "admin/noticias", element: withSuspense(<RequireAdmin><AdminNoticias /></RequireAdmin>) },
-      { path: "admin/recomendado", element: withSuspense(<RequireAdmin><AdminRecomendado /></RequireAdmin>) },
+      // El plan del mes y las preguntas viven ahora dentro de admin/sesiones (gestión del Club).
+      { path: "admin/recomendado", element: <Navigate to="/app/admin/sesiones" replace /> },
       { path: "admin/sesiones", element: withSuspense(<RequirePublisher><AdminSesiones /></RequirePublisher>) },
-      { path: "admin/preguntas", element: withSuspense(<RequireAdmin><AdminPreguntas /></RequireAdmin>) },
+      { path: "admin/preguntas", element: <Navigate to="/app/admin/sesiones?tab=questions" replace /> },
       { path: "admin/coach", element: withSuspense(<RequireAdmin><AdminCoach /></RequireAdmin>) },
       // Club/Coach (§rediseño Club/Coach): ya no van detrás de RequireFeature — se abren a los
       // 3 tiers, y cada pantalla decide sección a sección qué mostrar entero y qué mostrar

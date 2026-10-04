@@ -14,6 +14,7 @@ import ContentCard, { Thumb } from "../components/ContentCard"
 import { TOUR_OPEN_FEEDBACK_EVENT } from "../components/FeedbackButton"
 import ErrorScreen from "../components/ErrorScreen"
 import LockedTeaser from "../components/LockedTeaser"
+import PlanHomeCard from "../components/PlanHomeCard"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
 
@@ -152,6 +153,7 @@ const Inicio = () => {
     [canSeeMonthlyPick],
     "monthly-pick",
   )
+  const planSituations = monthlyPick?.situations ?? []
 
   // Escaparate borroso de "Recomendado del mes" (Starter): miniatura + título + tag reales, de
   // "Nuevo esta semana" + "Más vistos" (contenido que sí es público para su tier), pero la
@@ -212,16 +214,20 @@ const Inicio = () => {
 
       {/* Recomendado del mes (§Club hub, Fase 1; §rediseño Club/Coach): visible siempre, incluso
           para Starter — así se ve que existe la función, no solo cuando ya se tiene el plan.
-          Para Starter es un escaparate borroso; para Club/Coach solo aparece si hay pick
+          Para Starter es un escaparate borroso con la forma de la tarjeta nueva (LockedTeaser); para Club/Coach solo aparece si hay pick
           publicado este mes (un banner vacío en Inicio no aporta nada). Acento visual
           (borde/fondo neon-cyan) para distinguirla de una fila cualquiera; la versión completa
           (con la nota del equipo) vive en /app/club. */}
-      {(!canSeeMonthlyPick || (monthlyPick && monthlyPick.items.length > 0)) && (
+      {canSeeMonthlyPick && planSituations.length > 0 ? (
+        // Formato nuevo (§El plan del mes): pestañas por situación — ver PlanHomeCard.tsx.
+        <PlanHomeCard situations={planSituations} />
+      ) : (!canSeeMonthlyPick || (monthlyPick && monthlyPick.items.length > 0)) && (
         <section className="rounded-2xl border border-neon-cyan/30 bg-neon-cyan/[0.04] p-4 sm:p-5">
-          <SectionHeading title={t("inicio.section.monthly-pick", "Recomendado para ti este mes")} to="/app/club" />
+          {/* Bloqueado: sin "Ver todo" (llevaría a Club, que redirige a Precios) — el CTA es "Ver planes". */}
+          <SectionHeading title={t("inicio.section.monthly-pick", "Recomendado para ti este mes")} to={canSeeMonthlyPick ? "/app/club" : undefined} />
           {!canSeeMonthlyPick ? (
             <LockedTeaser
-              message={t("club.monthly-pick.locked", "Cada mes, un pack de clips y análisis elegidos por nuestro equipo. Disponible con el plan Club.")}
+              message={t("club.monthly-pick.locked", "Cada mes, un plan con las situaciones de la masterclass y los clips para trabajarlas. Disponible con el plan Club.")}
               items={teaserItems}
             />
           ) : (

@@ -52,6 +52,24 @@ export type MonthlyPick = {
   noteEn?: string | null
   items: ContentItem[]
   concepts: ConceptName[]
+  /** §El plan del mes: entre 2 y 4 situaciones. Si viene vacío o no viene (planes publicados
+   * antes de este formato), Club cae a la lista plana de `items`. */
+  situations?: PlanSituation[]
+  /** Masterclass de la que sale el plan ("Viene de la masterclass de este mes"). */
+  sessionId?: number | null
+}
+
+/** Una situación de "El plan del mes" (§Club): qué reconocer y sus clips. El progreso ("3 de 8 vistos") se calcula en el front a
+ * partir de `completed` de cada clip — misma regla de "visto" que el resto de la app. */
+export type PlanSituation = {
+  id: number
+  title: string
+  titleEn?: string | null
+  shortTitle: string // etiqueta corta para las pestañas de Inicio
+  shortTitleEn?: string | null
+  recognize: string // "Qué reconocer"
+  recognizeEn?: string | null
+  clips: ContentItem[]
 }
 
 /** Comentario (plano en el MVP). `likes` opcional según diseño. */

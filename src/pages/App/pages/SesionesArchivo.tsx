@@ -33,8 +33,8 @@ const SesionesArchivo = () => {
           <Clapperboard className="h-5 w-5" />
         </span>
         <div>
-          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{t("club.sessions.title", "Sesiones")}</h1>
-          <p className="text-sm text-white/60">{t("sesiones-archivo.subtitle", "Todas las sesiones grabadas, mes a mes.")}</p>
+          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{t("club.sessions.title", "Masterclasses")}</h1>
+          <p className="text-sm text-white/60">{t("sesiones-archivo.subtitle", "Todas las masterclasses, mes a mes.")}</p>
         </div>
       </div>
 
@@ -42,7 +42,7 @@ const SesionesArchivo = () => {
         <CardGridSkeleton count={8} />
       ) : !sessions || sessions.length === 0 ? (
         <p className="rounded-xl border border-white/10 bg-white/[0.02] p-6 text-sm text-white/50">
-          {t("club.sessions.empty", "Todavía no hay ninguna sesión grabada. Vuelve pronto.")}
+          {t("club.sessions.empty", "Todavía no hay ninguna masterclass grabada. Vuelve pronto.")}
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

@@ -5,7 +5,8 @@ import type { MonthlyPick } from "./types"
 export type AdminMonthlyPick = MonthlyPick & { publishedAtUtc: string }
 
 /**
- * Hub "Club" (§Stripe 3 planes, Fase 1: Recomendado del mes). El frontend define el contrato;
+ * Hub "Club" (§Stripe 3 planes, Fase 1: Recomendado del mes — ahora "El plan del mes", con
+ * situaciones, ver PlanSituation en types.ts). El frontend define el contrato;
  * el backend se adapta.
  */
 
@@ -24,8 +25,18 @@ export type CreateMonthlyPickInput = {
   month: string // "yyyy-MM"
   note?: string
   noteEn?: string
-  items: { contentType: "clip" | "analysis"; contentId: string }[]
-  conceptIds: number[]
+  /** Masterclass de la que sale el plan (opcional). */
+  sessionId?: number
+  /** §El plan del mes: entre 2 y 4 situaciones, cada una con sus clips en orden. */
+  situations: {
+    title: string
+    titleEn?: string
+    shortTitle: string
+    shortTitleEn?: string
+    recognize: string
+    recognizeEn?: string
+    clipIds: string[]
+  }[]
 }
 
 /** GET /api/admin/monthly-picks → histórico completo, más reciente primero. */

@@ -57,7 +57,8 @@ const QuestionCard = ({
   )
 }
 
-const AdminPreguntas = () => {
+/** `embedded`: dentro de la pantalla de gestión del Club (AdminSesiones), sin `<main>` ni cabecera propios. */
+const AdminPreguntas = ({ embedded = false }: { embedded?: boolean }) => {
   const { t } = useI18n()
   const [items, setItems] = useState<AdminSessionQuestion[]>([])
   const [loading, setLoading] = useState(true)
@@ -103,15 +104,16 @@ const AdminPreguntas = () => {
     }
   }
 
+  const Wrapper = embedded ? "div" : "main"
   return (
-    <main className="w-full py-8">
-      <div className="mb-6 flex items-center gap-3">
+    <Wrapper className={embedded ? "w-full" : "w-full py-8"}>
+      <div className={embedded ? "hidden" : "mb-6 flex items-center gap-3"}>
         <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan">
           <MessageCircleQuestion className="h-5 w-5" />
         </span>
         <div>
           <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{t("admin-preguntas.title", "Preguntas")}</h1>
-          <p className="text-sm text-white/60">{t("admin-preguntas.subtitle", "Lo que los usuarios de Club/Coach preguntan para la próxima sesión.")}</p>
+          <p className="text-sm text-white/60">{t("admin-preguntas.subtitle", "Lo que los usuarios de Club/Coach preguntan para las próximas masterclasses.")}</p>
         </div>
       </div>
 
@@ -152,7 +154,7 @@ const AdminPreguntas = () => {
           )}
         </div>
       )}
-    </main>
+    </Wrapper>
   )
 }
 
