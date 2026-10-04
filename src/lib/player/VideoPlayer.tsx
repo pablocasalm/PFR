@@ -66,6 +66,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   const lastReportRef = useRef(0)
   const resumedRef = useRef(false)
   const scrubbingRef = useRef(false)
+  const pendingSeekRef = useRef<number | null>(null)
   // Al cambiar de idioma (§HeyGen), se guarda aquí el punto/estado de reproducción justo antes
   // de recargar la fuente, para restaurarlo cuando el nuevo manifiesto esté listo — si no, cambiar
   // de idioma volvería siempre al minuto 0.
@@ -256,7 +257,25 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     if (v) v.currentTime = Math.max(0, Math.min(seconds, duration || seconds))
   }
 
-  useImperativeHandle(ref, () => ({ seekTo }))
+  // Salto pedido desde fuera del player (lista de capítulos de la página): además de mover el
+  // punto de reproducción, arranca el vídeo y lo trae a la vista — si no, con el vídeo aún sin
+  // empezar (póster) o con la lista de capítulos por debajo del player en móvil, el clic no
+  // tenía ningún efecto visible. Si los metadatos todavía no han cargado, el salto se aplica en
+  // onLoadedMetadata (con prioridad sobre la reanudación de "Continúa viendo").
+  const jumpTo = (seconds: number) => {
+    const v = videoRef.current
+    if (!v) return
+    if (v.readyState >= 1) seekTo(seconds)
+    else pendingSeekRef.current = seconds
+    setEnded(false)
+    if (v.paused) {
+      setLoading(true)
+      v.play().catch(() => setLoading(false))
+    }
+    containerRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+  }
+
+  useImperativeHandle(ref, () => ({ seekTo: jumpTo }))
 
   // Pointer Events (no onClick/onDrag): unifica ratón y táctil, y permite arrastrar continuo
   // para avanzar/retroceder, no solo un tap puntual (§reporte de beta — en móvil no se podía
@@ -390,7 +409,11 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
           const d = e.currentTarget.duration
           setDuration(d)
           durationRef.current = d
-          if (initialPosition && initialPosition > 0 && !resumedRef.current) {
+          if (pendingSeekRef.current !== null) {
+            resumedRef.current = true
+            e.currentTarget.currentTime = Math.max(0, Math.min(pendingSeekRef.current, d || pendingSeekRef.current))
+            pendingSeekRef.current = null
+          } else if (initialPosition && initialPosition > 0 && !resumedRef.current) {
             resumedRef.current = true
             e.currentTarget.currentTime = initialPosition
           }
