@@ -1,5 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  // Los `hover:` solo valen en dispositivos con ratón de verdad. En táctil el hover se queda
+  // "pegado" tras un toque hasta tocar en otro sitio: un botón recién desactivado seguía viéndose
+  // en su color de hover (p. ej. el de subtítulos, que seguía azul) — §reporte de beta.
+  future: { hoverOnlyWhenSupported: true },
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {

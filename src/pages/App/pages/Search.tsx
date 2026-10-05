@@ -36,11 +36,16 @@ import { pickText, pickList } from "../../../lib/i18n/content"
 
 // Umbral de tolerancia de Fuse: 0 = match exacto, 1 = matchea cualquier cosa. 0.4 tolera
 // plurales/erratas típicas sin degenerar en resultados sin relación con la búsqueda.
+// Se busca a la vez en español y en inglés (titleEn/conceptsEn/blockEn): con la app en inglés
+// los títulos se ven traducidos, y buscándolos tal cual no salía nada (§reporte de beta).
 const FUSE_OPTIONS: ConstructorParameters<typeof Fuse<ContentItem>>[1] = {
   keys: [
     { name: "title", weight: 3 },
+    { name: "titleEn", weight: 3 },
     { name: "concepts", weight: 2 },
+    { name: "conceptsEn", weight: 2 },
     { name: "block", weight: 1.5 },
+    { name: "blockEn", weight: 1.5 },
     { name: "players", weight: 1 },
     { name: "tournament", weight: 1 },
   ],
@@ -56,7 +61,8 @@ const sorts = (t: TFunc) => [
   { v: "duration", l: t("search.sort.duration", "Duración") },
 ]
 
-type Filters = { q: string; block: string; concept: string; type: string; sort: string; feed: string; hasEnglish: string }
+// `watched`: "" (todos) | "unseen" (sin ver) | "seen" (vistos) — §reporte de beta.
+type Filters = { q: string; block: string; concept: string; type: string; sort: string; feed: string; hasEnglish: string; watched: string }
 
 // Cabecera adaptada al origen desde el que llega el usuario (§11.1).
 const headerTitle = (f: Filters, t: TFunc, blockLabel?: string): string => {
@@ -78,6 +84,7 @@ const appliedChips = (f: Filters, t: TFunc): { key: keyof Filters; label: string
   if (f.concept) chips.push({ key: "concept", label: `#${f.concept}` })
   if (f.type) chips.push({ key: "type", label: f.type === "analysis" ? t("explorar.type.analyses", "Análisis") : t("explorar.type.clips", "Clips") })
   if (f.hasEnglish) chips.push({ key: "hasEnglish", label: t("explorar.filter.has-english", "Con inglés") })
+  if (f.watched) chips.push({ key: "watched", label: f.watched === "seen" ? t("search.filter.seen", "Vistos") : t("search.filter.unseen", "Sin ver") })
   return chips
 }
 
@@ -174,6 +181,7 @@ const Search = () => {
     sort: params.get("sort") ?? "",
     feed: params.get("feed") ?? "",
     hasEnglish: params.get("hasEnglish") ?? "",
+    watched: params.get("watched") ?? "",
   }
 
   const setFilter = (patch: Partial<Filters>) => {
@@ -233,9 +241,12 @@ const Search = () => {
     if (filters.concept) items = items.filter((i) => (i.concepts ?? []).includes(filters.concept))
     if (filters.block) items = items.filter((i) => i.block === filters.block || (i.blocks ?? []).some((b) => b.block === filters.block))
     if (filters.hasEnglish) items = items.filter((i) => i.hasEnglishVersion)
+    // "Visto" = mismo criterio que la insignia de las tarjetas (`completed`, lo marca el backend).
+    if (filters.watched === "seen") items = items.filter((i) => i.completed)
+    if (filters.watched === "unseen") items = items.filter((i) => !i.completed)
     return items
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searched, filters.concept, filters.block, filters.hasEnglish])
+  }, [searched, filters.concept, filters.block, filters.hasEnglish, filters.watched])
 
   const counts = {
     all: base.length,
@@ -278,6 +289,16 @@ const Search = () => {
       options: allConcepts.map((c) => ({ value: c, label: `#${pickText(c, conceptLabelEn.get(c), lang)}` })),
       isActive: (v) => filters.concept === v,
       onToggle: (v) => setFilter({ concept: filters.concept === v ? "" : v }),
+    },
+    {
+      title: t("search.filter.watched", "Vistos"),
+      options: [
+        { value: "", label: t("explorar.type.all", "Todos") },
+        { value: "unseen", label: t("search.filter.unseen", "Sin ver") },
+        { value: "seen", label: t("search.filter.seen", "Vistos") },
+      ],
+      isActive: (v) => (filters.watched || "") === v,
+      onToggle: (v) => setFilter({ watched: v }),
     },
     {
       title: t("explorar.filter.language", "Idioma"),

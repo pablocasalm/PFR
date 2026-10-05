@@ -69,6 +69,9 @@ const CHAPTER_LEAD_IN_SECONDS = 1.2
 /** Espera antes de enseñar el círculo de carga: un salto dentro de lo ya descargado tarda menos y no debe hacerlo parpadear. */
 const BUFFERING_DELAY_MS = 180
 
+/** Tiempo sin mover el ratón ni tocar la pantalla tras el que se ocultan los controles mientras se reproduce. */
+const CONTROLS_HIDE_MS = 3000
+
 const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, chapters = [], onChapterChange, aspect = "16:9", initialPosition, onProgress, onEnded, endSlot, subtitlesDefaultOn = false }, ref) => {
   const { t } = useI18n()
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -119,11 +122,29 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   // de la barra, red lenta). `buffering` es lo mismo con un pequeño retardo, y es lo que pinta
   // el círculo de carga sobre el vídeo mientras se reproduce — sin el retardo, cada salto que
   // se resuelve al instante haría parpadear el círculo.
+  // Controles: visibles con el vídeo en pausa y, mientras se reproduce, solo unos segundos
+  // después del último movimiento o toque (como YouTube/Netflix). Antes dependían del hover de
+  // CSS, que en táctil se queda "pegado" tras un toque y dejaba la barra tapando el vídeo
+  // indefinidamente (§reporte de beta).
+  const [controlsActive, setControlsActive] = useState(false)
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  // ¿Estaban ya a la vista los controles cuando empezó el toque en curso? (ver onClick del vídeo)
+  const controlsShownAtDownRef = useRef(true)
+  // Táctil o ratón: cambia qué hace tocar el vídeo (ver onClick) y si hay botón central de pausa.
+  // Se decide con el último puntero usado, no con el tipo de dispositivo — hay portátiles táctiles.
+  const [touchMode, setTouchMode] = useState(false)
   const [busy, setBusy] = useState(false)
   const [buffering, setBuffering] = useState(false)
   const [lang, setLang] = useState<"es" | "en">("es")
   const [subtitleTracks, setSubtitleTracks] = useState<{ index: number; label: string }[]>([])
   const [subtitleTrack, setSubtitleTrack] = useState(-1) // -1 = desactivados
+  const subtitleTrackRef = useRef(-1)
+  subtitleTrackRef.current = subtitleTrack
+  // Líneas del subtítulo que toca ahora. Los subtítulos los pinta la app (ver más abajo), no el
+  // navegador: así se pueden subir por encima de la barra de controles cuando está visible y
+  // darles un tamaño legible en móvil — pintados por el navegador quedaban pegados al borde
+  // inferior, medio tapados por la barra y cortados en el reproductor pequeño (§reporte de beta).
+  const [cueLines, setCueLines] = useState<string[]>([])
   // Un único menú abierto a la vez (subtítulos y ajustes son excluyentes). La posición se calcula
   // en JS y se aplica con `position: fixed` en vez de `absolute` anclado al contenedor: así el
   // menú no se recorta contra el `overflow-hidden` del player cuando es más alto de lo normal
@@ -177,6 +198,14 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     const timer = setTimeout(() => setBuffering(true), BUFFERING_DELAY_MS)
     return () => clearTimeout(timer)
   }, [busy])
+
+  const pokeControls = () => {
+    setControlsActive(true)
+    clearTimeout(controlsTimerRef.current)
+    controlsTimerRef.current = setTimeout(() => setControlsActive(false), CONTROLS_HIDE_MS)
+  }
+  useEffect(() => () => clearTimeout(controlsTimerRef.current), [])
+  const controlsVisible = !playing || controlsActive || openMenu !== null
 
   const activeSrc = lang === "en" && srcEn ? srcEn : src
 
@@ -248,6 +277,55 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     }
   }, [activeSrc])
 
+  // Subtítulos pintados por la app: la pista elegida va en modo "hidden" (el navegador carga
+  // sus cues y avisa con "cuechange", pero no las dibuja) y aquí se leen las cues activas.
+  // Sirve igual para hls.js (que crea las pistas en el <video>) que para HLS nativo de Safari.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    const tracks = video.textTracks
+    const isSubtitle = (tr: TextTrack) => tr.kind === "subtitles" || tr.kind === "captions"
+
+    const syncCues = () => {
+      const lines: string[] = []
+      for (const tr of Array.from(tracks)) {
+        if (!isSubtitle(tr) || tr.mode === "disabled") continue
+        for (const cue of Array.from(tr.activeCues ?? [])) {
+          lines.push(...(cue as VTTCue).text.replace(/<[^>]+>/g, "").split("\n").map((l) => l.trim()).filter(Boolean))
+        }
+      }
+      setCueLines((prev) => (prev.join("\n") === lines.join("\n") ? prev : lines))
+    }
+
+    const watchTracks = () => {
+      for (const tr of Array.from(tracks)) {
+        tr.removeEventListener("cuechange", syncCues)
+        tr.addEventListener("cuechange", syncCues)
+      }
+      // HLS nativo (Safari sin hls.js): nadie más avisa de qué pistas hay — se sacan de aquí.
+      if (!hlsRef.current) {
+        const found = Array.from(tracks)
+          .map((tr, index) => ({ tr, index }))
+          .filter(({ tr }) => isSubtitle(tr))
+          .map(({ tr, index }, n) => ({ index, label: tr.label || t("video-player.subtitle-track", "Subtítulos {n}", { n: n + 1 }) }))
+        setSubtitleTracks(found)
+        for (const { index } of found) if (tracks[index].mode === "showing") tracks[index].mode = "disabled"
+        if (subtitlesDefaultOnRef.current && found.length > 0 && subtitleTrackRef.current === -1) selectSubtitle(found[0].index)
+      }
+      syncCues()
+    }
+
+    tracks.addEventListener("addtrack", watchTracks)
+    tracks.addEventListener("change", syncCues)
+    watchTracks()
+    return () => {
+      tracks.removeEventListener("addtrack", watchTracks)
+      tracks.removeEventListener("change", syncCues)
+      for (const tr of Array.from(tracks)) tr.removeEventListener("cuechange", syncCues)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSrc])
+
   // Sincronizar el estado de pantalla completa con el evento del navegador.
   useEffect(() => {
     const onFs = () => setFullscreen(document.fullscreenElement === containerRef.current)
@@ -260,8 +338,23 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
-    const onBegin = () => setFullscreen(true)
-    const onEnd = () => setFullscreen(false)
+    // En la pantalla completa nativa de iPhone no se ve nada pintado por la app, así que ahí
+    // los subtítulos se le dejan al propio reproductor de iOS (pista en "showing") y, al salir,
+    // se vuelven a pintar aquí ("hidden").
+    const setNativeSubtitles = (native: boolean) => {
+      const index = subtitleTrackRef.current
+      if (index === -1) return
+      if (hlsRef.current) hlsRef.current.subtitleDisplay = native
+      else if (video.textTracks[index]) video.textTracks[index].mode = native ? "showing" : "hidden"
+    }
+    const onBegin = () => {
+      setFullscreen(true)
+      setNativeSubtitles(true)
+    }
+    const onEnd = () => {
+      setFullscreen(false)
+      setNativeSubtitles(false)
+    }
     video.addEventListener("webkitbeginfullscreen", onBegin)
     video.addEventListener("webkitendfullscreen", onEnd)
     return () => {
@@ -397,8 +490,13 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     const hls = hlsRef.current
     if (hls) {
       hls.subtitleTrack = index
-      hls.subtitleDisplay = index !== -1 // hls.js no pinta las cues por defecto
+      hls.subtitleDisplay = false // pista en "hidden": las cues las pinta la app (ver cueLines)
+    } else {
+      // HLS nativo: mismo criterio, a mano sobre las pistas del <video>.
+      const tracks = videoRef.current?.textTracks
+      if (tracks) for (let i = 0; i < tracks.length; i++) if (tracks[i].kind === "subtitles" || tracks[i].kind === "captions") tracks[i].mode = i === index ? "hidden" : "disabled"
     }
+    if (index === -1) setCueLines([])
     setSubtitleTrack(index)
     setOpenMenu(null)
   }
@@ -422,12 +520,28 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     <div
       ref={containerRef}
       className={`group relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black ${aspectCls}`}
+      onPointerMove={pokeControls}
+      onPointerDownCapture={(e) => {
+        controlsShownAtDownRef.current = controlsVisible
+        setTouchMode(e.pointerType !== "mouse")
+        pokeControls()
+      }}
+      onPointerLeave={(e) => {
+        if (e.pointerType === "mouse") setControlsActive(false)
+      }}
     >
       <video
         ref={videoRef}
         poster={poster}
         className="h-full w-full bg-black object-contain"
-        onClick={togglePlay}
+        // Con ratón, clic = reproducir/pausar. En táctil, como en YouTube/Netflix, tocar el vídeo
+        // nunca pausa: muestra los controles si estaban ocultos y los esconde si estaban a la
+        // vista; se pausa con el botón central (más abajo). El vídeo en pausa lleva encima el
+        // botón de reproducir a pantalla completa, así que este clic solo llega reproduciendo.
+        onClick={() => {
+          if (!touchMode) togglePlay()
+          else if (controlsShownAtDownRef.current) setControlsActive(false)
+        }}
         onPlay={() => {
           setPlaying(true)
           setEnded(false)
@@ -514,6 +628,35 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
         </button>
       )}
 
+      {/* Botón central de pausa: solo en táctil, mientras se reproduce y con los controles a la
+          vista. Solo el círculo recibe el toque — el resto del vídeo sigue mostrando/ocultando
+          controles. Cede el centro al círculo de carga mientras se espera vídeo. */}
+      {touchMode && playing && controlsVisible && !buffering && !ended && (
+        <button
+          onClick={togglePlay}
+          className="absolute left-1/2 top-1/2 z-10 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/80 bg-black/40 backdrop-blur-sm"
+          aria-label={t("video-player.pause", "Pausar")}
+        >
+          <Pause className="h-7 w-7 text-white" fill="currentColor" />
+        </button>
+      )}
+
+      {/* Subtítulos. Suben por encima de la barra de controles mientras está visible. */}
+      {subtitleTrack !== -1 && cueLines.length > 0 && !ended && (
+        <div
+          className={`pointer-events-none absolute inset-x-0 z-10 flex justify-center px-3 transition-[bottom] duration-200 ${
+            controlsVisible ? "bottom-[4.25rem]" : "bottom-3 sm:bottom-5"
+          }`}
+          aria-live="off"
+        >
+          {/* Las líneas de la cue se unen y se deja que el texto parta solo: respetando sus saltos
+              más el ajuste al ancho, en el reproductor pequeño de móvil salían hasta 4 líneas. */}
+          <p className="max-w-[94%] rounded-md bg-black/75 px-2.5 py-1 text-center text-xs font-medium leading-snug text-white [text-wrap:balance] sm:px-3 sm:py-1.5 sm:text-lg">
+            {cueLines.join(" ")}
+          </p>
+        </div>
+      )}
+
       {/* Círculo de carga mientras se reproduce: salto a otro punto o espera de datos. Con el
           vídeo en pausa no hace falta — ahí el propio botón central ya hace de indicador. */}
       {playing && buffering && !ended && (
@@ -541,10 +684,14 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       )}
 
       {/* Barra de controles */}
-      {/* `pointer-events-none` mientras está oculta: en táctil no hay hover previo, y la barra
-          invisible se quedaba con el primer toque — al pulsar play cerca de la parte de abajo,
-          el toque caía en la barra de progreso y saltaba a otro minuto (§reporte de beta). */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-12 opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100">
+      {/* Sin eventos mientras está oculta: si no, la barra invisible se quedaba con el toque —
+          al pulsar cerca de la parte de abajo caía en la barra de progreso y saltaba a otro
+          minuto (§reporte de beta). */}
+      <div
+        className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-12 transition ${
+          controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      >
         {/* Progreso con marcadores de capítulo. `-mt-2 mb-1.5` (antes `-my-2`): la zona táctil de
             20px se compensa solo por arriba, para que quede aire entre la barra y los botones. touch-none evita que el gesto de arrastrar se
             interprete como scroll de la página en móvil — sin esto, el primer intento de

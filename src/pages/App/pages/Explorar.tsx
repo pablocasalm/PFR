@@ -81,6 +81,13 @@ const Chip = ({ children, active = false, onClick }: { children: React.ReactNode
 // Desplegable con autosugerencia sobre los jugadores ya presentes en el catálogo (§reporte de
 // beta #21): al enfocar sin texto se ve la lista completa (orden alfabético); al escribir, se
 // filtra por coincidencia.
+//
+// En móvil, tocar un nombre de la lista no llegaba a seleccionarlo (§reporte de beta #83). La
+// lista se cerraba con un temporizador al perder el foco el campo, y en táctil el clic llega
+// con retraso respecto al toque: si el foco se iba antes, la lista ya no existía cuando llegaba
+// el clic. Ahora se cierra solo al tocar FUERA del componente, así el clic siempre encuentra su
+// opción; al elegir se suelta el foco (se cierra el teclado y se ve el nombre elegido), y el
+// campo usa 16px en móvil para que Safari de iPhone no haga zoom al enfocarlo.
 const PlayerFilter = ({
   players,
   selected,
@@ -93,8 +100,19 @@ const PlayerFilter = ({
   const { t } = useI18n()
   const [query, setQuery] = useState(selected)
   const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => setQuery(selected), [selected])
+
+  useEffect(() => {
+    if (!open) return
+    const onOutside = (e: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener("pointerdown", onOutside)
+    return () => document.removeEventListener("pointerdown", onOutside)
+  }, [open])
 
   const options = query.trim()
     ? players.filter((p) => p.toLowerCase().includes(query.trim().toLowerCase()))
@@ -103,8 +121,9 @@ const PlayerFilter = ({
   return (
     <div className="space-y-2">
       <span className="text-xs font-semibold uppercase tracking-wide text-white/50">{t("explorar.player-filter.label", "Jugador")}</span>
-      <div className="relative">
+      <div className="relative" ref={rootRef}>
         <input
+          ref={inputRef}
           type="text"
           value={query}
           onChange={(e) => {
@@ -116,9 +135,11 @@ const PlayerFilter = ({
             setOpen(true)
             if (selected) setQuery("")
           }}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setOpen(false)
+          }}
           placeholder={t("explorar.player-filter.placeholder", "Buscar jugador...")}
-          className="w-full rounded-lg border border-white/15 bg-midnight px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none"
+          className="w-full rounded-lg border border-white/15 bg-midnight px-3 py-2 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
         />
         {selected && (
           <button
@@ -140,7 +161,9 @@ const PlayerFilter = ({
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   onSelect(p)
+                  setQuery(p)
                   setOpen(false)
+                  inputRef.current?.blur()
                 }}
                 className="block w-full px-3 py-2 text-left text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
               >

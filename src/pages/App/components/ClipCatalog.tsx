@@ -20,8 +20,11 @@ import { Thumb } from "./ContentCard"
 const FUSE_OPTIONS: ConstructorParameters<typeof Fuse<ContentItem>>[1] = {
   keys: [
     { name: "title", weight: 3 },
+    { name: "titleEn", weight: 3 },
     { name: "concepts", weight: 2 },
+    { name: "conceptsEn", weight: 2 },
     { name: "block", weight: 1.5 },
+    { name: "blockEn", weight: 1.5 },
     { name: "players", weight: 1 },
     { name: "tournament", weight: 1 },
   ],
