@@ -224,7 +224,7 @@ const Inicio = () => {
       ) : (!canSeeMonthlyPick || (monthlyPick && monthlyPick.items.length > 0)) && (
         <section className="rounded-2xl border border-neon-cyan/30 bg-neon-cyan/[0.04] p-4 sm:p-5">
           {/* Bloqueado: sin "Ver todo" (llevaría a Club, que redirige a Precios) — el CTA es "Ver planes". */}
-          <SectionHeading title={t("inicio.section.monthly-pick", "Recomendado para ti este mes")} to={canSeeMonthlyPick ? "/app/club" : undefined} />
+          <SectionHeading title={t("inicio.section.monthly-pick", "El plan del mes")} to={canSeeMonthlyPick ? "/app/club" : undefined} />
           {!canSeeMonthlyPick ? (
             <LockedTeaser
               message={t("club.monthly-pick.locked", "Cada mes, un plan con las situaciones de la masterclass y los clips para trabajarlas. Disponible con el plan Club.")}
