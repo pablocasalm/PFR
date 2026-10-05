@@ -50,7 +50,8 @@ type Props = {
   /** Contenido superpuesto al terminar (tarjeta "Siguiente en 3, 2, 1…"). Se ve también en
    * fullscreen. Recibe `dismiss` para poder cerrar la tarjeta y quedarse en el vídeo actual
    * (p. ej. al cancelar el autoplay) sin tener que ir al siguiente ni salir de la página. */
-  endSlot?: (dismiss: () => void) => React.ReactNode
+  /** Tarjeta de fin de vídeo. `dismiss` solo la cierra; `replay` vuelve a reproducir desde el principio. */
+  endSlot?: (dismiss: () => void, replay: () => void) => React.ReactNode
   /** Preferencia de cuenta (Mi Cuenta): si hay subtítulos disponibles, se activa la primera
    * pista sola en cuanto se conocen, sin esperar a que el usuario abra el menú. */
   subtitlesDefaultOn?: boolean
@@ -525,13 +526,25 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
 
       {/* Tarjeta "Siguiente" al terminar (autoplay §9.7/§10.7). Cubre el vídeo, también en fullscreen. */}
       {ended && endSlot && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          {endSlot(() => setEnded(false))}
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 p-2 backdrop-blur-sm sm:p-4">
+          {endSlot(
+            () => setEnded(false),
+            () => {
+              setEnded(false)
+              const v = videoRef.current
+              if (!v) return
+              v.currentTime = 0
+              v.play().catch(() => {})
+            },
+          )}
         </div>
       )}
 
       {/* Barra de controles */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-12 opacity-0 transition group-hover:opacity-100">
+      {/* `pointer-events-none` mientras está oculta: en táctil no hay hover previo, y la barra
+          invisible se quedaba con el primer toque — al pulsar play cerca de la parte de abajo,
+          el toque caía en la barra de progreso y saltaba a otro minuto (§reporte de beta). */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-12 opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100">
         {/* Progreso con marcadores de capítulo. `-mt-2 mb-1.5` (antes `-my-2`): la zona táctil de
             20px se compensa solo por arriba, para que quede aire entre la barra y los botones. touch-none evita que el gesto de arrastrar se
             interprete como scroll de la página en móvil — sin esto, el primer intento de

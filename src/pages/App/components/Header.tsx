@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
-import { Search, ChevronDown, LogOut, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, Lock } from "lucide-react"
+import { Search, ChevronDown, LogOut, BookOpen, Bookmark, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, Lock } from "lucide-react"
 import { useAuth, canPublish, isAdmin, hasFeature, type AuthUser } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import SearchOverlay from "./SearchOverlay"
@@ -190,7 +190,9 @@ const SessionControl = () => {
 
   return (
     <div className="relative" ref={rootRef}>
-      <button onClick={() => setMenuOpen((v) => !v)} className="flex items-center gap-1.5">
+      {/* id: en móvil/tablet el último paso del tour ("Cómo funciona") señala este botón, porque
+          ahí ese enlace vive dentro de este menú y no en la barra inferior (ver tour.ts). */}
+      <button id="tour-como-funciona-mobile" onClick={() => setMenuOpen((v) => !v)} className="flex items-center gap-1.5">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-neon-cyan text-sm font-bold text-midnight">
           {initials(user)}
         </span>
@@ -210,6 +212,24 @@ const SessionControl = () => {
             >
               <UserCircle className="h-4 w-4" />
               {t("mi-cuenta.title", "Mi cuenta")}
+            </Link>
+            {/* Mi Lista, también solo por debajo de xl: la barra inferior prioriza Coach y Club (ver MobileNav). */}
+            <Link
+              to="/app/mi-lista"
+              onClick={() => setMenuOpen(false)}
+              className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5 xl:hidden"
+            >
+              <Bookmark className="h-4 w-4" />
+              {t("header.nav.mi-lista", "Mi Lista")}
+            </Link>
+            {/* Solo por debajo de xl: en escritorio "Cómo funciona" ya está en el nav. */}
+            <Link
+              to="/app/como-funciona"
+              onClick={() => setMenuOpen(false)}
+              className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5 xl:hidden"
+            >
+              <BookOpen className="h-4 w-4" />
+              {t("header.nav.como-funciona", "Cómo funciona")}
             </Link>
             {canPublish(user) && (
               <Link

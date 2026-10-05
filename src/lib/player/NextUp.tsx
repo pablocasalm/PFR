@@ -1,38 +1,20 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Play, X } from "lucide-react"
+import { Play, RotateCcw } from "lucide-react"
 import type { ContentItem } from "../api/types"
 import { hueFor, thumbStyle, watchHref } from "../format"
 import { useI18n } from "../i18n/store"
 import { pickText } from "../i18n/content"
 
 /**
- * Autoplay / "Siguiente" (§9.7 y §10.7). Al terminar un vídeo se ofrece el siguiente
- * contenido relacionado, priorizando el mismo concepto. Se usa como `endSlot` del
+ * "Siguiente" (§9.7 y §10.7). Al terminar un vídeo se ofrece volver a verlo o pasar al
+ * siguiente contenido relacionado, priorizando el mismo concepto. Si no se hace nada, salta solo
+ * tras una cuenta atrás de COUNTDOWN_SECONDS; cualquier toque, clic o tecla en cualquier punto
+ * de la pantalla la cancela (como en YouTube/Netflix) y la tarjeta se queda esperando — así
+ * quien quiere quedarse leyendo la descripción solo tiene que tocar o hacer scroll. No hay
+ * casilla de preferencia: la reproducción automática está siempre activa. Se usa como `endSlot` del
  * reproductor, por lo que aparece encima del vídeo (también en pantalla completa).
  */
-
-const AUTOPLAY_KEY = "autoplayNext"
-
-/** Preferencia de reproducción automática, persistida en localStorage (por defecto activada). */
-export function useAutoplay(): [boolean, (value: boolean) => void] {
-  const [on, setOn] = useState(() => {
-    try {
-      return localStorage.getItem(AUTOPLAY_KEY) !== "off"
-    } catch {
-      return true
-    }
-  })
-  const set = (value: boolean) => {
-    setOn(value)
-    try {
-      localStorage.setItem(AUTOPLAY_KEY, value ? "on" : "off")
-    } catch {
-      /* modo privado: se mantiene en memoria */
-    }
-  }
-  return [on, set]
-}
 
 /**
  * Elige el siguiente contenido relacionado: primero uno que comparta concepto (§9.6),
@@ -45,26 +27,25 @@ export function pickNextRelated(related: ContentItem[] | undefined, concepts: st
   return sameConcept ?? related[0]
 }
 
+/** Segundos de cuenta atrás antes de pasar solo al siguiente. */
+const COUNTDOWN_SECONDS = 10
+
 export const NextUpCard = ({
   item,
   label,
-  autoplay,
-  onToggleAutoplay,
-  onCancel,
+  onReplay,
 }: {
   item: ContentItem
   label: string
-  autoplay: boolean
-  onToggleAutoplay: (value: boolean) => void
-  /** Cierra la tarjeta de verdad (no solo la cuenta atrás) para quedarse en el vídeo actual. */
-  onCancel?: () => void
+  /** Vuelve a reproducir el vídeo actual desde el principio (y cierra la tarjeta). */
+  onReplay: () => void
 }) => {
   const navigate = useNavigate()
   const { t, lang } = useI18n()
-  const [seconds, setSeconds] = useState(autoplay ? 3 : -1) // -1 = sin cuenta atrás
+  const [seconds, setSeconds] = useState(COUNTDOWN_SECONDS) // -1 = cuenta atrás cancelada
   const go = () => navigate(watchHref(item))
 
-  // Cuenta atrás → navegar. Cancelable (poniendo seconds a -1).
+  // Cuenta atrás → navegar.
   useEffect(() => {
     if (seconds < 0) return
     if (seconds === 0) {
@@ -78,53 +59,53 @@ export const NextUpCard = ({
 
   const counting = seconds > 0
 
+  // Cualquier interacción en la página cancela la cuenta atrás. En fase de captura, para
+  // enterarse antes que nadie; no se frena el evento, así que el toque hace además lo suyo
+  // (p. ej. pulsar "Ver el siguiente" cancela y navega igualmente).
+  useEffect(() => {
+    if (!counting) return
+    const cancel = () => setSeconds(-1)
+    document.addEventListener("pointerdown", cancel, true)
+    document.addEventListener("keydown", cancel, true)
+    document.addEventListener("wheel", cancel, { capture: true, passive: true })
+    return () => {
+      document.removeEventListener("pointerdown", cancel, true)
+      document.removeEventListener("keydown", cancel, true)
+      document.removeEventListener("wheel", cancel, true)
+    }
+  }, [counting])
+
+  // Compacta y en horizontal (miniatura a la izquierda): tiene que caber entera dentro de un
+  // reproductor 16:9 a ancho de móvil (~200px de alto) — con la miniatura a todo el ancho y
+  // todo apilado, los botones quedaban cortados por abajo (§reporte de beta). Si aun así no
+  // cupiera, hace scroll dentro de la propia tarjeta en vez de recortarse.
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-midnight/95 p-5 text-center shadow-2xl">
+    <div className="flex max-h-full w-full max-w-md flex-col overflow-y-auto rounded-2xl border border-white/15 bg-midnight/95 p-3 shadow-2xl sm:p-5">
       <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-neon-cyan">
         {counting ? t("next-up.countdown", "{label} en {seconds}…", { label, seconds }) : label}
       </p>
 
-      <button onClick={go} className="group mt-4 block w-full overflow-hidden rounded-xl border border-white/10 text-left">
-        <div className="relative aspect-video w-full" style={thumbStyle(hueFor(item.id))}>
-          {item.thumbnailUrl && (
-            <img src={item.thumbnailUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          )}
-          <span className="absolute inset-0 flex items-center justify-center">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-neon-cyan text-midnight transition group-hover:scale-105">
-              <Play className="h-5 w-5 translate-x-0.5" fill="currentColor" />
-            </span>
-          </span>
+      <button onClick={go} className="group mt-2.5 flex items-center gap-3 text-left sm:mt-4">
+        <div className="relative aspect-video w-24 shrink-0 overflow-hidden rounded-lg border border-white/10 sm:w-40" style={thumbStyle(hueFor(item.id))}>
+          {item.thumbnailUrl && <img src={item.thumbnailUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />}
         </div>
+        <p className="line-clamp-2 text-sm font-semibold leading-snug text-white group-hover:text-neon-cyan">{pickText(item.title, item.titleEn, lang)}</p>
       </button>
-      <p className="mt-3 line-clamp-2 text-sm font-semibold text-white">{pickText(item.title, item.titleEn, lang)}</p>
 
-      <div className="mt-4 flex items-center justify-center gap-2">
-        <button
-          onClick={go}
-          className="flex items-center gap-2 rounded-lg bg-neon-cyan px-4 py-2 text-sm font-semibold text-midnight transition hover:brightness-110"
-        >
-          <Play className="h-4 w-4" fill="currentColor" /> {t("next-up.play-now", "Reproducir ahora")}
-        </button>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4">
         <button
           onClick={() => {
             setSeconds(-1)
-            onCancel?.()
+            onReplay()
           }}
-          className="flex items-center gap-1.5 rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5"
+          className="flex items-center justify-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-white/85 transition hover:bg-white/5"
         >
-          <X className="h-4 w-4" /> {t("common.cancel", "Cancelar")}
+          <RotateCcw className="h-4 w-4" /> {t("next-up.replay", "Volver a ver")}
+        </button>
+        <button onClick={go} className="flex items-center justify-center gap-1.5 rounded-lg bg-neon-cyan px-3 py-2 text-sm font-semibold text-midnight transition hover:brightness-110">
+          <Play className="h-4 w-4" fill="currentColor" /> {t("next-up.play-next", "Ver el siguiente")}
         </button>
       </div>
-
-      <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 text-xs text-white/50">
-        <input
-          type="checkbox"
-          checked={autoplay}
-          onChange={(e) => onToggleAutoplay(e.target.checked)}
-          className="h-3.5 w-3.5 accent-neon-cyan"
-        />
-        {t("next-up.autoplay-label", "Reproducción automática")}
-      </label>
     </div>
   )
 }

@@ -44,7 +44,11 @@ export const BottomSheet = ({
   return (
     <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col rounded-t-2xl border-t border-white/10 bg-midnight motion-safe:animate-[sheet-up_.22s_ease-out]">
+      {/* `dvh` (viewport visible), no `vh`: en Safari de iPhone 85vh se calcula sobre la pantalla
+          SIN las barras del navegador, y con ellas a la vista la hoja quedaba más alta que el
+          hueco real — la cabecera con el botón de cerrar se salía por arriba (§reporte de beta).
+          El `max-h-[85vh]` de antes queda de respaldo para navegadores sin `dvh`. */}
+      <div className="absolute inset-x-0 bottom-0 flex max-h-[85vh] max-h-[85dvh] flex-col rounded-t-2xl border-t border-white/10 bg-midnight motion-safe:animate-[sheet-up_.22s_ease-out]">
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
           <h2 className="text-sm font-bold text-white">{title}</h2>
           <button onClick={onClose} aria-label={t("common.close", "Cerrar")} className="text-white/60 transition hover:text-white">

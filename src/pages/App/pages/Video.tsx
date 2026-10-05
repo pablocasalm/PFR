@@ -15,7 +15,7 @@ import type { AnalysisDetail, Chapter, Comment, ContentItem } from "../../../lib
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
 import { useSavedItems, isSaved, toggleSavedItem } from "../../../lib/saved/store"
 import HlsPlayer, { type VideoPlayerHandle } from "../../../lib/player/VideoPlayer"
-import { NextUpCard, pickNextRelated, useAutoplay } from "../../../lib/player/NextUp"
+import { NextUpCard, pickNextRelated } from "../../../lib/player/NextUp"
 import { saveProgress } from "../../../lib/api/history"
 import { toggleLike, addComment } from "../../../lib/api/social"
 import { useShare } from "../../../lib/share"
@@ -64,7 +64,7 @@ const VideoPlayer = ({
   onChapterChange,
 }: {
   video: AnalysisDetail
-  endSlot?: (dismiss: () => void) => React.ReactNode
+  endSlot?: (dismiss: () => void, replay: () => void) => React.ReactNode
   playerRef?: React.Ref<VideoPlayerHandle>
   onChapterChange?: (index: number) => void
 }) => {
@@ -359,7 +359,6 @@ const Video = () => {
   const [params] = useSearchParams()
   const id = params.get("v") ?? ""
   const { data: video, loading, error, errorStatus } = useApi(() => getAnalysisDetail(id), [id])
-  const [autoplay, setAutoplay] = useAutoplay()
   const playerRef = useRef<VideoPlayerHandle>(null)
   const [activeChapter, setActiveChapter] = useState(-1)
 
@@ -384,8 +383,8 @@ const Video = () => {
             onChapterChange={setActiveChapter}
             endSlot={
               nextAnalysis
-                ? (dismiss: () => void) => (
-                    <NextUpCard item={nextAnalysis} label={t("watch.next-analysis", "Siguiente análisis")} autoplay={autoplay} onToggleAutoplay={setAutoplay} onCancel={dismiss} />
+                ? (_dismiss: () => void, replay: () => void) => (
+                    <NextUpCard item={nextAnalysis} label={t("watch.next-analysis", "Siguiente análisis")} onReplay={replay} />
                   )
                 : undefined
             }

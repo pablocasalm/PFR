@@ -2,7 +2,7 @@ import {
   Heart,
   MessageCircle,
   Share2,
-  ListPlus,
+  Bookmark,
   ChevronRight,
   ArrowRight,
   ArrowDown,
@@ -21,7 +21,7 @@ import { useShare } from "../../../lib/share"
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import CardRow from "../../../lib/ui/CardRow"
 import HlsPlayer from "../../../lib/player/VideoPlayer"
-import { NextUpCard, pickNextRelated, useAutoplay } from "../../../lib/player/NextUp"
+import { NextUpCard, pickNextRelated } from "../../../lib/player/NextUp"
 import { saveProgress } from "../../../lib/api/history"
 import EditContentLink from "../components/EditContentLink"
 import WatchedBadge from "../components/WatchedBadge"
@@ -198,8 +198,8 @@ const SaveActionRow = ({ item }: { item: ContentItem }) => {
       aria-pressed={saved}
       className={`flex items-center gap-2 text-sm transition ${saved ? "text-neon-cyan" : "text-white/80 hover:text-white"}`}
     >
-      {saved ? <Check className="h-5 w-5" /> : <ListPlus className="h-5 w-5" />}
-      {saved ? t("save-button.saved", "En Mi Lista") : t("clip.save-action", "Mi lista")}
+      {saved ? <Check className="h-5 w-5" /> : <Bookmark className="h-5 w-5" />}
+      {saved ? t("save-button.saved", "En Mi Lista") : t("save-button.save", "Mi Lista")}
     </button>
   )
 }
@@ -216,9 +216,9 @@ const SaveActionRail = ({ item }: { item: ContentItem }) => {
           saved ? "bg-neon-cyan text-midnight" : "bg-black/40 hover:bg-black/60"
         }`}
       >
-        {saved ? <Check className="h-5 w-5" /> : <ListPlus className="h-5 w-5" />}
+        {saved ? <Check className="h-5 w-5" /> : <Bookmark className="h-5 w-5" />}
       </span>
-      <span className="text-[11px] font-medium">{saved ? t("clip.saved-short", "Guardado") : t("clip.save-action", "Mi lista")}</span>
+      <span className="text-[11px] font-medium">{saved ? t("clip.saved-short", "Guardado") : t("save-button.save", "Mi Lista")}</span>
     </button>
   )
 }
@@ -411,7 +411,7 @@ const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; v
 // Players (placeholder hasta el bloque 6)
 // ---------------------------------------------------------------------------
 
-const VideoPlayer = ({ clip, endSlot }: { clip: ClipDetail; endSlot?: (dismiss: () => void) => React.ReactNode }) => {
+const VideoPlayer = ({ clip, endSlot }: { clip: ClipDetail; endSlot?: (dismiss: () => void, replay: () => void) => React.ReactNode }) => {
   const { user } = useAuth()
   return (
     <HlsPlayer
@@ -428,7 +428,7 @@ const VideoPlayer = ({ clip, endSlot }: { clip: ClipDetail; endSlot?: (dismiss: 
   )
 }
 
-const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: ClipSocial; endSlot?: (dismiss: () => void) => React.ReactNode }) => {
+const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: ClipSocial; endSlot?: (dismiss: () => void, replay: () => void) => React.ReactNode }) => {
   const { user } = useAuth()
   return (
   <div className="relative mx-auto w-full max-w-[420px]">
@@ -468,11 +468,10 @@ const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: C
 const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => {
   const { t, lang } = useI18n()
   const social = useClipSocial(clip)
-  const [autoplay, setAutoplay] = useAutoplay()
   const nextClip = pickNextRelated(clip.related, clip.concepts)
   const endSlot = nextClip
-    ? (dismiss: () => void) => (
-        <NextUpCard item={nextClip} label={t("watch.next-clip", "Siguiente clip")} autoplay={autoplay} onToggleAutoplay={setAutoplay} onCancel={dismiss} />
+    ? (_dismiss: () => void, replay: () => void) => (
+        <NextUpCard item={nextClip} label={t("watch.next-clip", "Siguiente clip")} onReplay={replay} />
       )
     : undefined
   return (
@@ -521,11 +520,10 @@ const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => {
 const ClipVertical = ({ clip }: { clip: ClipDetail }) => {
   const { t, lang } = useI18n()
   const social = useClipSocial(clip)
-  const [autoplay, setAutoplay] = useAutoplay()
   const nextClip = pickNextRelated(clip.related, clip.concepts)
   const endSlot = nextClip
-    ? (dismiss: () => void) => (
-        <NextUpCard item={nextClip} label={t("watch.next-clip", "Siguiente clip")} autoplay={autoplay} onToggleAutoplay={setAutoplay} onCancel={dismiss} />
+    ? (_dismiss: () => void, replay: () => void) => (
+        <NextUpCard item={nextClip} label={t("watch.next-clip", "Siguiente clip")} onReplay={replay} />
       )
     : undefined
   return (

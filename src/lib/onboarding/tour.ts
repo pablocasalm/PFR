@@ -22,8 +22,9 @@ import { TOUR_OPEN_FEEDBACK_EVENT } from "../../pages/App/components/FeedbackBut
  * salvo que se haya elegido mal al invitar — de ahí el primer paso, ver más abajo.
  */
 
-// Corte desktop/móvil de la app (mismo breakpoint xl que Header/MobileNav): el botón de
-// "Cómo funciona" vive en dos sitios distintos según el layout.
+// Corte desktop/móvil de la app (mismo breakpoint xl que Header/MobileNav): "Cómo funciona"
+// vive en dos sitios distintos según el layout — en el nav en escritorio, y dentro del menú del
+// avatar en móvil/tablet (ahí el paso señala el botón del avatar).
 const isDesktopLayout = () => window.innerWidth >= 1280
 
 const toggleFeedbackModal = (open: boolean) =>
