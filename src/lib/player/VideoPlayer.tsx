@@ -17,7 +17,13 @@ export type PlayerChapter = { startSeconds: number; title: string }
 
 /** API imperativa expuesta vía ref — permite saltar a un momento del vídeo desde fuera
  * (p. ej. al hacer clic en un capítulo listado en un panel aparte, §reporte de beta). */
-export type VideoPlayerHandle = { seekTo: (seconds: number) => void }
+export type VideoPlayerHandle = {
+  /** Salto a un CAPÍTULO: cae un poco después de su inicio (ver CHAPTER_LEAD_IN_SECONDS). */
+  seekTo: (seconds: number) => void
+  /** Salto al segundo exacto, sin margen — para tiempos escritos a mano (p. ej. "3:45" en las
+   * prioridades de un análisis de Coach), que no apuntan al inicio de un capítulo. */
+  seekExact: (seconds: number) => void
+}
 
 // Safari en iPhone no soporta Fullscreen API sobre el contenedor (solo en iPad, iPadOS 16.4+):
 // hay que usar el método nativo del propio <video>, que además dispara sus propios eventos
@@ -406,10 +412,10 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   // Sin animaciones: el capítulo se marca al instante (sin esperar al primer timeupdate) y el
   // scroll hasta el player es inmediato y solo si no está ya a la vista. Mientras el vídeo
   // llega al punto nuevo se ve el círculo de carga (`busy`, vía onSeeking/onWaiting).
-  const jumpTo = (chapterStart: number) => {
+  const jumpTo = (chapterStart: number, exact = false) => {
     const v = videoRef.current
     if (!v) return
-    const seconds = chapterStart > 0 ? chapterStart + CHAPTER_LEAD_IN_SECONDS : 0
+    const seconds = exact ? Math.max(0, chapterStart) : chapterStart > 0 ? chapterStart + CHAPTER_LEAD_IN_SECONDS : 0
     if (v.readyState >= 1) seekTo(seconds)
     else pendingSeekRef.current = seconds
     reportChapter(seconds)
@@ -424,7 +430,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     }
   }
 
-  useImperativeHandle(ref, () => ({ seekTo: jumpTo }))
+  useImperativeHandle(ref, () => ({ seekTo: (seconds) => jumpTo(seconds), seekExact: (seconds) => jumpTo(seconds, true) }))
 
   // Pointer Events (no onClick/onDrag): unifica ratón y táctil, y permite arrastrar continuo
   // para avanzar/retroceder, no solo un tap puntual (§reporte de beta — en móvil no se podía

@@ -178,9 +178,47 @@ export type PersonalAnalysisItem = {
   uploadedVideoUrl: string
   userNote?: string | null
   deliveredVideoUrl?: string | null
+  /** Formato anterior (texto libre). Los análisis nuevos traen `priorities`. */
   deliveredPlanText?: string | null
   deliveredAtUtc?: string | null
   cycleEndsAtUtc?: string | null
+  // Quién es el jugador en el vídeo (obligatorio al enviar).
+  playerSide?: PlayerSide | null // lado en el que juega
+  playerHand?: PlayerSide | null // mano dominante
+  playerStart?: "near" | "far" | null // dónde empieza respecto a la cámara
+  playerLook?: string | null // cómo reconocerle
+  matchContext?: string | null
+  // Ficha de prioridades (§"Entregable Coach y checklist del alumno").
+  priorities?: AnalysisPriority[]
+  strengths?: string | null // "Lo que ya haces bien", una por línea
+  observations?: string | null // "Otras observaciones", una por línea
+  finalComment?: string | null // comentario final del alumno para Guille
+  finalCommentAtUtc?: string | null
+}
+
+export type PlayerSide = "right" | "left"
+
+/** Cómo le fue al alumno con una prioridad: lo hizo, a medias o no le salió. La misma escala
+ * sirve para su seguimiento partido a partido y para la revisión de Guille en el análisis siguiente. */
+export type PriorityResult = "done" | "partial" | "missed"
+
+export type PriorityLog = { id: number; matchDate: string; result: PriorityResult; comment?: string | null }
+
+/** Una prioridad de la ficha de un análisis de Coach. */
+export type AnalysisPriority = {
+  id: number
+  title: string
+  situation: string
+  decision: string // "Qué decidir"
+  check: string // "Cómo saber si lo haces"
+  moments?: string | null // "Míralo en tu vídeo": minutos en texto, se enlazan al vídeo
+  blockId?: number | null
+  block?: string | null
+  blockEn?: string | null
+  concepts: { id: number; name: string; nameEn: string }[]
+  reviewResult?: PriorityResult | null // revisión de Guille en el análisis siguiente
+  reviewComment?: string | null
+  logs: PriorityLog[] // seguimiento del alumno durante el mes
 }
 
 export type SessionDetail = {

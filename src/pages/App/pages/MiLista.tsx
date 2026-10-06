@@ -5,6 +5,9 @@ import type { ContentItem } from "../../../lib/api/types"
 import { useSavedItems, toggleSavedItem } from "../../../lib/saved/store"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getRecent } from "../../../lib/api/history"
+import { getMyDeliveredAnalyses } from "../../../lib/api/personalAnalysis"
+import { useAuth, hasFeature } from "../../../lib/auth/store"
+import { PastAnalysesList } from "../components/CoachAnalysis"
 import SaveButton from "../../../lib/saved/SaveButton"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
@@ -212,6 +215,12 @@ const MiLista = () => {
   const analyses = saved.filter((i) => i.type === "analysis")
 
   const { data: recent } = useApi(getRecent, [], "recent")
+  // Análisis de Coach de quien YA NO tiene Coach (bajó a Club o Starter): los conserva aquí,
+  // solo el vídeo de Guille y sus prioridades. Con Coach activo viven en su propia pantalla, así
+  // que ni se piden.
+  const { user } = useAuth()
+  const hasCoach = hasFeature(user, "personalAnalysis")
+  const { data: coachAnalyses } = useApi(() => (hasCoach ? Promise.resolve([]) : getMyDeliveredAnalyses().catch(() => [])), [hasCoach], "my-delivered-analyses")
   const recentItems = recent ?? []
   const inProgressItems = recentItems.filter((i) => !i.completed)
   const finishedItems = recentItems.filter((i) => i.completed)
@@ -240,7 +249,8 @@ const MiLista = () => {
   const emptyAll = () => removeItems(saved)
 
   const nothingSaved = saved.length === 0
-  const nothingAtAll = nothingSaved && recentItems.length === 0
+  const hasCoachAnalyses = !hasCoach && (coachAnalyses ?? []).length > 0
+  const nothingAtAll = nothingSaved && recentItems.length === 0 && !hasCoachAnalyses
 
   return (
     <main className="w-full space-y-10 py-8">
@@ -355,6 +365,13 @@ const MiLista = () => {
             </section>
           )}
         </>
+      )}
+
+      {hasCoachAnalyses && (
+        <section>
+          <SectionHeading title={t("mi-lista.coach-analyses", "Tus análisis de Coach")} count={coachAnalyses!.length} />
+          <PastAnalysesList items={coachAnalyses!} />
+        </section>
       )}
     </main>
   )
