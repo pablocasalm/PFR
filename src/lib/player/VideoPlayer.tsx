@@ -141,6 +141,9 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   const [touchMode, setTouchMode] = useState(false)
   const [busy, setBusy] = useState(false)
   const [buffering, setBuffering] = useState(false)
+  // El vídeo no se ha podido cargar (ya no existe en Cloudflare, o su enlace firmado ha
+  // caducado): se dice, en vez de dejar un reproductor en negro que parece que va a arrancar.
+  const [loadFailed, setLoadFailed] = useState(false)
   const [lang, setLang] = useState<"es" | "en">("es")
   const [subtitleTracks, setSubtitleTracks] = useState<{ index: number; label: string }[]>([])
   const [subtitleTrack, setSubtitleTrack] = useState(-1) // -1 = desactivados
@@ -232,6 +235,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
 
     setSubtitleTracks([])
     setSubtitleTrack(-1)
+    setLoadFailed(false)
 
     const restoreAfterSwitch = () => {
       const pending = switchStateRef.current
@@ -271,6 +275,11 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
         // cambiar de audio ES/EN), igual que se resetea subtitleTrack a -1 arriba.
         if (subtitlesDefaultOnRef.current && tracks.length > 0) selectSubtitle(tracks[0].index)
       })
+      // Solo el fallo al cargar el manifiesto: es el que significa "este vídeo no está". El
+      // resto de errores (cortes de red a media reproducción, etc.) los gestiona hls.js.
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal && data.type === Hls.ErrorTypes.NETWORK_ERROR && data.details.startsWith("manifest")) setLoadFailed(true)
+      })
       return () => {
         hls.destroy()
         hlsRef.current = null
@@ -280,6 +289,12 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = activeSrc
       video.addEventListener("loadedmetadata", restoreAfterSwitch, { once: true })
+      // HLS nativo (Safari sin MSE): un error antes de tener metadatos es que no ha cargado.
+      const onError = () => {
+        if (video.readyState === 0) setLoadFailed(true)
+      }
+      video.addEventListener("error", onError)
+      return () => video.removeEventListener("error", onError)
     }
   }, [activeSrc])
 
@@ -616,8 +631,21 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
         playsInline
       />
 
+      {/* No se ha podido cargar: aviso en lugar del botón de reproducir */}
+      {loadFailed && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/80 px-6 text-center" role="alert">
+          <p className="text-sm font-semibold text-white">{t("video-player.load-failed", "No se ha podido cargar este vídeo")}</p>
+          <p className="max-w-sm text-xs leading-relaxed text-white/60">
+            {t("video-player.load-failed-help", "Prueba a recargar la página. Si sigue igual, puede que el vídeo ya no esté disponible: avísanos y lo revisamos.")}
+          </p>
+          <button onClick={() => window.location.reload()} className="rounded-lg border border-white/20 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10">
+            {t("video-player.reload", "Recargar la página")}
+          </button>
+        </div>
+      )}
+
       {/* Botón central de play cuando está pausado (con spinner mientras carga) */}
-      {!playing && (
+      {!playing && !loadFailed && (
         <button
           onClick={togglePlay}
           disabled={loading}

@@ -10,7 +10,10 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 export const TOUR_OPEN_FEEDBACK_EVENT = "pfr:tour-open-feedback"
 
 /**
- * Botón flotante de feedback para la beta. Visible en toda la app. El usuario elige primero
+ * Botón flotante de feedback para la beta, visible en toda la app en escritorio. En móvil y
+ * tableta no flota: tapaba contenido (títulos de tarjetas, enlaces) por mucho que se apartase
+ * al hacer scroll, así que ahí el acceso es un icono fijo en la cabecera (ver Header.tsx), que
+ * abre este mismo modal con TOUR_OPEN_FEEDBACK_EVENT. El usuario elige primero
  * el tipo (fallo / idea / otro) y escribe el mensaje. Se adjunta automáticamente el contexto:
  * la ruta actual y, si está viendo un clip/análisis, su id (el navegador lo añade el backend).
  */
@@ -35,27 +38,6 @@ const FeedbackButton = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageError, setImageError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // En móvil el botón flota sobre contenido largo con scroll: se aparta mientras se
-  // hace scroll hacia abajo (para no tapar tarjetas/enlaces) y vuelve al parar o subir.
-  const [hidden, setHidden] = useState(false)
-  const lastY = useRef(0)
-  useEffect(() => {
-    lastY.current = window.scrollY
-    let ticking = false
-    const onScroll = () => {
-      if (ticking) return
-      ticking = true
-      requestAnimationFrame(() => {
-        const y = window.scrollY
-        setHidden(y > lastY.current && y > 120)
-        lastY.current = y
-        ticking = false
-      })
-    }
-    window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
-  }, [])
 
   // El tour de bienvenida abre este modal para enseñarlo (§ beta) sin duplicar su lógica.
   useEffect(() => {
@@ -130,12 +112,10 @@ const FeedbackButton = () => {
         id="tour-feedback-button"
         onClick={() => setOpen(true)}
         aria-label={t("feedback-button.open", "Reportar un fallo o enviar feedback")}
-        className={`fixed bottom-24 left-4 z-40 flex items-center gap-2 rounded-full border border-neon-cyan/40 bg-midnight/90 px-4 py-2.5 text-sm font-semibold text-neon-cyan shadow-lg backdrop-blur transition-all duration-300 hover:bg-neon-cyan/10 xl:pointer-events-auto xl:bottom-6 xl:left-auto xl:right-6 xl:translate-y-0 xl:opacity-100 ${
-          hidden ? "translate-y-20 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
-        }`}
+        className="fixed bottom-6 right-6 z-40 hidden items-center gap-2 rounded-full border border-neon-cyan/40 bg-midnight/90 px-4 py-2.5 text-sm font-semibold text-neon-cyan shadow-lg backdrop-blur transition hover:bg-neon-cyan/10 xl:flex"
       >
         <MessageSquarePlus className="h-4 w-4" />
-        <span className="hidden sm:inline">{t("feedback-button.cta", "Reportar / Feedback")}</span>
+        {t("feedback-button.cta", "Reportar / Feedback")}
       </button>
 
       {open && (

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
-import { Search, ChevronDown, LogOut, BookOpen, Bookmark, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, Lock } from "lucide-react"
+import { Search, ChevronDown, LogOut, BookOpen, Bookmark, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, Lock, MessageSquarePlus } from "lucide-react"
 import { useAuth, canPublish, isAdmin, hasFeature, type AuthUser } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import SearchOverlay from "./SearchOverlay"
 import NewsBell from "./NewsBell"
+import { TOUR_OPEN_FEEDBACK_EVENT } from "./FeedbackButton"
 import LanguageSelector from "./LanguageSelector"
 
 /**
@@ -36,7 +37,7 @@ const Header = () => {
   return (
   <>
   <header className="sticky top-0 z-20 border-b border-white/10 bg-black/40 backdrop-blur-md">
-    <div className="flex w-full items-center gap-4 px-4 py-4 sm:px-6 md:gap-6 lg:px-10">
+    <div className="flex w-full items-center gap-2 px-3 py-4 min-[480px]:gap-4 min-[480px]:px-4 sm:px-6 md:gap-6 lg:px-10">
       {/* Logo: vuelve a Inicio */}
       <Link to="/app/inicio" className="flex items-center gap-3">
         <img
@@ -44,7 +45,9 @@ const Header = () => {
           alt="Padel Film Room"
           className="h-11 w-11 shrink-0 object-contain"
         />
-        <div className="leading-none">
+        {/* En móviles estrechos solo el logo: con el icono de feedback en la cabecera, el nombre
+            no cabía (y ya antes se partía en tres líneas). */}
+        <div className="hidden whitespace-nowrap leading-none min-[480px]:block">
           <p className="text-sm font-bold uppercase tracking-wide text-white">Padel</p>
           <p className="text-sm font-bold uppercase tracking-wide text-white">Film Room</p>
         </div>
@@ -142,6 +145,17 @@ const Header = () => {
         <Search className="h-5 w-5" />
       </button>
 
+      {/* Feedback (móvil/tablet): aquí en vez de flotando sobre el contenido. Abre el modal de
+          FeedbackButton, que sigue montado en toda la app. */}
+      <button
+        id="tour-feedback-button-mobile"
+        onClick={() => window.dispatchEvent(new CustomEvent(TOUR_OPEN_FEEDBACK_EVENT, { detail: true }))}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan transition hover:bg-neon-cyan/15 xl:hidden"
+        aria-label={t("feedback-button.open", "Reportar un fallo o enviar feedback")}
+      >
+        <MessageSquarePlus className="h-5 w-5" />
+      </button>
+
       {/* Idioma */}
       <LanguageSelector />
 
@@ -196,7 +210,8 @@ const SessionControl = () => {
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-neon-cyan text-sm font-bold text-midnight">
           {initials(user)}
         </span>
-        <ChevronDown className="h-4 w-4 text-white/60" />
+        {/* En las pantallas más estrechas (320 px) la flecha no cabe: el avatar ya se entiende como menú. */}
+        <ChevronDown className="hidden h-4 w-4 text-white/60 min-[360px]:block" />
       </button>
 
       {menuOpen && (

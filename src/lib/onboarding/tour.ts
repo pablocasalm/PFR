@@ -100,7 +100,8 @@ export function startOnboardingTour(navigate: NavigateFunction) {
         },
       },
       {
-        element: "#tour-feedback-button",
+        // El botón de feedback flota en escritorio y es un icono de la cabecera en móvil/tablet.
+        element: isDesktopLayout() ? "#tour-feedback-button" : "#tour-feedback-button-mobile",
         popover: {
           title: t("onboarding.step-feedback.title", "Estamos en beta"),
           description: t(
