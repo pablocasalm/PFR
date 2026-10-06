@@ -15,7 +15,6 @@ import SidePanel from "../../../lib/ui/SidePanel"
 import FileDrop from "../components/FileDrop"
 import { DeliveredAnalysisView, PastAnalysesList } from "../components/CoachAnalysis"
 import CoachProgress from "../components/CoachProgress"
-import { COACH_DEMO, coachDemoMode } from "../components/coachDemo"
 import { useAuth, hasFeature } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import type { PersonalAnalysisItem, PlayerSide, PriorityLog } from "../../../lib/api/types"
@@ -335,14 +334,13 @@ const Coach = () => {
   const { t, lang } = useI18n()
   const { user } = useAuth()
   const hasCoach = hasFeature(user, "personalAnalysis")
-  const demo = coachDemoMode()
-  const { data } = useApi(demo ? () => Promise.resolve(COACH_DEMO[demo]) : getMyPersonalAnalysis, [demo], demo ? `coach-demo-${demo}` : "my-personal-analysis")
+  const { data } = useApi(getMyPersonalAnalysis, [], "my-personal-analysis")
   const [override, setOverride] = useState<MyPersonalAnalysis | null>(null)
   const [sending, setSending] = useState(false)
   // Lo que el alumno anota en esta visita, para que el resumen de progreso se mueva al momento.
   const [logChanges, setLogChanges] = useState<Record<number, PriorityLog[]>>({})
 
-  if (!hasCoach && !demo) return <Navigate to="/app/precios" replace />
+  if (!hasCoach) return <Navigate to="/app/precios" replace />
 
   const current = override ?? data
   const request = current?.request ?? null

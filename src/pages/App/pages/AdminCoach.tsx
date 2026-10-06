@@ -11,8 +11,7 @@ import {
 } from "../../../lib/api/personalAnalysis"
 import { createDirectUpload, uploadToCloudflare, readVideoDuration, createPublishToken, waitForVideoReady, getConcepts, type ConceptOption } from "../../../lib/api/admin"
 import { getBlocks, type BlockOption } from "../../../lib/api/blocks"
-import type { AnalysisPriority, PersonalAnalysisItem, PriorityResult } from "../../../lib/api/types"
-import { COACH_ADMIN_DEMO, coachDemoMode } from "../components/coachDemo"
+import type { AnalysisPriority, PriorityResult } from "../../../lib/api/types"
 import { AnalysisSheet, ResultBadge } from "../components/CoachAnalysis"
 import { useResultLabels } from "../components/coachResultLabels"
 import FileDrop from "../components/FileDrop"
@@ -244,14 +243,10 @@ const SIDE_LABEL: Record<string, string> = { right: "derecha", left: "revés" }
 const HAND_LABEL: Record<string, string> = { right: "diestro", left: "zurdo" }
 const START_LABEL: Record<string, string> = { near: "empieza cerca de la cámara", far: "empieza lejos de la cámara" }
 
-/** Lo que el alumno verá de la ficha que se acaba de guardar — solo para el modo de ejemplo. */
-type SavedSheet = Partial<PersonalAnalysisItem>
-
 const RequestCard = ({
   item,
   blocks,
   concepts,
-  demo,
   onMarkInReview,
   onSaved,
   onRemove,
@@ -259,11 +254,9 @@ const RequestCard = ({
   item: AdminPersonalAnalysisItem
   blocks: BlockOption[]
   concepts: ConceptOption[]
-  /** Datos de ejemplo (?ejemplo, solo en desarrollo): guardar no sube ni manda nada. */
-  demo: boolean
   onMarkInReview: (item: AdminPersonalAnalysisItem) => void
-  /** Entregado o editado. `sheet` solo viene en el modo de ejemplo. */
-  onSaved: (item: AdminPersonalAnalysisItem, sheet?: SavedSheet) => void
+  /** Entregado o editado: toca recargar la cola. */
+  onSaved: (item: AdminPersonalAnalysisItem) => void
   onRemove: (item: AdminPersonalAnalysisItem) => void
 }) => {
   const { t, lang } = useI18n()
@@ -285,7 +278,7 @@ const RequestCard = ({
 
   const previous = item.previous
   // Al corregir una entrega el vídeo es opcional: sin elegir otro, se queda el que ya hay.
-  const canSave = (!!file || demo || isDelivered) && priorities.length >= MIN_PRIORITIES && priorities.every(isPriorityComplete)
+  const canSave = (!!file || isDelivered) && priorities.length >= MIN_PRIORITIES && priorities.every(isPriorityComplete)
 
   const openForm = () => {
     if (isDelivered) {
@@ -318,35 +311,6 @@ const RequestCard = ({
 
   const save = async () => {
     if (!canSave || busy) return
-    if (demo) {
-      // Ejemplo: la ficha se queda solo en pantalla, con el vídeo de muestra.
-      const existing = item.priorities ?? []
-      onSaved(item, {
-        deliveredVideoUrl: item.deliveredVideoUrl ?? item.uploadedVideoUrl,
-        strengths: strengths.trim() || null,
-        observations: observations.trim() || null,
-        priorities: priorities.map((p, i) => {
-          const block = blocks.find((b) => String(b.id) === p.blockId)
-          const input = toInput(p)
-          return {
-            ...existing.find((x) => x.id === p.id),
-            id: p.id ?? item.id * 10 + i,
-            title: input.title,
-            situation: input.situation,
-            decision: input.decision,
-            check: input.check,
-            moments: input.moments ?? null,
-            blockId: input.blockId ?? null,
-            block: block?.nameEs ?? null,
-            blockEn: block?.nameEn ?? null,
-            concepts: concepts.filter((c) => p.conceptIds.includes(c.id)).map((c) => ({ id: c.id, name: c.nameEs, nameEn: c.nameEn ?? c.nameEs })),
-            logs: existing.find((x) => x.id === p.id)?.logs ?? [],
-          }
-        }),
-      })
-      setFormOpen(false)
-      return
-    }
     setBusy(true)
     setError(null)
     try {
@@ -608,13 +572,7 @@ const AdminCoach = () => {
   const [error, setError] = useState<string | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
 
-  const demo = coachDemoMode() !== null
   const refresh = async () => {
-    if (demo) {
-      setItems(COACH_ADMIN_DEMO)
-      setLoading(false)
-      return
-    }
     setLoading(true)
     try {
       const res = await adminListPersonalAnalysis()
@@ -639,7 +597,6 @@ const AdminCoach = () => {
 
   const markInReview = async (item: AdminPersonalAnalysisItem) => {
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "InReview" } : i))) // optimista
-    if (demo) return
     try {
       await adminMarkInReview(item.id)
     } catch (err) {
@@ -648,19 +605,10 @@ const AdminCoach = () => {
     }
   }
 
-  // Tras entregar o corregir se recarga la cola; en el ejemplo, el cambio se queda en pantalla.
-  const markSaved = (item: AdminPersonalAnalysisItem, sheet?: Partial<PersonalAnalysisItem>) => {
-    if (!demo) return void refresh()
-    setItems((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, ...sheet, status: "Delivered", deliveredAtUtc: i.deliveredAtUtc ?? new Date().toISOString(), previous: null } : i)),
-    )
-    setHistoryOpen(true)
-  }
-
   const remove = async (item: AdminPersonalAnalysisItem) => {
     if (!window.confirm(t("admin-coach.confirm-delete", "¿Eliminar esta solicitud?"))) return
     try {
-      if (!demo) await adminDeletePersonalAnalysis(item.id)
+      await adminDeletePersonalAnalysis(item.id)
       setItems((prev) => prev.filter((i) => i.id !== item.id))
     } catch (err) {
       setError(err instanceof Error ? err.message : t("admin-coach.error.delete", "No se pudo eliminar."))
@@ -688,7 +636,7 @@ const AdminCoach = () => {
       ) : (
         <div className="space-y-4">
           {pending.map((item) => (
-            <RequestCard key={item.id} item={item} blocks={blocks} concepts={concepts} onMarkInReview={markInReview} demo={demo} onSaved={markSaved} onRemove={remove} />
+            <RequestCard key={item.id} item={item} blocks={blocks} concepts={concepts} onMarkInReview={markInReview} onSaved={() => refresh()} onRemove={remove} />
           ))}
         </div>
       )}
@@ -707,7 +655,7 @@ const AdminCoach = () => {
           {historyOpen && (
             <div className="mt-4 space-y-4">
               {delivered.map((item) => (
-                <RequestCard key={item.id} item={item} blocks={blocks} concepts={concepts} onMarkInReview={markInReview} demo={demo} onSaved={markSaved} onRemove={remove} />
+                <RequestCard key={item.id} item={item} blocks={blocks} concepts={concepts} onMarkInReview={markInReview} onSaved={() => refresh()} onRemove={remove} />
               ))}
             </div>
           )}

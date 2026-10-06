@@ -64,23 +64,17 @@ export type PlayerInfo = {
 export const submitPersonalAnalysis = (uid: string, durationSeconds: number, player: PlayerInfo, note?: string) =>
   apiPost<PersonalAnalysisItem>("/api/club/personal-analysis", { uid, durationSeconds, note, ...player })
 
-/** Pantalla Coach con datos de ejemplo (`?ejemplo`, solo en desarrollo — ver coachDemo.ts): lo
- * que el alumno anota no se manda a ningún sitio, porque esos análisis no existen. */
-const isDemo = () => import.meta.env.DEV && new URLSearchParams(window.location.search).has("ejemplo")
-
 /** POST …/{id}/priorities/{priorityId}/logs → el alumno anota un partido en una prioridad. */
 export const addPriorityLog = (requestId: number, priorityId: number, log: { matchDate: string; result: PriorityResult; comment?: string }) =>
-  isDemo() ? Promise.resolve<PriorityLog>({ id: Date.now(), ...log }) : apiPost<PriorityLog>(`/api/club/personal-analysis/${requestId}/priorities/${priorityId}/logs`, log)
+  apiPost<PriorityLog>(`/api/club/personal-analysis/${requestId}/priorities/${priorityId}/logs`, log)
 
 /** DELETE …/{id}/logs/{logId} → borra una anotación propia. */
 export const deletePriorityLog = (requestId: number, logId: number) =>
-  isDemo() ? Promise.resolve({ ok: true }) : apiDelete<{ ok: boolean }>(`/api/club/personal-analysis/${requestId}/logs/${logId}`)
+  apiDelete<{ ok: boolean }>(`/api/club/personal-analysis/${requestId}/logs/${logId}`)
 
 /** PATCH …/{id}/final-comment → comentario final del alumno para Guille. */
 export const setFinalComment = (requestId: number, text: string) =>
-  isDemo()
-    ? Promise.resolve({ ok: true, finalComment: text })
-    : apiPatch<{ ok: boolean; finalComment: string | null }>(`/api/club/personal-analysis/${requestId}/final-comment`, { text })
+  apiPatch<{ ok: boolean; finalComment: string | null }>(`/api/club/personal-analysis/${requestId}/final-comment`, { text })
 
 /** PATCH /api/club/personal-analysis/{id} → corrige un envío propio (vídeo y/o nota) mientras
  * siga en cola ("Submitted"); el backend lo rechaza en cuanto pasa a "en revisión". Todo
