@@ -122,11 +122,8 @@ const PlanCard = ({ plan, isCurrent, backend }: { plan: (typeof PLANS)[number]; 
       {CHECKOUT_TEST ? (
         // Modo de prueba local (textos sin traducir a propósito: no los ve ningún usuario).
         <div className="mt-6 space-y-2">
-          <p className="text-xs text-amber-200/80">
-            {backendPrice
-              ? `Precio en el backend: ${new Intl.NumberFormat("es-ES", { style: "currency", currency: backendPrice.currency }).format(backendPrice.displayAmount)} / mes`
-              : "Sin precio mensual en el backend para este plan."}
-          </p>
+          {/* Solo si falta: explica por qué el botón está apagado. */}
+          {backend && !backendPrice && <p className="text-xs text-amber-200/80">Este plan no tiene precio dado de alta todavía.</p>}
           <button
             type="button"
             onClick={subscribe}
