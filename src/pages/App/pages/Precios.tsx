@@ -47,7 +47,7 @@ const FEATURE_ROWS: FeatureRow[] = [
 ]
 
 const PLANS: { tier: PlanTier; price: number; availability: (t: TFunc) => string; accent: boolean }[] = [
-  { tier: "Starter", price: 9.9, availability: (t) => t("precios.availability.open", "Abierta"), accent: false },
+  { tier: "Starter", price: 14.9, availability: (t) => t("precios.availability.open", "Abierta"), accent: false },
   { tier: "Club", price: 24.9, availability: (t) => t("precios.availability.open", "Abierta"), accent: true },
   { tier: "Coach", price: 74.9, availability: (t) => t("precios.availability.limited", "Plazas limitadas"), accent: false },
 ]
