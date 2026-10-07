@@ -120,7 +120,8 @@ const FeedbackButton = () => {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={close} />
+          {/* Más alto que la pantalla, como en BottomSheet: cubre también bajo las barras de Safari. */}
+          <div className="absolute inset-x-0 -inset-y-32 bg-black/60 backdrop-blur-sm" onClick={close} />
           <div
             id="tour-feedback-modal"
             className="relative w-full max-w-md rounded-t-2xl border border-white/10 bg-midnight p-5 sm:rounded-2xl"

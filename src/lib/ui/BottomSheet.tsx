@@ -43,7 +43,10 @@ export const BottomSheet = ({
 
   return (
     <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      {/* El fondo se alarga por arriba y por abajo más allá de la pantalla visible: en Safari de
+          iPhone la página se ve también bajo la barra de estado y la barra de direcciones, y un
+          fondo de `inset-0` dejaba ahí una franja sin oscurecer ni difuminar (§reporte de beta #85). */}
+      <div className="absolute inset-x-0 -inset-y-32 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       {/* `dvh` (viewport visible), no `vh`: en Safari de iPhone 85vh se calcula sobre la pantalla
           SIN las barras del navegador, y con ellas a la vista la hoja quedaba más alta que el
           hueco real — la cabecera con el botón de cerrar se salía por arriba (§reporte de beta).
