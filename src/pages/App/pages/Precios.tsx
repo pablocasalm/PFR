@@ -34,6 +34,10 @@ const PLANS: { tier: PlanTier; price: number; availability: (t: TFunc) => string
   { tier: "Coach", price: 74.9, availability: (t) => t("precios.availability.limited", "Plazas limitadas"), accent: false },
 ]
 
+/** Nombre comercial de cada plan. El primero se llama "Essential" de cara al usuario (decisión
+ * de octubre de 2026); por dentro — API, base de datos, `PlanTier` — sigue siendo "Starter". */
+const TIER_NAME: Record<PlanTier, string> = { Starter: "Essential", Club: "Club", Coach: "Coach" }
+
 const currencyFormat = (amount: number, lang: string) =>
   new Intl.NumberFormat(lang === "en" ? "en-US" : "es-ES", { style: "currency", currency: "EUR" }).format(amount)
 
@@ -60,7 +64,7 @@ const PlanCard = ({ plan, isCurrent }: { plan: (typeof PLANS)[number]; isCurrent
       )}
 
       <h2 className="font-display text-xl font-bold text-white">
-        {t(`precios.tier.${plan.tier.toLowerCase()}`, `PFR ${plan.tier}`)}
+        {t(`precios.tier.${plan.tier.toLowerCase()}`, `PFR ${TIER_NAME[plan.tier]}`)}
       </h2>
       <p className="mt-2 text-3xl font-bold text-white">
         {currencyFormat(plan.price, lang)}
