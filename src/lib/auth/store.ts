@@ -186,6 +186,22 @@ export async function markOnboardingSeenAndSync() {
   }
 }
 
+/** Aplica un cambio de cuenta que llega del servidor en tiempo real (plan, estado de la
+ * suscripción, rol… — ver lib/realtime/accountHub.ts): actualiza la copia local y avisa a los
+ * componentes, sin recargar ni volver a iniciar sesión. Si cambia a qué da acceso la cuenta, se
+ * vacía además la caché de datos, para que las pantallas vuelvan a pedir lo que ahora sí (o ya
+ * no) pueden ver. */
+export function applyAccountState(update: Partial<AuthUser>) {
+  // Se parte de lo que hay en localStorage, no de `state`: el token puede haberse renovado en
+  // segundo plano (client.ts lo escribe ahí directamente) y `state.token` sería el antiguo.
+  const current = read()
+  if (!current.user) return
+  const changed = (Object.keys(update) as (keyof AuthUser)[]).filter((key) => (current.user![key] ?? null) !== (update[key] ?? null))
+  if (changed.length === 0) return
+  setState({ token: current.token, user: { ...current.user, ...update } })
+  if (changed.some((key) => key === "planTier" || key === "subscriptionStatus" || key === "role" || key === "planType")) invalidateApiCache()
+}
+
 /** Actualiza el nombre visible en el estado local (tras guardarlo en el backend), sin
  * necesidad de recargar ni re-loguear — así el header y demás sitios lo reflejan al momento. */
 export function setLocalDisplayName(displayName: string) {

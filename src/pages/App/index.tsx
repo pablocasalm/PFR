@@ -5,7 +5,8 @@ import MobileNav from "./components/MobileNav"
 import FeedbackButton from "./components/FeedbackButton"
 import ScrollToTop from "../../lib/ui/ScrollToTop"
 import { hydrateSaved } from "../../lib/saved/store"
-import { useAuth, refreshSubscriptionState } from "../../lib/auth/store"
+import { useAuth, refreshSubscriptionState, applyAccountState } from "../../lib/auth/store"
+import { startAccountHub, stopAccountHub } from "../../lib/realtime/accountHub"
 import { startOnboardingTour } from "../../lib/onboarding/tour"
 
 /**
@@ -20,6 +21,13 @@ const AppLayout = () => {
   // Al entrar en la zona con sesión, sincroniza Mi Lista con la cuenta (/api/saved).
   useEffect(() => {
     hydrateSaved()
+  }, [])
+
+  // Canal en tiempo real con el backend mientras hay sesión: si cambia el plan o la suscripción
+  // (pago, cambio de plan, cancelación), la app lo refleja al momento, sin recargar.
+  useEffect(() => {
+    startAccountHub(applyAccountState)
+    return stopAccountHub
   }, [])
 
   // Vuelta de Stripe Checkout (ver Precios.tsx, successUrl=/app/inicio?checkout=success):

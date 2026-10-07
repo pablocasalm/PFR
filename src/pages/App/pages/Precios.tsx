@@ -62,7 +62,7 @@ const PlanCard = ({ plan, isCurrent, backend }: { plan: (typeof PLANS)[number]; 
   const { t, lang } = useI18n()
   // Solo en el modo de prueba: el precio mensual que el backend tiene para este plan (tabla
   // PricingPlans) y el salto al checkout de Stripe.
-  const backendPrice = backend?.plans.find((p) => p.tier === plan.tier)?.prices.find((p) => p.interval === "Monthly") ?? null
+  const backendPrice = backend?.plans?.find((p) => p.tier === plan.tier)?.prices?.find((p) => p.interval === "Monthly") ?? null
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const subscribe = async () => {
