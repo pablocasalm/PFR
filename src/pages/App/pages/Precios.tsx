@@ -3,7 +3,6 @@ import { Check, Minus, CreditCard, Clock } from "lucide-react"
 import { useAuth, PLAN_NAME, type PlanTier } from "../../../lib/auth/store"
 import PendingPlanNote from "../components/PendingPlanNote"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
-import { API_BASE } from "../../../lib/config"
 import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../../../lib/api/billing"
 
 /**
@@ -30,7 +29,7 @@ import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../..
  *    y este código ni siquiera entra en la compilación;
  *  - `.env.local` tiene `VITE_ENABLE_CHECKOUT=true`.
  * El backend puede ser el de producción (es como se prueba: frontend en local, backend
- * publicado con la clave de prueba de Stripe), así que el aviso de arriba dice contra cuál va.
+ * publicado con la clave de prueba de Stripe).
  */
 const CHECKOUT_TEST = import.meta.env.DEV && import.meta.env.VITE_ENABLE_CHECKOUT === "true"
 
@@ -159,12 +158,6 @@ const Precios = () => {
 
   return (
     <main className="mx-auto w-full max-w-5xl py-8">
-      {CHECKOUT_TEST && (
-        <p className="mb-6 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
-          <strong>Modo de prueba de pagos.</strong> Los botones abren el checkout de Stripe contra {API_BASE}. Solo se ve en tu ordenador; en la app publicada
-          siguen en «Próximamente».
-        </p>
-      )}
       <div className="mb-8 flex items-center gap-3">
         <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan">
           <CreditCard className="h-5 w-5" />
