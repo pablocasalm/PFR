@@ -24,13 +24,14 @@ import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../..
 
 /**
  * Modo de prueba del pago, para probar Stripe sin abrir las suscripciones a nadie. Los botones
- * solo dejan de decir "Próximamente" si se cumplen las tres cosas a la vez:
- *  - la app corre en desarrollo (`npm run dev`) — en la versión publicada esto es siempre falso;
- *  - `.env.local` tiene `VITE_ENABLE_CHECKOUT=true`;
- *  - el backend al que apunta NO es el de producción (para no cobrar ni suscribir cuentas reales
- *    por error, ya que `.env.local` suele apuntar a producción).
+ * solo dejan de decir "Próximamente" si se cumplen las dos cosas a la vez:
+ *  - la app corre en desarrollo (`npm run dev`) — en la versión publicada esto es siempre falso,
+ *    y este código ni siquiera entra en la compilación;
+ *  - `.env.local` tiene `VITE_ENABLE_CHECKOUT=true`.
+ * El backend puede ser el de producción (es como se prueba: frontend en local, backend
+ * publicado con la clave de prueba de Stripe), así que el aviso de arriba dice contra cuál va.
  */
-const CHECKOUT_TEST = import.meta.env.DEV && import.meta.env.VITE_ENABLE_CHECKOUT === "true" && !API_BASE.includes("padelfilmroom.com")
+const CHECKOUT_TEST = import.meta.env.DEV && import.meta.env.VITE_ENABLE_CHECKOUT === "true"
 
 type FeatureRow = { label: (t: TFunc) => string; tiers: PlanTier[] } // qué tiers incluyen esta fila
 
