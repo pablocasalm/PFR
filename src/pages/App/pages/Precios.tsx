@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Check, Minus, CreditCard, Clock } from "lucide-react"
-import { useAuth, type PlanTier } from "../../../lib/auth/store"
+import { useAuth, PLAN_NAME, type PlanTier } from "../../../lib/auth/store"
+import PendingPlanNote from "../components/PendingPlanNote"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { API_BASE } from "../../../lib/config"
 import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../../../lib/api/billing"
@@ -51,10 +52,6 @@ const PLANS: { tier: PlanTier; price: number; availability: (t: TFunc) => string
   { tier: "Coach", price: 74.9, availability: (t) => t("precios.availability.limited", "Plazas limitadas"), accent: false },
 ]
 
-/** Nombre comercial de cada plan. El primero se llama "Essential" de cara al usuario (decisión
- * de octubre de 2026); por dentro — API, base de datos, `PlanTier` — sigue siendo "Starter". */
-const TIER_NAME: Record<PlanTier, string> = { Starter: "Essential", Club: "Club", Coach: "Coach" }
-
 const currencyFormat = (amount: number, lang: string) =>
   new Intl.NumberFormat(lang === "en" ? "en-US" : "es-ES", { style: "currency", currency: "EUR" }).format(amount)
 
@@ -98,7 +95,7 @@ const PlanCard = ({ plan, isCurrent, backend }: { plan: (typeof PLANS)[number]; 
       )}
 
       <h2 className="font-display text-xl font-bold text-white">
-        {t(`precios.tier.${plan.tier.toLowerCase()}`, `PFR ${TIER_NAME[plan.tier]}`)}
+        {t(`precios.tier.${plan.tier.toLowerCase()}`, PLAN_NAME[plan.tier])}
       </h2>
       <p className="mt-2 text-3xl font-bold text-white">
         {currencyFormat(plan.price, lang)}
@@ -180,6 +177,8 @@ const Precios = () => {
           <p className="text-sm text-white/60">{t("precios.subtitle-v2", "Tres niveles de acompañamiento. Muy pronto podrás suscribirte.")}</p>
         </div>
       </div>
+
+      <PendingPlanNote user={user} className="mb-8" />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {PLANS.map((plan) => (

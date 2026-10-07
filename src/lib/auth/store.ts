@@ -17,6 +17,10 @@ export type SubscriptionStatus = "None" | "Trialing" | "Active" | "PastDue" | "C
 /** Nivel de suscripción (§Stripe 3 planes) — independiente de BillingPlan (categoría de
  * facturación) y de Role (permisos). Lo fija el webhook de Stripe según el Price comprado. */
 export type PlanTier = "Starter" | "Club" | "Coach"
+/** Nombre comercial de cada plan. El primero se llama "Essential" de cara al usuario (decisión
+ * de octubre de 2026); por dentro — API, base de datos, `PlanTier` — sigue siendo "Starter". */
+export const PLAN_NAME: Record<PlanTier, string> = { Starter: "PFR Essential", Club: "PFR Club", Coach: "PFR Coach" }
+
 export type AuthUser = {
   email: string
   displayName?: string | null
@@ -27,6 +31,12 @@ export type AuthUser = {
   trialEndsAtUtc?: string | null
   subscriptionStatus?: SubscriptionStatus
   subscriptionCurrentPeriodEndUtc?: string | null
+  // Cambio pedido y todavía sin aplicar (lo sincroniza el backend desde Stripe): bajar de plan o
+  // cancelar no quita nada al momento, lo pagado se conserva hasta `pendingChangeAtUtc`. Solo
+  // informativo — los permisos siguen saliendo de planTier/subscriptionStatus.
+  pendingPlanTier?: PlanTier | null // plan al que bajará
+  pendingCancel?: boolean // ha cancelado: la suscripción termina ese día
+  pendingChangeAtUtc?: string | null
   preferredLanguage?: string // "es" | "en"
   subtitlesDefaultOn?: boolean
 }
@@ -116,6 +126,9 @@ function toAuthUser(res: Awaited<ReturnType<typeof apiLogin>>, fallbackEmail: st
     trialEndsAtUtc: res.trialEndsAtUtc,
     subscriptionStatus: res.subscriptionStatus as SubscriptionStatus | undefined,
     subscriptionCurrentPeriodEndUtc: res.subscriptionCurrentPeriodEndUtc,
+    pendingPlanTier: res.pendingPlanTier as PlanTier | null | undefined,
+    pendingCancel: res.pendingCancel,
+    pendingChangeAtUtc: res.pendingChangeAtUtc,
     preferredLanguage: res.preferredLanguage,
     subtitlesDefaultOn: res.subtitlesDefaultOn,
   }

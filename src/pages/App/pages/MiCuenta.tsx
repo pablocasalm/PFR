@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { UserCircle, Settings2, CreditCard, Lock, type LucideIcon } from "lucide-react"
-import { useAuth, setLocalDisplayName } from "../../../lib/auth/store"
+import { useAuth, setLocalDisplayName, PLAN_NAME } from "../../../lib/auth/store"
+import PendingPlanNote from "../components/PendingPlanNote"
 import { getMyProfile, updateProfile, changePassword, updateMyPreferences, type ProfileResponse } from "../../../lib/api/profile"
 import { createPortalSession } from "../../../lib/api/billing"
 import { useI18n, setLanguage, type TFunc } from "../../../lib/i18n/store"
@@ -92,6 +93,11 @@ const MiCuenta = () => {
 
   const [prefSaving, setPrefSaving] = useState(false)
   const [prefError, setPrefError] = useState<string | null>(null)
+
+  // Estado y fecha de la suscripción: primero los de la sesión, que se actualizan en tiempo real
+  // cuando Stripe aplica un cambio; el perfil (cargado una vez al entrar) queda de respaldo.
+  const subStatus = user?.subscriptionStatus ?? profile?.subscriptionStatus
+  const subPeriodEnd = user?.subscriptionCurrentPeriodEndUtc ?? profile?.subscriptionCurrentPeriodEndUtc
 
   const openPortal = async () => {
     if (portalLoading) return
@@ -338,31 +344,41 @@ const MiCuenta = () => {
           <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
             <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/70">{t("mi-cuenta.subscription", "Mi suscripción")}</h2>
             <dl className="mb-4 divide-y divide-white/10 text-sm">
+              {/* Plan y cambio pendiente salen de la sesión (no del perfil cargado al entrar):
+                  la sesión se actualiza en tiempo real cuando Stripe aplica un cambio. */}
+              {user?.planTier && (
+                <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0">
+                  <dt className="text-white/50">{t("mi-cuenta.plan", "Plan")}</dt>
+                  <dd className="font-semibold text-white">{PLAN_NAME[user.planTier]}</dd>
+                </div>
+              )}
               <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0">
                 <dt className="text-white/50">{t("mi-cuenta.status", "Estado")}</dt>
                 <dd>
                   <span
                     className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-                      SUB_STATUS_CLS[profile?.subscriptionStatus ?? "None"] ?? SUB_STATUS_CLS.None
+                      SUB_STATUS_CLS[subStatus ?? "None"] ?? SUB_STATUS_CLS.None
                     }`}
                   >
-                    {SUB_STATUS_LABEL[profile?.subscriptionStatus ?? "None"] ?? profile?.subscriptionStatus ?? "—"}
+                    {SUB_STATUS_LABEL[subStatus ?? "None"] ?? subStatus ?? "—"}
                   </span>
                 </dd>
               </div>
-              {profile?.subscriptionCurrentPeriodEndUtc && (
+              {subPeriodEnd && (
                 <div className="flex items-center justify-between gap-3 py-2.5">
-                  <dt className="text-white/50">{t("mi-cuenta.renews-on", "Renueva el")}</dt>
+                  <dt className="text-white/50">{user?.pendingCancel ? t("mi-cuenta.ends-on", "Termina el") : t("mi-cuenta.renews-on", "Renueva el")}</dt>
                   <dd className="text-white">
-                    {new Date(profile.subscriptionCurrentPeriodEndUtc).toLocaleDateString(lang === "en" ? "en-US" : "es-ES")}
+                    {new Date(subPeriodEnd).toLocaleDateString(lang === "en" ? "en-US" : "es-ES")}
                   </dd>
                 </div>
               )}
             </dl>
 
+            <PendingPlanNote user={user} className="mb-4" />
+
             {portalError && <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{portalError}</p>}
 
-            {profile?.subscriptionStatus && profile.subscriptionStatus !== "None" ? (
+            {subStatus && subStatus !== "None" ? (
               <button
                 type="button"
                 onClick={openPortal}

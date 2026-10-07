@@ -19,7 +19,10 @@ import type { AuthUser } from "../auth/store"
  */
 
 /** Lo que trae el evento "accountChanged": mismos campos y valores que el login. */
-export type AccountState = Pick<AuthUser, "role" | "planType" | "planTier" | "trialEndsAtUtc" | "subscriptionStatus" | "subscriptionCurrentPeriodEndUtc">
+export type AccountState = Pick<
+  AuthUser,
+  "role" | "planType" | "planTier" | "trialEndsAtUtc" | "subscriptionStatus" | "subscriptionCurrentPeriodEndUtc" | "pendingPlanTier" | "pendingCancel" | "pendingChangeAtUtc"
+>
 
 const ACCOUNT_CHANGED = "accountChanged"
 

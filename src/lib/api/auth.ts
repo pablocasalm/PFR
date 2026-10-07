@@ -14,6 +14,10 @@ export type AuthResponse = {
   trialEndsAtUtc?: string | null
   subscriptionStatus?: string // "None" | "Trialing" | "Active" | "PastDue" | "Canceled"
   subscriptionCurrentPeriodEndUtc?: string | null
+  // Cambio pedido y todavía sin aplicar: bajada de plan o cancelación al final del periodo.
+  pendingPlanTier?: string | null
+  pendingCancel?: boolean
+  pendingChangeAtUtc?: string | null
   preferredLanguage?: string // "es" | "en"
   subtitlesDefaultOn?: boolean
 }
