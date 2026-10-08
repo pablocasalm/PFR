@@ -31,11 +31,26 @@ function readLang(): string {
   }
 }
 
+/** Título de la pestaña del navegador, por idioma (el mismo en toda la app). */
+const TAB_TITLE: Record<string, string> = {
+  es: "Padel Film Room | Aprende a leer el pádel",
+  en: "Padel Film Room | Learn to read padel",
+}
+
+/** El documento sigue al idioma de la app: atributo `lang` (lectores de pantalla, traductores
+ * del navegador) y título de la pestaña. */
+function applyDocumentLang(lang: string) {
+  document.documentElement.lang = lang
+  document.title = TAB_TITLE[lang] ?? TAB_TITLE.es
+}
+
 let state: I18nState = { lang: readLang(), dict: {}, languages: [], ready: false }
 const listeners = new Set<() => void>()
+applyDocumentLang(state.lang)
 
 function setState(next: Partial<I18nState>) {
   state = { ...state, ...next }
+  if (next.lang) applyDocumentLang(next.lang)
   listeners.forEach((l) => l())
 }
 
