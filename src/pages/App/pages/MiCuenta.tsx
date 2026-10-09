@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { UserCircle, Settings2, CreditCard, Lock, type LucideIcon } from "lucide-react"
 import { useAuth, setLocalDisplayName, PLAN_NAME } from "../../../lib/auth/store"
 import PendingPlanNote from "../components/PendingPlanNote"
+import { PAYMENTS_ENABLED } from "../../../lib/payments"
 import { getMyProfile, updateProfile, changePassword, updateMyPreferences, type ProfileResponse } from "../../../lib/api/profile"
 import { createPortalSession } from "../../../lib/api/billing"
 import { useI18n, setLanguage, type TFunc } from "../../../lib/i18n/store"
@@ -378,7 +379,10 @@ const MiCuenta = () => {
 
             {portalError && <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{portalError}</p>}
 
-            {subStatus && subStatus !== "None" ? (
+            {/* El portal de Stripe (cambiar de plan, cancelar) solo con los pagos abiertos — ver
+                lib/payments.ts. Hasta entonces, quien tenga una suscripción de prueba no puede
+                tocarla desde la app publicada. */}
+            {PAYMENTS_ENABLED && subStatus && subStatus !== "None" ? (
               <button
                 type="button"
                 onClick={openPortal}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Check, Minus, CreditCard, Clock } from "lucide-react"
 import { useAuth, PLAN_NAME, type PlanTier } from "../../../lib/auth/store"
 import PendingPlanNote from "../components/PendingPlanNote"
+import { PAYMENTS_ENABLED } from "../../../lib/payments"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../../../lib/api/billing"
 
@@ -19,19 +20,8 @@ import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../..
  *      estático de abajo.
  *
  * §Prueba local de Stripe (oct 2026): mientras tanto existe un modo de prueba que SÍ conecta los
- * botones con el checkout — ver CHECKOUT_TEST más abajo. Nunca se activa en la app publicada.
+ * botones con el checkout — ver PAYMENTS_ENABLED en lib/payments.ts. Nunca se activa en la app publicada.
  */
-
-/**
- * Modo de prueba del pago, para probar Stripe sin abrir las suscripciones a nadie. Los botones
- * solo dejan de decir "Próximamente" si se cumplen las dos cosas a la vez:
- *  - la app corre en desarrollo (`npm run dev`) — en la versión publicada esto es siempre falso,
- *    y este código ni siquiera entra en la compilación;
- *  - `.env.local` tiene `VITE_ENABLE_CHECKOUT=true`.
- * El backend puede ser el de producción (es como se prueba: frontend en local, backend
- * publicado con la clave de prueba de Stripe).
- */
-const CHECKOUT_TEST = import.meta.env.DEV && import.meta.env.VITE_ENABLE_CHECKOUT === "true"
 
 type FeatureRow = { label: (t: TFunc) => string; tiers: PlanTier[] } // qué tiers incluyen esta fila
 
@@ -118,7 +108,7 @@ const PlanCard = ({ plan, isCurrent, backend }: { plan: (typeof PLANS)[number]; 
         })}
       </ul>
 
-      {CHECKOUT_TEST ? (
+      {PAYMENTS_ENABLED ? (
         // Modo de prueba local (textos sin traducir a propósito: no los ve ningún usuario).
         <div className="mt-6 space-y-2">
           {/* Solo si falta: explica por qué el botón está apagado. */}
@@ -153,7 +143,7 @@ const Precios = () => {
   const { user } = useAuth()
   const [backend, setBackend] = useState<BillingPlans | null>(null)
   useEffect(() => {
-    if (CHECKOUT_TEST) getBillingPlans().then(setBackend).catch(() => {})
+    if (PAYMENTS_ENABLED) getBillingPlans().then(setBackend).catch(() => {})
   }, [])
 
   return (
