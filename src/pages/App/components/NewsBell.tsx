@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Bell, ChevronDown, History } from "lucide-react"
 import { getNews, markAllNewsRead, type NewsItem } from "../../../lib/api/news"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
+import { onHubEvent } from "../../../lib/realtime/accountHub"
 
 /** "Hace X" relativo, mismo criterio que el backend usa para comentarios (Ago en ContentMapper). */
 const fmt = (iso: string, t: TFunc, lang: string) => {
@@ -67,6 +68,20 @@ const NewsBell = () => {
       .catch(() => {})
       .finally(() => setLoaded(true))
   }, [])
+
+  // Noticia recién publicada: el servidor avisa y la campana se pone al día sin recargar.
+  useEffect(
+    () =>
+      onHubEvent("newsPublished", () => {
+        getNews()
+          .then((res) => {
+            setItems(res.items)
+            setUnreadCount(res.unreadCount)
+          })
+          .catch(() => {})
+      }),
+    [],
+  )
 
   const toggle = () => {
     const next = !open

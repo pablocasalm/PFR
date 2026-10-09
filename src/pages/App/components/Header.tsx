@@ -121,6 +121,8 @@ const Header = () => {
           <Sparkles className="h-4 w-4" />
           {t("header.nav.coach", "Coach")}
           {!hasFeature(user, "personalAnalysis") && <Lock className="h-3 w-3" />}
+          {/* Mensajes de Coach sin leer (para un admin el aviso va en su menú, no aquí). */}
+          {!isAdmin(user) && (user?.coachUnread ?? 0) > 0 && <span className="h-2 w-2 rounded-full bg-neon-cyan" aria-hidden />}
         </NavLink>
       </nav>
 
@@ -207,8 +209,13 @@ const SessionControl = () => {
       {/* id: en móvil/tablet el último paso del tour ("Cómo funciona") señala este botón, porque
           ahí ese enlace vive dentro de este menú y no en la barra inferior (ver tour.ts). */}
       <button id="tour-como-funciona-mobile" onClick={() => setMenuOpen((v) => !v)} className="flex items-center gap-1.5">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-neon-cyan text-sm font-bold text-midnight">
+        <span className="relative">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-neon-cyan text-sm font-bold text-midnight">
           {initials(user)}
+        </span>
+          {isAdmin(user) && (user.coachUnread ?? 0) > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-midnight bg-neon-lime" aria-hidden />
+          )}
         </span>
         {/* En las pantallas más estrechas (320 px) la flecha no cabe: el avatar ya se entiende como menú. */}
         <ChevronDown className="hidden h-4 w-4 text-white/60 min-[360px]:block" />
@@ -304,6 +311,10 @@ const SessionControl = () => {
               >
                 <Sparkles className="h-4 w-4" />
                 {t("admin-coach.title", "Análisis personalizado")}
+                {/* Mensajes de alumnos sin leer */}
+                {(user.coachUnread ?? 0) > 0 && (
+                  <span className="ml-auto rounded-full bg-neon-cyan px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-midnight">{user.coachUnread}</span>
+                )}
               </Link>
             )}
             <button

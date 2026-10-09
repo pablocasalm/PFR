@@ -37,6 +37,9 @@ export type AuthUser = {
   pendingPlanTier?: PlanTier | null // plan al que bajará
   pendingCancel?: boolean // ha cancelado: la suscripción termina ese día
   pendingChangeAtUtc?: string | null
+  /** Mensajes de Coach sin leer (para un admin, los de todos los alumnos). Lo manda el servidor
+   * al conectar el canal en tiempo real y se va ajustando en local. */
+  coachUnread?: number
   preferredLanguage?: string // "es" | "en"
   subtitlesDefaultOn?: boolean
 }
@@ -220,6 +223,9 @@ export function applyAccountState(update: Partial<AuthUser>) {
 export function setLocalDisplayName(displayName: string) {
   if (state.user) setState({ ...state, user: { ...state.user, displayName } })
 }
+
+/** El usuario de la sesión, fuera de un componente (lo más reciente que hay guardado). */
+export const getAuthUser = () => read().user
 
 /** Hook de sesión: { token, user, isAuthenticated } + acciones. */
 export function useAuth() {

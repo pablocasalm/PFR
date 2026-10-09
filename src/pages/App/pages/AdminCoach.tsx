@@ -15,6 +15,7 @@ import type { AnalysisPriority, PriorityResult } from "../../../lib/api/types"
 import { AnalysisSheet, ResultBadge } from "../components/CoachAnalysis"
 import { useResultLabels } from "../components/coachResultLabels"
 import FileDrop from "../components/FileDrop"
+import AnalysisThread from "../components/AnalysisThread"
 import HlsPlayer, { type VideoPlayerHandle } from "../../../lib/player/VideoPlayer"
 import { useI18n } from "../../../lib/i18n/store"
 
@@ -372,6 +373,11 @@ const RequestCard = ({
         </div>
       )}
       {item.userNote && <p className="mb-3 whitespace-pre-wrap text-sm text-white/80">{item.userNote}</p>}
+
+      {/* Hilo con el alumno: para preguntarle algo del vídeo antes de analizarlo, o responderle después. */}
+      <div className="mb-3">
+        <AnalysisThread requestId={item.id} side="staff" messageCount={item.messageCount} unread={item.unreadMessages} />
+      </div>
 
       {/* Pendiente: el partido del alumno. Entregado: su partido y el vídeo analizado, lado a lado. */}
       {isDelivered && item.deliveredVideoUrl ? (

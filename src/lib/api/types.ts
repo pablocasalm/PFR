@@ -193,6 +193,9 @@ export type PersonalAnalysisItem = {
   strengths?: string | null // "Lo que ya haces bien", una por línea
   observations?: string | null // "Otras observaciones", una por línea
   finalComment?: string | null // comentario final del alumno para Guille
+  // Hilo de mensajes con quien analiza: cuántos hay y cuántos sin leer para quien pregunta.
+  messageCount?: number
+  unreadMessages?: number
   finalCommentAtUtc?: string | null
 }
 

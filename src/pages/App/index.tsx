@@ -5,8 +5,8 @@ import MobileNav from "./components/MobileNav"
 import FeedbackButton from "./components/FeedbackButton"
 import ScrollToTop from "../../lib/ui/ScrollToTop"
 import { hydrateSaved } from "../../lib/saved/store"
-import { useAuth, refreshSubscriptionState, applyAccountState } from "../../lib/auth/store"
-import { startAccountHub, stopAccountHub } from "../../lib/realtime/accountHub"
+import { useAuth, refreshSubscriptionState, applyAccountState, getAuthUser, isAdmin } from "../../lib/auth/store"
+import { startAccountHub, stopAccountHub, onHubEvent, currentUserId } from "../../lib/realtime/accountHub"
 import { startOnboardingTour } from "../../lib/onboarding/tour"
 
 /**
@@ -26,8 +26,21 @@ const AppLayout = () => {
   // Canal en tiempo real con el backend mientras hay sesión: si cambia el plan o la suscripción
   // (pago, cambio de plan, cancelación), la app lo refleja al momento, sin recargar.
   useEffect(() => {
-    startAccountHub(applyAccountState)
-    return stopAccountHub
+    const offAccount = onHubEvent("accountChanged", applyAccountState)
+    // Mensaje nuevo de Coach escrito por otra persona: sube el contador del menú. (El hilo que
+    // esté abierto en pantalla lo descuenta él mismo — ver AnalysisThread.) Un alumno cuenta los
+    // del equipo; un admin, los de los alumnos.
+    const offMessage = onHubEvent("coachMessage", (message) => {
+      const me = getAuthUser()
+      if (message.authorUserId === currentUserId() || message.fromStaff === isAdmin(me)) return
+      applyAccountState({ coachUnread: (me?.coachUnread ?? 0) + 1 })
+    })
+    startAccountHub()
+    return () => {
+      offAccount()
+      offMessage()
+      stopAccountHub()
+    }
   }, [])
 
   // Vuelta de Stripe Checkout (ver Precios.tsx, successUrl=/app/inicio?checkout=success):

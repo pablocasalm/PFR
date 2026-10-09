@@ -14,17 +14,52 @@ import type { AuthUser } from "../auth/store"
  * el estado actual cada vez que se conecta (y al reconectar tras un corte), de modo que tampoco
  * se pierde un cambio ocurrido con la app cerrada o sin red.
  *
- * Un solo canal para toda la app: los próximos avisos en directo (análisis de Coach listo,
- * noticias, mensajes) se añaden como eventos nuevos de esta misma conexión.
+ * Un solo canal para toda la app, con varios avisos (ver HubEvents). Quien quiera enterarse de
+ * uno se apunta con `onHubEvent`, esté o no abierta la conexión en ese momento.
  */
 
 /** Lo que trae el evento "accountChanged": mismos campos y valores que el login. */
 export type AccountState = Pick<
   AuthUser,
-  "role" | "planType" | "planTier" | "trialEndsAtUtc" | "subscriptionStatus" | "subscriptionCurrentPeriodEndUtc" | "pendingPlanTier" | "pendingCancel" | "pendingChangeAtUtc"
+  | "role"
+  | "planType"
+  | "planTier"
+  | "trialEndsAtUtc"
+  | "subscriptionStatus"
+  | "subscriptionCurrentPeriodEndUtc"
+  | "pendingPlanTier"
+  | "pendingCancel"
+  | "pendingChangeAtUtc"
+  | "coachUnread"
 >
 
-const ACCOUNT_CHANGED = "accountChanged"
+/** Un mensaje del hilo de un análisis de Coach. */
+export type CoachMessage = { id: number; requestId: number; fromStaff: boolean; authorUserId: number; authorName: string; text: string; createdAtUtc: string }
+
+/** Avisos que manda el servidor y qué trae cada uno. */
+export type HubEvents = {
+  /** Ha cambiado la cuenta (plan, suscripción, mensajes sin leer). */
+  accountChanged: AccountState
+  /** Mensaje nuevo en el hilo de un análisis de Coach (al alumno, o a los admins). */
+  coachMessage: CoachMessage
+  /** El análisis del alumno ya está entregado. */
+  analysisDelivered: { requestId: number }
+  /** Se ha publicado una noticia. */
+  newsPublished: Record<string, never>
+}
+const EVENT_NAMES: (keyof HubEvents)[] = ["accountChanged", "coachMessage", "analysisDelivered", "newsPublished"]
+
+const handlers = new Map<string, Set<(payload: never) => void>>()
+
+/** Se apunta a un aviso del servidor. Devuelve la función para dejar de escucharlo. */
+export function onHubEvent<K extends keyof HubEvents>(event: K, handler: (payload: HubEvents[K]) => void): () => void {
+  const set = handlers.get(event) ?? new Set()
+  handlers.set(event, set)
+  set.add(handler as (payload: never) => void)
+  return () => {
+    set.delete(handler as (payload: never) => void)
+  }
+}
 
 let connection: HubConnection | null = null
 let retryTimer: ReturnType<typeof setTimeout> | undefined
@@ -50,8 +85,19 @@ const accessToken = async () => {
   return token ?? ""
 }
 
-/** Abre el canal (si no lo está ya) y llama a `onAccountChanged` con cada aviso del servidor. */
-export function startAccountHub(onAccountChanged: (state: AccountState) => void) {
+/** Id del usuario de la sesión, sacado del token (para distinguir mis mensajes de los de otros). */
+export function currentUserId(): number | null {
+  try {
+    const token = localStorage.getItem("token") ?? ""
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))) as { sub?: string }
+    return payload.sub ? Number(payload.sub) : null
+  } catch {
+    return null
+  }
+}
+
+/** Abre el canal (si no lo está ya). Los avisos llegan a quien se haya apuntado con `onHubEvent`. */
+export function startAccountHub() {
   if (connection) return
 
   const hub = new HubConnectionBuilder()
@@ -60,7 +106,7 @@ export function startAccountHub(onAccountChanged: (state: AccountState) => void)
     .withAutomaticReconnect({ nextRetryDelayInMilliseconds: (ctx) => Math.min(30_000, 1000 * 2 ** ctx.previousRetryCount) })
     .configureLogging(import.meta.env.DEV ? LogLevel.Warning : LogLevel.None)
     .build()
-  hub.on(ACCOUNT_CHANGED, onAccountChanged)
+  for (const name of EVENT_NAMES) hub.on(name, (payload: never) => handlers.get(name)?.forEach((handler) => handler(payload)))
   connection = hub
 
   // La reconexión automática solo cubre una conexión que llegó a abrirse; el primer intento

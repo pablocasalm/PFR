@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom"
 import { Home, Compass, BarChart2, Crown, Sparkles, Lock } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-import { useAuth, hasFeature, type PlanFeature } from "../../../lib/auth/store"
+import { useAuth, hasFeature, isAdmin, type PlanFeature } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 
 /**
@@ -49,6 +49,10 @@ const MobileNav = () => {
             <Icon className="h-5 w-5" />
             {feature && !hasFeature(user, feature) && (
               <Lock className="absolute -right-2 -top-1 h-2.5 w-2.5 text-white/60" strokeWidth={3} aria-hidden />
+            )}
+            {/* Mensajes de Coach sin leer (para un admin el aviso va en su menú, no aquí). */}
+            {to === "/app/coach" && !isAdmin(user) && (user?.coachUnread ?? 0) > 0 && (
+              <span className="absolute -right-1.5 -top-1 h-2.5 w-2.5 rounded-full border-2 border-black bg-neon-cyan" aria-hidden />
             )}
           </span>
           {t(key, label)}

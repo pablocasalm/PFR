@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Navigate } from "react-router-dom"
 import { Sparkles, UploadCloud } from "lucide-react"
 import { useApi } from "../../../lib/hooks/useApi"
@@ -15,6 +15,9 @@ import SidePanel from "../../../lib/ui/SidePanel"
 import FileDrop from "../components/FileDrop"
 import { DeliveredAnalysisView, PastAnalysesList } from "../components/CoachAnalysis"
 import CoachProgress from "../components/CoachProgress"
+import AnalysisThread from "../components/AnalysisThread"
+import { onHubEvent } from "../../../lib/realtime/accountHub"
+import { invalidateApiCache } from "../../../lib/hooks/useApi"
 import { useAuth, hasFeature } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import type { PersonalAnalysisItem, PlayerSide, PriorityLog } from "../../../lib/api/types"
@@ -334,8 +337,19 @@ const Coach = () => {
   const { t, lang } = useI18n()
   const { user } = useAuth()
   const hasCoach = hasFeature(user, "personalAnalysis")
-  const { data } = useApi(getMyPersonalAnalysis, [], "my-personal-analysis")
+  const [reload, setReload] = useState(0)
+  const { data } = useApi(getMyPersonalAnalysis, [reload], "my-personal-analysis")
   const [override, setOverride] = useState<MyPersonalAnalysis | null>(null)
+  // "Tu análisis está listo" llega en directo: se vuelve a pedir todo y la pantalla cambia sola.
+  useEffect(
+    () =>
+      onHubEvent("analysisDelivered", () => {
+        invalidateApiCache("my-personal-analysis")
+        setOverride(null)
+        setReload((n) => n + 1)
+      }),
+    [],
+  )
   const [sending, setSending] = useState(false)
   // Lo que el alumno anota en esta visita, para que el resumen de progreso se mueva al momento.
   const [logChanges, setLogChanges] = useState<Record<number, PriorityLog[]>>({})
@@ -425,6 +439,8 @@ const Coach = () => {
       )}
 
       {pending && <PendingCard request={pending} onUpdated={(updated) => setOverride({ ...current, canSubmit: false, request: updated })} />}
+      {/* Mientras se analiza: por si el equipo necesita preguntar algo del vídeo, o el alumno añadir algo. */}
+      {pending && <AnalysisThread requestId={pending.id} side="student" messageCount={pending.messageCount} unread={pending.unreadMessages} />}
 
       {latest && <CoachProgress current={withLogs(latest)} history={older} />}
 
@@ -434,7 +450,7 @@ const Coach = () => {
             {pending ? t("coach.latest.previous", "Tu último análisis") : t("coach.latest.title", "Tu análisis de este mes")}
           </h2>
           <div className="rounded-2xl border border-neon-cyan/20 bg-neon-cyan/[0.03] p-4 sm:p-6">
-            <DeliveredAnalysisView analysis={latest} editable onLogsChange={(id, logs) => setLogChanges((prev) => ({ ...prev, [id]: logs }))} />
+            <DeliveredAnalysisView analysis={latest} editable thread="student" onLogsChange={(id, logs) => setLogChanges((prev) => ({ ...prev, [id]: logs }))} />
           </div>
         </section>
       )}
@@ -443,7 +459,7 @@ const Coach = () => {
       {older.length > 0 && (
         <section>
           <h2 className={`mb-3 ${h2Cls}`}>{t("coach.history.title", "Tus análisis anteriores")}</h2>
-          <PastAnalysesList items={older} />
+          <PastAnalysesList items={older} thread="student" />
         </section>
       )}
 

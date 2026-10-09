@@ -6,6 +6,8 @@ import type { AnalysisPriority, PersonalAnalysisItem, PriorityLog, PriorityResul
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
 import { useResultLabels } from "./coachResultLabels"
+import AnalysisThread from "./AnalysisThread"
+import type { ThreadSide } from "../../../lib/api/personalAnalysis"
 
 /**
  * Piezas de un análisis de Coach ya entregado, compartidas por Coach.tsx (análisis actual e
@@ -396,10 +398,13 @@ export const DeliveredAnalysisView = ({
   analysis,
   editable = false,
   onLogsChange,
+  thread,
 }: {
   analysis: PersonalAnalysisItem
   editable?: boolean
   onLogsChange?: LogsChange
+  /** Si se pasa, bajo la ficha va el hilo de mensajes de ese análisis, abierto desde ese lado. */
+  thread?: ThreadSide
 }) => {
   const playerRef = useRef<VideoPlayerHandle>(null)
   if (!analysis.deliveredVideoUrl) return null
@@ -410,7 +415,10 @@ export const DeliveredAnalysisView = ({
       <div className="overflow-hidden rounded-xl border border-white/10 lg:sticky lg:top-24">
         <HlsPlayer ref={playerRef} src={analysis.deliveredVideoUrl} aspect="16:9" />
       </div>
-      <AnalysisSheet analysis={analysis} editable={editable} onLogsChange={onLogsChange} onSeek={(seconds) => playerRef.current?.seekExact(seconds)} />
+      <div className="space-y-4">
+        <AnalysisSheet analysis={analysis} editable={editable} onLogsChange={onLogsChange} onSeek={(seconds) => playerRef.current?.seekExact(seconds)} />
+        {thread && <AnalysisThread requestId={analysis.id} side={thread} messageCount={analysis.messageCount} unread={analysis.unreadMessages} />}
+      </div>
     </div>
   )
 }
@@ -420,7 +428,7 @@ export const DeliveredAnalysisView = ({
  * fecha de entrega, que se despliega para ver el vídeo y su ficha (solo lectura). El vídeo solo
  * se monta al abrir la fila, para no cargar varios reproductores a la vez.
  */
-export const PastAnalysesList = ({ items }: { items: PersonalAnalysisItem[] }) => {
+export const PastAnalysesList = ({ items, thread }: { items: PersonalAnalysisItem[]; thread?: ThreadSide }) => {
   const { t, lang } = useI18n()
   const [openId, setOpenId] = useState<number | null>(null)
   const fmt = (iso?: string | null) =>
@@ -436,11 +444,12 @@ export const PastAnalysesList = ({ items }: { items: PersonalAnalysisItem[] }) =
             <li key={item.id} className={`rounded-xl border bg-white/[0.02] ${open ? "border-neon-cyan/30" : "border-white/10"}`}>
               <button onClick={() => setOpenId(open ? null : item.id)} aria-expanded={open} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
                 <span className="text-sm font-medium text-white">{t("coach.history.delivered-on", "Análisis del {date}", { date: fmt(item.deliveredAtUtc) })}</span>
+                {thread && (item.unreadMessages ?? 0) > 0 && <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-neon-cyan" aria-hidden />}
                 <ChevronDown className={`h-4 w-4 shrink-0 text-white/50 transition-transform ${open ? "rotate-180" : ""}`} />
               </button>
               {open && (
                 <div className="px-4 pb-4">
-                  <DeliveredAnalysisView analysis={item} />
+                  <DeliveredAnalysisView analysis={item} thread={thread} />
                 </div>
               )}
             </li>

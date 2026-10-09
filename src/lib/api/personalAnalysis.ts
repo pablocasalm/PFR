@@ -1,5 +1,6 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from "./client"
 import type { PersonalAnalysisItem, PlayerSide, PriorityLog, PriorityResult } from "./types"
+import type { CoachMessage } from "../realtime/accountHub"
 
 /**
  * Análisis táctico personalizado (§Club hub, Fase 5, plan Coach). El frontend define el
@@ -81,6 +82,20 @@ export const setFinalComment = (requestId: number, text: string) =>
  * opcional: solo se manda lo que se quiere cambiar. */
 export const editPersonalAnalysis = (id: number, changes: { uid?: string; durationSeconds?: number; note?: string } & Partial<PlayerInfo>) =>
   apiPatch<PersonalAnalysisItem>(`/api/club/personal-analysis/${id}`, changes)
+
+/* ---- Hilo de mensajes de un análisis ---- */
+
+/** Desde qué lado se abre el hilo: el alumno, o el equipo (admin). Cada uno tiene su endpoint. */
+export type ThreadSide = "student" | "staff"
+const threadUrl = (side: ThreadSide, requestId: number) =>
+  `${side === "staff" ? "/api/admin/personal-analysis" : "/api/club/personal-analysis"}/${requestId}/messages`
+
+/** GET …/{id}/messages → el hilo, del mensaje más antiguo al más reciente. Pedirlo lo marca como leído. */
+export const getAnalysisMessages = (side: ThreadSide, requestId: number) => apiGet<CoachMessage[]>(threadUrl(side, requestId))
+
+/** POST …/{id}/messages → escribe en el hilo. El otro lado lo recibe en tiempo real. */
+export const sendAnalysisMessage = (side: ThreadSide, requestId: number, text: string) =>
+  apiPost<CoachMessage>(threadUrl(side, requestId), { text })
 
 /* ---- Gestión (solo Admin) ---- */
 
