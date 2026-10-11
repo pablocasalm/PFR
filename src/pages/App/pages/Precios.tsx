@@ -3,6 +3,7 @@ import { Check, Minus, CreditCard, Clock } from "lucide-react"
 import { useAuth, PLAN_NAME, type PlanTier } from "../../../lib/auth/store"
 import PendingPlanNote from "../components/PendingPlanNote"
 import { PAYMENTS_ENABLED } from "../../../lib/payments"
+import { trackActivity } from "../../../lib/api/activity"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../../../lib/api/billing"
 
@@ -143,6 +144,7 @@ const Precios = () => {
   const { user } = useAuth()
   const [backend, setBackend] = useState<BillingPlans | null>(null)
   useEffect(() => {
+    trackActivity("pricing_view") // métricas internas: quién llega a ver los precios
     if (PAYMENTS_ENABLED) getBillingPlans().then(setBackend).catch(() => {})
   }, [])
 

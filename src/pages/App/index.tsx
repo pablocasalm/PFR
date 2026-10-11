@@ -5,6 +5,7 @@ import MobileNav from "./components/MobileNav"
 import FeedbackButton from "./components/FeedbackButton"
 import ScrollToTop from "../../lib/ui/ScrollToTop"
 import { hydrateSaved } from "../../lib/saved/store"
+import { trackActivity } from "../../lib/api/activity"
 import { useAuth, refreshSubscriptionState, applyAccountState, getAuthUser, isAdmin } from "../../lib/auth/store"
 import { startAccountHub, stopAccountHub, onHubEvent, currentUserId } from "../../lib/realtime/accountHub"
 import { startOnboardingTour } from "../../lib/onboarding/tour"
@@ -21,6 +22,7 @@ const AppLayout = () => {
   // Al entrar en la zona con sesión, sincroniza Mi Lista con la cuenta (/api/saved).
   useEffect(() => {
     hydrateSaved()
+    trackActivity("app_open") // métricas internas: días que entra cada usuario
   }, [])
 
   // Canal en tiempo real con el backend mientras hay sesión: si cambia el plan o la suscripción
