@@ -2,10 +2,11 @@ import { apiPost, apiGet, apiDelete } from "./client"
 
 /**
  * Invitaciones de beta. Quien tiene un código gastado puede solicitar otro por email
- * (§ beta). Si ya existe una cuenta con ese email, el backend responde con error.
+ * (§ beta). Si ya existe una cuenta con ese email, o una invitación sin usar, el backend
+ * responde con error — el mensaje viene ya en `language`.
  */
-export const requestInvite = (email: string) =>
-  apiPost<{ ok: boolean; message?: string }>("/api/invite-requests", { email })
+export const requestInvite = (email: string, language: string) =>
+  apiPost<{ ok: boolean; message?: string }>("/api/invite-requests", { email, language })
 
 /** Categoría de facturación (independiente del rol) — base para cuando esté Stripe conectado. */
 export type BillingPlan = "Free" | "TrialThenPaid" | "Discounted"
@@ -37,10 +38,31 @@ export const listInvites = () => apiGet<InviteCode[]>("/api/admin/invites")
 export const deleteInvite = (id: number) => apiDelete<{ ok: boolean }>(`/api/admin/invites/${id}`)
 
 /** Solicitud de acceso pendiente (formulario público de la landing o "pedir otro código"). */
-export type InviteRequestItem = { id: number; email: string; createdAtUtc: string }
+export type InviteRequestItem = {
+  id: number
+  email: string
+  createdAtUtc: string
+  /** "es"/"en": el de la landing al apuntarse o el del botón del email; null si no se sabe. */
+  language: string | null
+  /** Cuándo se le envió el email de acceso anticipado (null = todavía no). */
+  announcedAtUtc: string | null
+  /** Primer clic en el botón de confirmación de ese email (null = sin confirmar). */
+  confirmedAtUtc: string | null
+}
 
 /** GET /api/admin/invite-requests (Admin) → solicitudes pendientes (sin atender todavía). */
 export const listInviteRequests = () => apiGet<InviteRequestItem[]>("/api/admin/invite-requests")
 
 /** DELETE /api/admin/invite-requests/{id} (Admin) → descarta una solicitud sin invitar (pruebas, email mal escrito). */
 export const deleteInviteRequest = (id: number) => apiDelete<{ ok: boolean }>(`/api/admin/invite-requests/${id}`)
+
+/** Resultado de enviar el email de acceso anticipado: cuántos salieron y cuántos se saltaron (ya avisados). */
+export type AnnounceResult = { ok: boolean; test: boolean; sent: number; skipped: number }
+
+/** POST /api/admin/invite-requests/announce (Admin) → envío de prueba del email de acceso anticipado a una sola dirección. */
+export const sendAnnounceTest = (testTo: string) =>
+  apiPost<AnnounceResult>("/api/admin/invite-requests/announce", { testTo })
+
+/** POST /api/admin/invite-requests/announce (Admin) → envío real del email de acceso anticipado a esas solicitudes. */
+export const sendAnnounce = (ids: number[]) =>
+  apiPost<AnnounceResult>("/api/admin/invite-requests/announce", { ids })

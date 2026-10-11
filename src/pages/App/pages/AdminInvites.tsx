@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react"
-import { Ticket, Copy, Check, Trash2, Mail, Send, ChevronDown } from "lucide-react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { Ticket, Copy, Check, Trash2, Mail, Send, ChevronDown, Megaphone } from "lucide-react"
 import {
   generateInvites,
+  sendAnnounce,
+  sendAnnounceTest,
   listInvites,
   deleteInvite,
   listInviteRequests,
@@ -41,6 +43,45 @@ const fmt = (iso: string | null, lang: string): string => {
 }
 
 type Filter = "all" | "pending" | "used"
+type InviteLang = "es" | "en"
+
+/** Selector Español / English: el mismo para las invitaciones manuales y para "Invitar". */
+const LangToggle = ({ value, onChange }: { value: InviteLang; onChange: (l: InviteLang) => void }) => (
+  <div className="inline-flex rounded-lg border border-white/10 bg-white/5 p-1">
+    {(["es", "en"] as const).map((l) => (
+      <button
+        key={l}
+        type="button"
+        onClick={() => onChange(l)}
+        aria-pressed={value === l}
+        className={`rounded-md px-4 py-1.5 text-xs font-semibold transition ${
+          value === l ? "bg-neon-cyan text-midnight" : "text-white/60 hover:text-white"
+        }`}
+      >
+        {l === "es" ? "Español" : "English"}
+      </button>
+    ))}
+  </div>
+)
+
+/** Ventana pequeña centrada (abajo en móvil). Se cierra pulsando fuera. */
+const Dialog = ({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) => (
+  <div
+    className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-4 sm:items-center"
+    role="dialog"
+    aria-modal="true"
+    aria-label={title}
+    onClick={onClose}
+  >
+    <div
+      className="max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-midnight p-5 sm:p-6"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h2 className="font-display text-lg font-bold text-white">{title}</h2>
+      {children}
+    </div>
+  </div>
+)
 
 const AdminInvites = () => {
   const { t, lang } = useI18n()
@@ -53,8 +94,8 @@ const AdminInvites = () => {
   const [copied, setCopied] = useState<string | null>(null)
   const [filter, setFilter] = useState<Filter>("all")
   // Idioma del email de invitación (y preferido del usuario al canjearla) — se aplica a todo
-  // el lote que se genere/envíe, tanto desde el textarea como desde "Invitar" en una solicitud.
-  const [inviteLang, setInviteLang] = useState<"es" | "en">("es")
+  // el lote que se genere/envíe desde el textarea. "Invitar" en una solicitud pregunta el suyo.
+  const [inviteLang, setInviteLang] = useState<InviteLang>("es")
 
   // Solicitudes pendientes (formulario público de la landing o "pedir otro código").
   const [requests, setRequests] = useState<InviteRequestItem[]>([])
@@ -62,6 +103,19 @@ const AdminInvites = () => {
   const [invitingEmail, setInvitingEmail] = useState<string | null>(null)
   // Plegado por defecto: esperamos que se acumulen muchas y no queremos que tapen el resto.
   const [requestsOpen, setRequestsOpen] = useState(false)
+  // "Invitar" en una solicitud: antes de enviar se pregunta el idioma, preseleccionado con el
+  // que la persona eligió en el email de acceso anticipado (o el de la landing), o español.
+  const [inviteTarget, setInviteTarget] = useState<InviteRequestItem | null>(null)
+  const [inviteTargetLang, setInviteTargetLang] = useState<InviteLang>("es")
+
+  // Email de acceso anticipado a la lista de espera. Dos pasos a propósito: elegir destinatarios
+  // ("pick") y confirmar ("confirm") — no sale ningún email real hasta el segundo.
+  const [announceOpen, setAnnounceOpen] = useState(false)
+  const [announceStep, setAnnounceStep] = useState<"pick" | "confirm">("pick")
+  const [announceIds, setAnnounceIds] = useState<Set<number>>(new Set())
+  const [announceBusy, setAnnounceBusy] = useState(false)
+  const [announceMsg, setAnnounceMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [testTo, setTestTo] = useState("")
 
   const emails = parseEmails(raw)
 
@@ -94,18 +148,80 @@ const AdminInvites = () => {
 
   // Invita con un clic desde una solicitud pendiente: genera el código para ese email
   // (el backend marca la solicitud como atendida solo) y refresca las dos listas.
-  const inviteFromRequest = async (email: string) => {
+  const inviteFromRequest = async (email: string, language: InviteLang) => {
+    setInviteTarget(null)
     setInvitingEmail(email)
     setError(null)
     setNotice(null)
     try {
-      await generateInvites([email], inviteLang)
+      await generateInvites([email], language)
       setNotice(t("admin-invites.notice.sent-one", "Invitación generada y enviada a {email}.", { email }))
       await Promise.all([refresh(), refreshRequests()])
     } catch (err) {
       setError(err instanceof Error ? err.message : t("admin-invites.error.generate-one", "No se pudo generar la invitación."))
     } finally {
       setInvitingEmail(null)
+    }
+  }
+
+  const askInviteLanguage = (r: InviteRequestItem) => {
+    setInviteTargetLang(r.language === "en" ? "en" : "es")
+    setInviteTarget(r)
+  }
+
+  // Quién no ha recibido todavía el email de acceso anticipado: los únicos a los que se puede enviar.
+  const notAnnounced = useMemo(() => requests.filter((r) => !r.announcedAtUtc), [requests])
+  const announcedCount = requests.length - notAnnounced.length
+
+  const openAnnounce = () => {
+    setAnnounceIds(new Set(notAnnounced.map((r) => r.id)))
+    setAnnounceStep("pick")
+    setAnnounceMsg(null)
+    setAnnounceOpen(true)
+  }
+
+  const toggleAnnounceId = (id: number) =>
+    setAnnounceIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  const sendTest = async () => {
+    const to = testTo.trim().toLowerCase()
+    if (!to.includes("@") || announceBusy) return
+    setAnnounceBusy(true)
+    setAnnounceMsg(null)
+    try {
+      await sendAnnounceTest(to)
+      setAnnounceMsg({ ok: true, text: t("admin-invites.announce.test-sent", "Prueba enviada a {email}. No se ha enviado a nadie más.", { email: to }) })
+      await refreshRequests()
+    } catch (err) {
+      setAnnounceMsg({ ok: false, text: err instanceof Error ? err.message : t("admin-invites.announce.error", "No se pudo enviar el email.") })
+    } finally {
+      setAnnounceBusy(false)
+    }
+  }
+
+  const sendAnnounceForReal = async () => {
+    if (announceIds.size === 0 || announceBusy) return
+    setAnnounceBusy(true)
+    setAnnounceMsg(null)
+    try {
+      const res = await sendAnnounce([...announceIds])
+      setAnnounceOpen(false)
+      setNotice(
+        res.sent === 1
+          ? t("admin-invites.announce.sent-singular", "Email de acceso anticipado enviado a 1 persona.")
+          : t("admin-invites.announce.sent-plural", "Email de acceso anticipado enviado a {count} personas.", { count: res.sent }),
+      )
+      await refreshRequests()
+    } catch (err) {
+      setAnnounceStep("pick")
+      setAnnounceMsg({ ok: false, text: err instanceof Error ? err.message : t("admin-invites.announce.error", "No se pudo enviar el email.") })
+    } finally {
+      setAnnounceBusy(false)
     }
   }
 
@@ -218,19 +334,7 @@ const AdminInvites = () => {
 
         <div>
           <span className="mb-2 block text-sm font-medium text-white">{t("admin-invites.language-label", "Idioma del email")}</span>
-          <div className="inline-flex rounded-lg border border-white/10 bg-white/5 p-1">
-            {(["es", "en"] as const).map((l) => (
-              <button
-                key={l}
-                onClick={() => setInviteLang(l)}
-                className={`rounded-md px-4 py-1.5 text-xs font-semibold transition ${
-                  inviteLang === l ? "bg-neon-cyan text-midnight" : "text-white/60 hover:text-white"
-                }`}
-              >
-                {l === "es" ? "Español" : "English"}
-              </button>
-            ))}
-          </div>
+          <LangToggle value={inviteLang} onChange={setInviteLang} />
         </div>
 
         {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
@@ -265,7 +369,23 @@ const AdminInvites = () => {
           ) : requests.length === 0 ? (
             <p className="mt-4 text-sm text-white/40">{t("admin-invites.no-requests", "No hay solicitudes pendientes.")}</p>
           ) : (
-            <ul className="mt-4 space-y-2">
+            <>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white">{t("admin-invites.announce.title", "Email de acceso anticipado")}</p>
+                <p className="text-xs text-white/50">
+                  {t("admin-invites.announce.status", "Enviado a {sent} · sin enviar a {pending}", { sent: announcedCount, pending: notAnnounced.length })}
+                </p>
+              </div>
+              <button
+                onClick={openAnnounce}
+                className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold text-white/80 transition hover:text-white"
+              >
+                <Megaphone className="h-3.5 w-3.5" />
+                {t("admin-invites.announce.open", "Preparar envío")}
+              </button>
+            </div>
+            <ul className="mt-3 space-y-2">
               {requests.map((r) => (
                 <li
                   key={r.id}
@@ -273,11 +393,28 @@ const AdminInvites = () => {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm text-white/90">{r.email}</p>
-                    <p className="text-xs text-white/40">{fmt(r.createdAtUtc, lang)}</p>
+                    <p className="text-xs text-white/40">
+                      {fmt(r.createdAtUtc, lang)}
+                      {!r.confirmedAtUtc && r.language ? ` · ${r.language.toUpperCase()}` : ""}
+                    </p>
+                    {r.confirmedAtUtc ? (
+                      <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="rounded-full border border-neon-lime/40 bg-neon-lime/10 px-2 py-0.5 text-[11px] font-semibold text-neon-lime">
+                          {t("admin-invites.confirmed", "Confirmado")} · {(r.language ?? "es").toUpperCase()}
+                        </span>
+                        <span className="text-xs text-white/40">{fmt(r.confirmedAtUtc, lang)}</span>
+                      </p>
+                    ) : r.announcedAtUtc ? (
+                      <p className="mt-1.5">
+                        <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-white/50">
+                          {t("admin-invites.not-confirmed", "Sin confirmar")}
+                        </span>
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <button
-                      onClick={() => inviteFromRequest(r.email)}
+                      onClick={() => askInviteLanguage(r)}
                       disabled={invitingEmail !== null}
                       className="flex items-center gap-1.5 rounded-lg border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-1.5 text-xs font-semibold text-neon-cyan transition hover:bg-neon-cyan/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -295,8 +432,167 @@ const AdminInvites = () => {
                 </li>
               ))}
             </ul>
+            </>
           ))}
       </div>
+
+      {/* "Invitar": elegir idioma antes de enviar. */}
+      {inviteTarget && (
+        <Dialog title={t("admin-invites.invite-dialog.title", "Enviar invitación")} onClose={() => setInviteTarget(null)}>
+          <p className="mt-3 break-words text-sm text-white/80">
+            {t("admin-invites.invite-dialog.question", "¿En qué idioma enviamos la invitación a {email}?", { email: inviteTarget.email })}
+          </p>
+          <div className="mt-4">
+            <LangToggle value={inviteTargetLang} onChange={setInviteTargetLang} />
+          </div>
+          <div className="mt-6 flex flex-wrap justify-end gap-2">
+            <button
+              onClick={() => setInviteTarget(null)}
+              className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-white/70 transition hover:text-white"
+            >
+              {t("common.cancel", "Cancelar")}
+            </button>
+            <button
+              onClick={() => inviteFromRequest(inviteTarget.email, inviteTargetLang)}
+              className="rounded-lg bg-neon-cyan px-4 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
+            >
+              {t("admin-invites.invite-dialog.send", "Enviar invitación")}
+            </button>
+          </div>
+        </Dialog>
+      )}
+
+      {/* Email de acceso anticipado: prueba, destinatarios y confirmación final. */}
+      {announceOpen && (
+        <Dialog title={t("admin-invites.announce.title", "Email de acceso anticipado")} onClose={() => !announceBusy && setAnnounceOpen(false)}>
+          {announceStep === "pick" ? (
+            <>
+              <p className="mt-2 text-sm text-white/60">
+                {t(
+                  "admin-invites.announce.intro",
+                  "Avisa a la lista de espera de que abrimos, con un botón para confirmar su plaza. Es un único email, en español y en inglés.",
+                )}
+              </p>
+
+              <label className="mt-5 block text-sm font-medium text-white">{t("admin-invites.announce.test-label", "1. Envíate una prueba")}</label>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <input
+                  type="email"
+                  value={testTo}
+                  onChange={(e) => setTestTo(e.target.value)}
+                  placeholder={t("admin-invites.announce.test-placeholder", "tu@email.com")}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
+                />
+                <button
+                  onClick={sendTest}
+                  disabled={!testTo.includes("@") || announceBusy}
+                  className="shrink-0 rounded-lg border border-neon-cyan/40 bg-neon-cyan/10 px-4 py-2.5 text-sm font-semibold text-neon-cyan transition hover:bg-neon-cyan/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {t("admin-invites.announce.test-cta", "Enviar prueba")}
+                </button>
+              </div>
+              <p className="mt-1.5 text-xs text-white/40">
+                {t("admin-invites.announce.test-help", "Solo le llega a esa dirección. Los botones de la prueba funcionan de verdad.")}
+              </p>
+
+              {announceMsg && (
+                <p className={`mt-3 rounded-lg px-3 py-2 text-sm ${announceMsg.ok ? "bg-neon-cyan/10 text-neon-cyan" : "bg-red-500/10 text-red-300"}`}>
+                  {announceMsg.text}
+                </p>
+              )}
+
+              <div className="mt-6 flex items-center justify-between gap-3">
+                <span className="text-sm font-medium text-white">{t("admin-invites.announce.recipients", "2. Elige a quién se envía")}</span>
+                <button
+                  onClick={() => setAnnounceIds(announceIds.size === notAnnounced.length ? new Set() : new Set(notAnnounced.map((r) => r.id)))}
+                  className="text-xs text-white/60 transition hover:text-white"
+                >
+                  {announceIds.size === notAnnounced.length
+                    ? t("admin-invites.announce.select-none", "Quitar todos")
+                    : t("admin-invites.announce.select-all", "Marcar todos")}
+                </button>
+              </div>
+              {notAnnounced.length === 0 ? (
+                <p className="mt-2 text-sm text-white/40">{t("admin-invites.announce.nobody", "Ya se ha enviado a toda la lista.")}</p>
+              ) : (
+                <ul className="mt-2 max-h-64 space-y-1 overflow-y-auto rounded-lg border border-white/10 p-2">
+                  {notAnnounced.map((r) => (
+                    <li key={r.id}>
+                      <label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm text-white/90">
+                        <input
+                          type="checkbox"
+                          checked={announceIds.has(r.id)}
+                          onChange={() => toggleAnnounceId(r.id)}
+                          className="h-4 w-4 shrink-0 accent-[#28f0e0]"
+                        />
+                        <span className="min-w-0 truncate">{r.email}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {announcedCount > 0 && (
+                <p className="mt-1.5 text-xs text-white/40">
+                  {t("admin-invites.announce.already", "{count} ya lo recibieron y no aparecen aquí.", { count: announcedCount })}
+                </p>
+              )}
+
+              <p className="mt-5 text-xs text-white/50">
+                {t("admin-invites.announce.two-steps", "Este botón todavía no envía nada: en el siguiente paso tendrás que confirmarlo.")}
+              </p>
+              <div className="mt-3 flex flex-wrap justify-end gap-2">
+                <button
+                  onClick={() => setAnnounceOpen(false)}
+                  className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-white/70 transition hover:text-white"
+                >
+                  {t("common.cancel", "Cancelar")}
+                </button>
+                <button
+                  onClick={() => setAnnounceStep("confirm")}
+                  disabled={announceIds.size === 0 || announceBusy}
+                  className="rounded-lg bg-neon-cyan px-4 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {t("admin-invites.announce.review", "Revisar envío ({count})", { count: announceIds.size })}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="mt-3 text-sm text-white">
+                {announceIds.size === 1
+                  ? t("admin-invites.announce.confirm-singular", "Vas a enviar el email a 1 persona de la lista de espera.")
+                  : t("admin-invites.announce.confirm-plural", "Vas a enviar el email a {count} personas de la lista de espera.", { count: announceIds.size })}
+              </p>
+              <p className="mt-2 text-sm text-amber-300">
+                {t("admin-invites.announce.confirm-warning", "Es un envío real y no se puede deshacer. No se envía hasta que pulses «Sí, enviar ahora».")}
+              </p>
+              <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto rounded-lg border border-white/10 p-3 text-xs text-white/70">
+                {notAnnounced
+                  .filter((r) => announceIds.has(r.id))
+                  .map((r) => (
+                    <li key={r.id} className="truncate">{r.email}</li>
+                  ))}
+              </ul>
+              <div className="mt-6 flex flex-wrap justify-end gap-2">
+                <button
+                  onClick={() => setAnnounceStep("pick")}
+                  disabled={announceBusy}
+                  className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-white/70 transition hover:text-white disabled:opacity-50"
+                >
+                  {t("admin-invites.announce.back", "Volver")}
+                </button>
+                <button
+                  onClick={sendAnnounceForReal}
+                  disabled={announceBusy}
+                  className="rounded-lg bg-neon-cyan px-4 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {announceBusy ? t("common.sending", "Enviando...") : t("admin-invites.announce.confirm-cta", "Sí, enviar ahora")}
+                </button>
+              </div>
+            </>
+          )}
+        </Dialog>
+      )}
 
       {/* Lista */}
       <div className="mt-10">

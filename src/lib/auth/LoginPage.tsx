@@ -15,7 +15,7 @@ import { useI18n, setLanguage } from "../i18n/store"
 type Mode = "login" | "register" | "request" | "forgot"
 
 const LoginPage = () => {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const { isAuthenticated, login, register } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -80,7 +80,7 @@ const LoginPage = () => {
     setLoading(true)
     try {
       if (mode === "request") {
-        const res = await requestInvite(emailOnly.trim())
+        const res = await requestInvite(emailOnly.trim(), lang)
         setInfo(res.message ?? t("login.request.sent", "Solicitud recibida. Te enviaremos un nuevo código pronto."))
       } else {
         await requestPasswordReset(emailOnly.trim())
