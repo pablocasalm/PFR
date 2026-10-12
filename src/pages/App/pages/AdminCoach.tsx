@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Sparkles, History, ChevronDown, CheckCircle2, Send, Trash2, Plus, Pencil, X } from "lucide-react"
 import {
   adminListPersonalAnalysis,
@@ -11,6 +11,7 @@ import {
 } from "../../../lib/api/personalAnalysis"
 import { createDirectUpload, uploadToCloudflare, readVideoDuration, createPublishToken, waitForVideoReady, getConcepts, type ConceptOption } from "../../../lib/api/admin"
 import { getBlocks, type BlockOption } from "../../../lib/api/blocks"
+import { getExplore } from "../../../lib/api/explore"
 import type { AnalysisPriority, PriorityResult } from "../../../lib/api/types"
 import { AnalysisSheet, ResultBadge } from "../components/CoachAnalysis"
 import { useResultLabels } from "../components/coachResultLabels"
@@ -48,6 +49,9 @@ const MIN_PRIORITIES = 1
 const MAX_PRIORITIES = 4
 
 /** `id`: la prioridad ya existe (se está editando una ficha entregada); sin él, es nueva. */
+/** Conceptos de cada bloque, por id de bloque (como texto, igual que PriorityDraft.blockId). */
+type BlockConcepts = Record<string, ConceptOption[]>
+
 type PriorityDraft = { key: number; id?: number; title: string; situation: string; decision: string; check: string; moments: string[]; blockId: string; conceptIds: number[] }
 let draftKey = 0
 const emptyPriority = (): PriorityDraft => ({ key: ++draftKey, title: "", situation: "", decision: "", check: "", moments: [], blockId: "", conceptIds: [] })
@@ -150,6 +154,7 @@ const PriorityEditor = ({
   draft,
   blocks,
   concepts,
+  blockConcepts,
   canRemove,
   onChange,
   onRemove,
@@ -158,6 +163,7 @@ const PriorityEditor = ({
   draft: PriorityDraft
   blocks: BlockOption[]
   concepts: ConceptOption[]
+  blockConcepts: BlockConcepts
   canRemove: boolean
   onChange: (changes: Partial<PriorityDraft>) => void
   onRemove: () => void
@@ -165,9 +171,14 @@ const PriorityEditor = ({
   const { t } = useI18n()
   const [conceptQuery, setConceptQuery] = useState("")
   const q = conceptQuery.trim().toLowerCase()
+  // Con un bloque elegido, los conceptos se eligen de un desplegable con los de ese bloque. Sin
+  // bloque (o si ese bloque todavía no tiene conceptos en el catálogo) se buscan escribiendo.
+  const ofBlock = draft.blockId ? blockConcepts[draft.blockId] ?? [] : []
+  const pickFromBlock = ofBlock.length > 0
+  const pickable = ofBlock.filter((c) => !draft.conceptIds.includes(c.id))
   // Seleccionados siempre a la vista; del resto, solo los que coinciden con lo escrito (el
   // catálogo entero de conceptos no cabe en pantalla).
-  const shown = concepts.filter((c) => draft.conceptIds.includes(c.id) || (q !== "" && c.nameEs.toLowerCase().includes(q)))
+  const shown = concepts.filter((c) => draft.conceptIds.includes(c.id) || (!pickFromBlock && q !== "" && c.nameEs.toLowerCase().includes(q)))
   const toggleConcept = (id: number) =>
     onChange({ conceptIds: draft.conceptIds.includes(id) ? draft.conceptIds.filter((x) => x !== id) : [...draft.conceptIds, id] })
 
@@ -215,7 +226,30 @@ const PriorityEditor = ({
               </option>
             ))}
           </select>
-          <input value={conceptQuery} onChange={(e) => setConceptQuery(e.target.value)} placeholder={t("admin-coach.priority.concept-search", "Buscar conceptos para etiquetar…")} className={inputCls} />
+          {pickFromBlock ? (
+            // Siempre en "": elegir un concepto lo añade a las etiquetas de abajo y el desplegable
+            // vuelve a ofrecer los que quedan.
+            <select
+              value=""
+              onChange={(e) => e.target.value && toggleConcept(Number(e.target.value))}
+              disabled={pickable.length === 0}
+              className={inputCls}
+              aria-label={t("admin-coach.priority.concept", "Concepto")}
+            >
+              <option value="">
+                {pickable.length === 0
+                  ? t("admin-coach.priority.concept-all-added", "Todos los conceptos del bloque añadidos")
+                  : t("admin-coach.priority.concept-pick", "Añadir concepto del bloque…")}
+              </option>
+              {pickable.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nameEs}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input value={conceptQuery} onChange={(e) => setConceptQuery(e.target.value)} placeholder={t("admin-coach.priority.concept-search", "Buscar conceptos para etiquetar…")} className={inputCls} />
+          )}
         </div>
         {shown.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -248,6 +282,7 @@ const RequestCard = ({
   item,
   blocks,
   concepts,
+  blockConcepts,
   onMarkInReview,
   onSaved,
   onRemove,
@@ -255,6 +290,7 @@ const RequestCard = ({
   item: AdminPersonalAnalysisItem
   blocks: BlockOption[]
   concepts: ConceptOption[]
+  blockConcepts: BlockConcepts
   onMarkInReview: (item: AdminPersonalAnalysisItem) => void
   /** Entregado o editado: toca recargar la cola. */
   onSaved: (item: AdminPersonalAnalysisItem) => void
@@ -513,6 +549,7 @@ const RequestCard = ({
                 draft={p}
                 blocks={blocks}
                 concepts={concepts}
+                blockConcepts={blockConcepts}
                 canRemove={priorities.length > MIN_PRIORITIES}
                 onChange={(changes) => setPriorities((prev) => prev.map((x) => (x.key === p.key ? { ...x, ...changes } : x)))}
                 onRemove={() => removePriority(p)}
@@ -592,11 +629,30 @@ const AdminCoach = () => {
   // Catálogo para etiquetar las prioridades con su bloque y sus conceptos.
   const [blocks, setBlocks] = useState<BlockOption[]>([])
   const [concepts, setConcepts] = useState<ConceptOption[]>([])
+  // Qué conceptos tiene cada bloque, por nombre: lo da la biblioteca de Explorar (los conceptos
+  // con los que se han publicado los clips de ese bloque).
+  const [conceptNamesByBlock, setConceptNamesByBlock] = useState<Record<string, string[]>>({})
   useEffect(() => {
     refresh()
     getBlocks().then(setBlocks).catch(() => {})
     getConcepts().then(setConcepts).catch(() => {})
+    getExplore()
+      .then((explore) => setConceptNamesByBlock(Object.fromEntries(explore.sections.map((s) => [s.block, s.concepts]))))
+      .catch(() => {}) // sin esto se sigue pudiendo etiquetar buscando por texto
   }, [])
+
+  const blockConcepts = useMemo<BlockConcepts>(() => {
+    const byName = new Map(concepts.map((c) => [c.nameEs, c]))
+    const result: BlockConcepts = {}
+    for (const b of blocks) {
+      if (b.id == null) continue
+      result[String(b.id)] = (conceptNamesByBlock[b.nameEs] ?? [])
+        .map((name) => byName.get(name))
+        .filter((c): c is ConceptOption => c != null)
+        .sort((a, z) => a.nameEs.localeCompare(z.nameEs, "es"))
+    }
+    return result
+  }, [blocks, concepts, conceptNamesByBlock])
 
   const pending = items.filter((i) => i.status !== "Delivered")
   const delivered = items.filter((i) => i.status === "Delivered")
@@ -642,7 +698,7 @@ const AdminCoach = () => {
       ) : (
         <div className="space-y-4">
           {pending.map((item) => (
-            <RequestCard key={item.id} item={item} blocks={blocks} concepts={concepts} onMarkInReview={markInReview} onSaved={() => refresh()} onRemove={remove} />
+            <RequestCard key={item.id} item={item} blocks={blocks} concepts={concepts} blockConcepts={blockConcepts} onMarkInReview={markInReview} onSaved={() => refresh()} onRemove={remove} />
           ))}
         </div>
       )}
@@ -661,7 +717,7 @@ const AdminCoach = () => {
           {historyOpen && (
             <div className="mt-4 space-y-4">
               {delivered.map((item) => (
-                <RequestCard key={item.id} item={item} blocks={blocks} concepts={concepts} onMarkInReview={markInReview} onSaved={() => refresh()} onRemove={remove} />
+                <RequestCard key={item.id} item={item} blocks={blocks} concepts={concepts} blockConcepts={blockConcepts} onMarkInReview={markInReview} onSaved={() => refresh()} onRemove={remove} />
               ))}
             </div>
           )}
