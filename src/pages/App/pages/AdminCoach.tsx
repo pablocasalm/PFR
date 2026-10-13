@@ -382,6 +382,14 @@ const RequestCard = ({
 
   const day = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString(lang === "en" ? "en-US" : "es-ES", { day: "numeric", month: "short" })
   const captionCls = "mb-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/50"
+  // En el hueco del vídeo original, cuando ya se borró.
+  const uploadedGone = (
+    <div className="flex aspect-video items-center justify-center rounded-lg border border-dashed border-white/15 px-4 text-center text-xs leading-relaxed text-white/45">
+      {item.uploadedDeletedAtUtc
+        ? t("admin-coach.video.student-deleted", "Vídeo original eliminado el {date}, a los 3 meses de la entrega.", { date: fmt(item.uploadedDeletedAtUtc, lang) })
+        : t("admin-coach.video.student-missing", "El vídeo original ya no está disponible.")}
+    </div>
+  )
 
   return (
     <article className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
@@ -415,14 +423,19 @@ const RequestCard = ({
         <AnalysisThread requestId={item.id} side="staff" messageCount={item.messageCount} unread={item.unreadMessages} />
       </div>
 
-      {/* Pendiente: el partido del alumno. Entregado: su partido y el vídeo analizado, lado a lado. */}
+      {/* Pendiente: el partido del alumno. Entregado: su partido y el vídeo analizado, lado a lado.
+          El partido original se borra solo a los 3 meses de la entrega: entonces va un aviso. */}
       {isDelivered && item.deliveredVideoUrl ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="min-w-0">
             <p className={captionCls}>{t("admin-coach.video.student", "Vídeo del alumno")}</p>
-            <div className="overflow-hidden rounded-lg border border-white/10">
-              <HlsPlayer src={item.uploadedVideoUrl} aspect="16:9" />
-            </div>
+            {item.uploadedVideoUrl ? (
+              <div className="overflow-hidden rounded-lg border border-white/10">
+                <HlsPlayer src={item.uploadedVideoUrl} aspect="16:9" />
+              </div>
+            ) : (
+              uploadedGone
+            )}
           </div>
           <div className="min-w-0">
             <p className={captionCls}>{t("admin-coach.video.analysis", "Vídeo analizado")}</p>
@@ -431,10 +444,12 @@ const RequestCard = ({
             </div>
           </div>
         </div>
-      ) : (
+      ) : item.uploadedVideoUrl ? (
         <div className="overflow-hidden rounded-lg border border-white/10">
           <HlsPlayer src={item.uploadedVideoUrl} aspect="16:9" />
         </div>
+      ) : (
+        uploadedGone
       )}
 
       {/* Ya entregado: su ficha, con el seguimiento que haya ido anotando el alumno */}

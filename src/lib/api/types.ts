@@ -177,7 +177,9 @@ export type PersonalAnalysisItem = {
   id: number
   status: PersonalAnalysisStatus
   submittedAtUtc: string
-  uploadedVideoUrl: string
+  /** Vídeo original del alumno. Null cuando ya se borró (3 meses tras la entrega). */
+  uploadedVideoUrl: string | null
+  uploadedDeletedAtUtc?: string | null
   userNote?: string | null
   deliveredVideoUrl?: string | null
   /** Formato anterior (texto libre). Los análisis nuevos traen `priorities`. */

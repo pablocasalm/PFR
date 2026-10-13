@@ -117,6 +117,9 @@ const SubmitForm = ({
   return (
     <div className="space-y-3">
       <FileDrop file={file} onFile={setFile} label={t("club.personal-analysis.upload-label", "Sube 20 min de uno de tus partidos")} />
+      <p className="text-xs leading-relaxed text-white/50">
+        {t("club.personal-analysis.upload-retention", "Solo lo ve nuestro equipo, para analizarlo. Borramos tu vídeo original a los 3 meses de entregarte el análisis.")}
+      </p>
 
       <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
         <p className="text-xs font-bold uppercase tracking-[0.12em] text-white/50">{t("coach.player.title", "Para saber quién eres en el vídeo")}</p>
