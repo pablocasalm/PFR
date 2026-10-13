@@ -13,6 +13,8 @@ export type SituationDraft = {
   shortTitleEn: string
   recognize: string
   recognizeEn: string
+  tryIt: string // "Pruébalo en tu partido": opcional, no cuenta para dar la situación por completa
+  tryItEn: string
   clips: ContentItem[]
 }
 
@@ -25,10 +27,12 @@ export const emptySituation = (): SituationDraft => ({
   shortTitleEn: "",
   recognize: "",
   recognizeEn: "",
+  tryIt: "",
+  tryItEn: "",
   clips: [],
 })
 
 export const isSituationComplete = (s: SituationDraft) => !!s.title.trim() && !!s.shortTitle.trim() && !!s.recognize.trim() && s.clips.length > 0
 
 export const isSituationEmpty = (s: SituationDraft) =>
-  !s.title.trim() && !s.titleEn.trim() && !s.shortTitle.trim() && !s.shortTitleEn.trim() && !s.recognize.trim() && !s.recognizeEn.trim() && s.clips.length === 0
+  !s.title.trim() && !s.titleEn.trim() && !s.shortTitle.trim() && !s.shortTitleEn.trim() && !s.recognize.trim() && !s.recognizeEn.trim() && !s.tryIt.trim() && !s.tryItEn.trim() && s.clips.length === 0

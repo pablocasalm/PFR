@@ -248,6 +248,8 @@ const AdminSesiones = () => {
         shortTitleEn: s.shortTitleEn.trim() || undefined,
         recognize: s.recognize.trim(),
         recognizeEn: s.recognizeEn.trim() || undefined,
+        tryIt: s.tryIt.trim() || undefined,
+        tryItEn: s.tryItEn.trim() || undefined,
         clipIds: s.clips.map((c) => c.id),
       })),
     })

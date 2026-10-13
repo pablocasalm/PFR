@@ -149,6 +149,20 @@ const PlanEditor = ({
             <label className={labelCls}>{t("admin-recomendado.situation.recognize", "Qué reconocer")}</label>
             <textarea value={active.recognize} onChange={(e) => update({ recognize: e.target.value })} maxLength={1000} rows={3} className={inputCls} />
           </div>
+          <div>
+            <label className={labelCls}>{t("admin-sesiones.situation.try-it-label", "Pruébalo en tu partido (opcional)")}</label>
+            <textarea
+              value={active.tryIt}
+              onChange={(e) => update({ tryIt: e.target.value })}
+              maxLength={500}
+              rows={2}
+              placeholder={t("admin-sesiones.situation.try-it-example", "Elige a un rival y repítele dos o tres voleas antes de cambiar.")}
+              className={inputCls}
+            />
+            <p className="mt-1.5 text-xs text-white/40">
+              {t("admin-sesiones.situation.try-it-hint", "Una o dos frases: qué probar en el próximo partido. Lo mismo que se dice en la masterclass al cerrar el foco.")}
+            </p>
+          </div>
 
           <details className="rounded-xl border border-white/10 px-3 py-2.5">
             <summary className="cursor-pointer text-xs font-medium text-white/60">{t("admin-sesiones.situation.english", "Versión en inglés (opcional)")}</summary>
@@ -156,6 +170,7 @@ const PlanEditor = ({
               <input value={active.titleEn} onChange={(e) => update({ titleEn: e.target.value })} maxLength={200} placeholder={t("admin-sesiones.situation.title-label", "Título")} className={inputCls} />
               <input value={active.shortTitleEn} onChange={(e) => update({ shortTitleEn: e.target.value })} maxLength={60} placeholder={t("admin-sesiones.situation.short-only", "Etiqueta corta")} className={inputCls} />
               <textarea value={active.recognizeEn} onChange={(e) => update({ recognizeEn: e.target.value })} maxLength={1000} rows={3} placeholder={t("admin-recomendado.situation.recognize", "Qué reconocer")} className={inputCls} />
+              <textarea value={active.tryItEn} onChange={(e) => update({ tryItEn: e.target.value })} maxLength={500} rows={2} placeholder={t("admin-sesiones.situation.try-it-en", "Try it in your match")} className={inputCls} />
             </div>
           </details>
 

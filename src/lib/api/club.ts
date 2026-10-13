@@ -35,6 +35,8 @@ export type CreateMonthlyPickInput = {
     shortTitleEn?: string
     recognize: string
     recognizeEn?: string
+    tryIt?: string
+    tryItEn?: string
     clipIds: string[]
   }[]
 }

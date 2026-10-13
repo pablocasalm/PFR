@@ -8,7 +8,8 @@ import ContentCard from "./ContentCard"
 
 /**
  * Situaciones de "El plan del mes" (§Club) — acordeón de 2 a 4 situaciones, una abierta a la
- * vez. Cada una: qué reconocer y sus clips (con "Visto" y progreso). Arranca abierta la que
+ * vez. Cada una: qué reconocer, sus clips (con "Visto" y progreso) y, al final, qué probar en
+ * el próximo partido. Arranca abierta la que
  * pida `initialOpenId` (enlace "Ver los clips de este foco" de Inicio, `?foco=`) o, si no, la
  * primera que aún tenga clips sin ver, para que quien vuelve a mitad de mes caiga donde lo dejó.
  */
@@ -17,6 +18,9 @@ const seenCount = (s: PlanSituation) => s.clips.filter((c) => c.completed).lengt
 
 const SituationBody = ({ situation }: { situation: PlanSituation }) => {
   const { t, lang } = useI18n()
+  // Opcional: los planes anteriores no lo tienen. En inglés, si falta la traducción, se enseña
+  // el texto en español antes que dejar el foco sin su parte práctica.
+  const tryIt = situation.tryIt ? pickText(situation.tryIt, situation.tryItEn ?? undefined, lang) : ""
   return (
     <div className="space-y-5 px-4 pb-4 sm:px-5 sm:pb-5">
       <div>
@@ -29,6 +33,14 @@ const SituationBody = ({ situation }: { situation: PlanSituation }) => {
           <ContentCard key={clip.id} item={clip} />
         ))}
       </CardRow>
+
+      {/* El JUGAR del método: "qué reconocer" es qué mirar en los clips; esto, qué hacer en pista. */}
+      {tryIt && (
+        <div className="rounded-xl border border-dashed border-neon-cyan/50 bg-neon-cyan/[0.04] p-4">
+          <h4 className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-neon-cyan">{t("club.plan.try-it", "Pruébalo en tu partido")}</h4>
+          <p className="text-sm leading-relaxed text-white/90">{tryIt}</p>
+        </div>
+      )}
     </div>
   )
 }

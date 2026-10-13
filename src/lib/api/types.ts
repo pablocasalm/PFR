@@ -59,7 +59,7 @@ export type MonthlyPick = {
   sessionId?: number | null
 }
 
-/** Una situación de "El plan del mes" (§Club): qué reconocer y sus clips. El progreso ("3 de 8 vistos") se calcula en el front a
+/** Una situación de "El plan del mes" (§Club): qué reconocer, sus clips y qué probar en pista. El progreso ("3 de 8 vistos") se calcula en el front a
  * partir de `completed` de cada clip — misma regla de "visto" que el resto de la app. */
 export type PlanSituation = {
   id: number
@@ -69,6 +69,8 @@ export type PlanSituation = {
   shortTitleEn?: string | null
   recognize: string // "Qué reconocer"
   recognizeEn?: string | null
+  tryIt?: string | null // "Pruébalo en tu partido" (opcional)
+  tryItEn?: string | null
   clips: ContentItem[]
 }
 
