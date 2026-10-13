@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Navigate, useNavigate, useSearchParams, useLocation } from "react-router-dom"
 import { useAuth } from "./store"
-import { requestInvite } from "../api/invites"
+import { requestInvite, getInviteInfo } from "../api/invites"
 import { requestPasswordReset } from "../api/auth"
 import { useI18n, setLanguage } from "../i18n/store"
 
@@ -31,6 +31,24 @@ const LoginPage = () => {
   const [displayName, setDisplayName] = useState("")
   const [inviteCode, setInviteCode] = useState(inviteFromUrl)
   const [emailOnly, setEmailOnly] = useState(emailFromUrl) // email para "solicitar código" / "recuperar"
+
+  // El enlace de invitación solo lleva el código (el email no viaja en la URL): se le pregunta
+  // al backend a qué email pertenece para dejarlo ya escrito. Si falla (código gastado o sin
+  // red), la persona lo escribe a mano y el registro lo valida igual.
+  useEffect(() => {
+    if (!inviteFromUrl || emailFromUrl) return
+    let cancelled = false
+    getInviteInfo(inviteFromUrl)
+      .then((info) => {
+        if (cancelled || !info?.email) return
+        setEmail((current) => current || info.email)
+        setEmailOnly((current) => current || info.email)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [inviteFromUrl, emailFromUrl])
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)

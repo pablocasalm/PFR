@@ -8,6 +8,11 @@ import { apiPost, apiGet, apiDelete } from "./client"
 export const requestInvite = (email: string, language: string) =>
   apiPost<{ ok: boolean; message?: string }>("/api/invite-requests", { email, language })
 
+/** GET /api/invites/{code} (público) → email e idioma de una invitación sin usar. La pantalla
+ * de registro lo usa para rellenar el email: el enlace de invitación ya no lo lleva en la URL. */
+export const getInviteInfo = (code: string) =>
+  apiGet<{ email: string; language: string }>(`/api/invites/${encodeURIComponent(code)}`)
+
 /** Categoría de facturación (independiente del rol) — base para cuando esté Stripe conectado. */
 export type BillingPlan = "Free" | "TrialThenPaid" | "Discounted"
 
