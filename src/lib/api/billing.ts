@@ -30,8 +30,14 @@ export const getBillingPlans = () => apiGet<BillingPlans>("/api/billing/plans")
 /** POST /api/billing/checkout-session → URL de Stripe Checkout a la que redirigir. Tier por
  * defecto "Club" mientras Precios.tsx siga siendo la pantalla de un único plan (Fase 0-3) — pasa
  * a ser obligatorio en la práctica en la Fase 4, cuando la pantalla ya pida elegir plan. */
-export const createCheckoutSession = (interval: BillingInterval, tier: PlanTier = "Club") =>
-  apiPost<{ url: string }>("/api/billing/checkout-session", { interval, tier })
+export const createCheckoutSession = (interval: BillingInterval, tier: PlanTier = "Club", coachWaiverVersion?: string) =>
+  apiPost<{ url: string }>("/api/billing/checkout-session", { interval, tier, coachWaiverVersion })
+
+/** Versión del texto de renuncia al desistimiento que se acepta al contratar Coach. Tiene que
+ * coincidir con BillingController.CoachWaiverVersion: si cambia el texto, se suben las dos (y la
+ * clave de traducción, que lleva la versión en el nombre) para que cada aceptación guardada diga
+ * qué texto se aceptó. */
+export const COACH_WAIVER_VERSION = "v1"
 
 /** POST /api/billing/portal → URL del Customer Portal de Stripe (cancelar, cambiar método de
  * pago, ver facturas). */

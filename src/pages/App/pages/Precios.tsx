@@ -5,7 +5,7 @@ import PendingPlanNote from "../components/PendingPlanNote"
 import { PAYMENTS_ENABLED } from "../../../lib/payments"
 import { trackActivity } from "../../../lib/api/activity"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
-import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../../../lib/api/billing"
+import { createCheckoutSession, getBillingPlans, type BillingPlans, COACH_WAIVER_VERSION } from "../../../lib/api/billing"
 
 /**
  * Pantalla de precios / paywall (§Stripe 3 planes, Fase 4). Comparativa de los 3 planes.
@@ -52,12 +52,17 @@ const PlanCard = ({ plan, isCurrent, backend }: { plan: (typeof PLANS)[number]; 
   const backendPrice = backend?.plans?.find((p) => p.tier === plan.tier)?.prices?.find((p) => p.interval === "Monthly") ?? null
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Coach: antes de pagar hay que aceptar expresamente, en una casilla aparte y sin marcar, que
+  // el derecho de desistimiento se pierde al entregar el análisis. El backend lo exige y lo
+  // guarda (usuario, fecha y versión del texto); sin eso no abre el pago.
+  const needsWaiver = plan.tier === "Coach"
+  const [waiverAccepted, setWaiverAccepted] = useState(false)
   const subscribe = async () => {
-    if (busy) return
+    if (busy || (needsWaiver && !waiverAccepted)) return
     setBusy(true)
     setError(null)
     try {
-      const { url } = await createCheckoutSession("Monthly", plan.tier)
+      const { url } = await createCheckoutSession("Monthly", plan.tier, needsWaiver ? COACH_WAIVER_VERSION : undefined)
       window.location.href = url
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo abrir el pago.")
@@ -114,10 +119,26 @@ const PlanCard = ({ plan, isCurrent, backend }: { plan: (typeof PLANS)[number]; 
         <div className="mt-6 space-y-2">
           {/* Solo si falta: explica por qué el botón está apagado. */}
           {backend && !backendPrice && <p className="text-xs text-amber-200/80">Este plan no tiene precio dado de alta todavía.</p>}
+          {needsWaiver && (
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs leading-relaxed text-white/75">
+              <input
+                type="checkbox"
+                checked={waiverAccepted}
+                onChange={(e) => setWaiverAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-[#28f0e0]"
+              />
+              <span>
+                {t(
+                  `precios.coach-waiver.${COACH_WAIVER_VERSION}.text`,
+                  "Pido que el servicio de PFR Coach empiece ya y entiendo que, una vez entregado mi análisis personalizado, pierdo el derecho de desistimiento.",
+                )}
+              </span>
+            </label>
+          )}
           <button
             type="button"
             onClick={subscribe}
-            disabled={!backendPrice || busy}
+            disabled={!backendPrice || busy || (needsWaiver && !waiverAccepted)}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-400 py-3 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CreditCard className="h-4 w-4" />
