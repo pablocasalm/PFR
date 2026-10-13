@@ -13,6 +13,7 @@ import {
 import { readVideoDuration, uploadToCloudflare } from "../../../lib/api/admin"
 import SidePanel from "../../../lib/ui/SidePanel"
 import FileDrop from "../components/FileDrop"
+import { LegalLink } from "../../../lib/ui/LegalLinks"
 import { DeliveredAnalysisView, PastAnalysesList } from "../components/CoachAnalysis"
 import CoachProgress from "../components/CoachProgress"
 import AnalysisThread from "../components/AnalysisThread"
@@ -118,7 +119,8 @@ const SubmitForm = ({
     <div className="space-y-3">
       <FileDrop file={file} onFile={setFile} label={t("club.personal-analysis.upload-label", "Sube 20 min de uno de tus partidos")} />
       <p className="text-xs leading-relaxed text-white/50">
-        {t("club.personal-analysis.upload-retention", "Solo lo ve nuestro equipo, para analizarlo. Borramos tu vídeo original a los 3 meses de entregarte el análisis.")}
+        {t("club.personal-analysis.upload-retention", "Solo lo ve nuestro equipo, para analizarlo. Borramos tu vídeo original a los 3 meses de entregarte el análisis.")}{" "}
+        <LegalLink doc="privacy" />
       </p>
 
       <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">

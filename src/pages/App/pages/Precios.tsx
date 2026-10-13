@@ -4,6 +4,7 @@ import { useAuth, PLAN_NAME, type PlanTier } from "../../../lib/auth/store"
 import PendingPlanNote from "../components/PendingPlanNote"
 import { PAYMENTS_ENABLED } from "../../../lib/payments"
 import { trackActivity } from "../../../lib/api/activity"
+import { LegalLink } from "../../../lib/ui/LegalLinks"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { createCheckoutSession, getBillingPlans, type BillingPlans, COACH_WAIVER_VERSION } from "../../../lib/api/billing"
 
@@ -131,7 +132,8 @@ const PlanCard = ({ plan, isCurrent, backend }: { plan: (typeof PLANS)[number]; 
                 {t(
                   `precios.coach-waiver.${COACH_WAIVER_VERSION}.text`,
                   "Pido que el servicio de PFR Coach empiece ya y entiendo que, una vez entregado mi análisis personalizado, pierdo el derecho de desistimiento.",
-                )}
+                )}{" "}
+                <LegalLink doc="terms" />
               </span>
             </label>
           )}
@@ -188,6 +190,12 @@ const Precios = () => {
           <PlanCard key={plan.tier} plan={plan} isCurrent={user?.planTier === plan.tier} backend={backend} />
         ))}
       </div>
+
+      {/* Condiciones de la suscripción (renovación, cancelación, desistimiento): en los términos. */}
+      <p className="mt-6 text-xs leading-relaxed text-white/50">
+        {t("precios.legal.prefix", "Las condiciones de la suscripción, la renovación y la cancelación están en los")} <LegalLink doc="terms" />.{" "}
+        {t("precios.legal.privacy-prefix", "Cómo tratamos tus datos, en la")} <LegalLink doc="privacy" />.
+      </p>
     </main>
   )
 }

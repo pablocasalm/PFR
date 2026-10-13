@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Navigate, useNavigate, useSearchParams, useLocation } from "react-router-dom"
 import { useAuth } from "./store"
 import { requestInvite, getInviteInfo } from "../api/invites"
+import LegalLinks, { LegalLink } from "../ui/LegalLinks"
 import { requestPasswordReset } from "../api/auth"
 import { useI18n, setLanguage } from "../i18n/store"
 
@@ -215,6 +216,14 @@ const LoginPage = () => {
 
             {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
+            {/* Al crear la cuenta se aceptan los términos y se informa del tratamiento de datos. */}
+            {mode === "register" && (
+              <p className="text-xs leading-relaxed text-white/50">
+                {t("login.legal.register-prefix", "Al crear tu cuenta aceptas los")} <LegalLink doc="terms" /> {t("login.legal.and", "y la")}{" "}
+                <LegalLink doc="privacy" />.
+              </p>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -269,6 +278,8 @@ const LoginPage = () => {
             </button>
           )}
         </p>
+
+        <LegalLinks className="mt-6 justify-center" />
       </div>
     </div>
   )

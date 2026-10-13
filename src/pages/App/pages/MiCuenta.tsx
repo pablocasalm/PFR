@@ -4,6 +4,7 @@ import { UserCircle, Settings2, CreditCard, Lock, type LucideIcon } from "lucide
 import { useAuth, setLocalDisplayName, PLAN_NAME } from "../../../lib/auth/store"
 import PendingPlanNote from "../components/PendingPlanNote"
 import { PAYMENTS_ENABLED } from "../../../lib/payments"
+import LegalLinks from "../../../lib/ui/LegalLinks"
 import { getMyProfile, updateProfile, changePassword, updateMyPreferences, type ProfileResponse } from "../../../lib/api/profile"
 import { createPortalSession } from "../../../lib/api/billing"
 import { useI18n, setLanguage, type TFunc } from "../../../lib/i18n/store"
@@ -464,6 +465,8 @@ const MiCuenta = () => {
             </form>
           </section>
         )}
+
+        <LegalLinks className="px-1 pt-2" />
       </div>
     </main>
   )
