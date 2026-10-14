@@ -10,8 +10,8 @@ import { useI18n } from "../../../lib/i18n/store"
  * para todos los roles: las pestañas de Admin ya no viven en el nav de escritorio (solo
  * en el desplegable del avatar), así que no hace falta un caso especial aquí tampoco.
  *
- * Cinco accesos, priorizando lo que vende el producto: Inicio, Mi Juego, Explorar, Club y
- * Coach (en ese orden, de menos a más plan). Coach y Club salen SIEMPRE, también para quien no tiene ese plan (con un candado
+ * Cinco accesos: Inicio, Explorar, Mi Juego, Coach y Club (orden pedido en el reporte de beta
+ * #87: Explorar justo después de Inicio, como estaba antes). Coach y Club salen SIEMPRE, también para quien no tiene ese plan (con un candado
  * pequeño): al entrar, la propia pantalla le lleva a /app/precios, así que la pestaña hace de
  * escaparate. "Mi Lista" y "Cómo funciona" viven en el menú del avatar (Header.tsx), que es
  * también donde apunta el último paso del tour de bienvenida en este layout.
@@ -24,10 +24,10 @@ import { useI18n } from "../../../lib/i18n/store"
 // `feature`: función del plan que hace falta para entrar — sin ella, la pestaña lleva candado.
 const ITEMS: { to: string; key: string; label: string; icon: LucideIcon; feature?: PlanFeature }[] = [
   { to: "/app/inicio", key: "header.nav.inicio", label: "Inicio", icon: Home },
-  { to: "/app/mi-juego", key: "header.nav.mi-juego", label: "Mi Juego", icon: BarChart2 },
   { to: "/app/explorar", key: "header.nav.explorar", label: "Explorar", icon: Compass },
-  { to: "/app/club", key: "header.nav.club", label: "Club", icon: Crown, feature: "monthlyPicks" },
+  { to: "/app/mi-juego", key: "header.nav.mi-juego", label: "Mi Juego", icon: BarChart2 },
   { to: "/app/coach", key: "header.nav.coach", label: "Coach", icon: Sparkles, feature: "personalAnalysis" },
+  { to: "/app/club", key: "header.nav.club", label: "Club", icon: Crown, feature: "monthlyPicks" },
 ]
 
 const MobileNav = () => {
