@@ -22,6 +22,12 @@ import { invalidateApiCache } from "../../../lib/hooks/useApi"
 import { useAuth, hasFeature } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import type { PersonalAnalysisItem, PlayerSide, PriorityLog } from "../../../lib/api/types"
+import { ApiError } from "../../../lib/api/client"
+
+// Al subir el partido, el alumno no debe ver errores técnicos de la subida (los de la librería
+// de subida o de Cloudflare vienen en inglés y con jerga). Los de nuestra API sí se enseñan:
+// ya están escritos para él ("Ya tienes un análisis en curso este ciclo"…).
+const friendlyError = (err: unknown, fallback: string) => (err instanceof ApiError && err.message ? err.message : fallback)
 
 /**
  * Coach — pantalla propia del plan Coach (§rediseño Club/Coach, separada de Club.tsx). Quien no
@@ -98,7 +104,7 @@ const SubmitForm = ({
       const dur = await readVideoDuration(file)
       const up = await createDirectUpload(file.name, file.size, dur)
       await uploadToCloudflare(up.uploadURL, file, (p) => setProgress({ label: t("club.personal-analysis.uploading", "Subiendo tu partido…"), percent: p }))
-      setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
+      setProgress({ label: t("club.personal-analysis.processing", "Preparando tu vídeo… puede tardar unos minutos. No cierres esta pantalla."), percent: 100 })
       await waitForVideoReady(up.uid)
       const created = await submitPersonalAnalysis(
         up.uid,
@@ -108,7 +114,7 @@ const SubmitForm = ({
       )
       onSubmitted(created)
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("club.personal-analysis.error", "No se pudo enviar el partido."))
+      setError(friendlyError(err, t("club.personal-analysis.error", "No se pudo enviar el partido. Revisa tu conexión e inténtalo de nuevo.")))
     } finally {
       setBusy(false)
       setProgress(null)
@@ -186,7 +192,10 @@ const SubmitForm = ({
       {error && <p className="text-xs text-red-300">{error}</p>}
       {progress && (
         <div>
-          <p className="mb-1 text-xs text-white/50">{progress.label}</p>
+          <p className="mb-1 text-xs text-white/50">
+            {progress.label}
+            {progress.percent > 0 && progress.percent < 100 && ` ${progress.percent}%`}
+          </p>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-neon-cyan transition-all" style={{ width: `${progress.percent}%` }} />
           </div>
@@ -235,7 +244,7 @@ const PendingCard = ({ request, onUpdated }: { request: PersonalAnalysisItem; on
         durationSeconds = await readVideoDuration(editFile)
         const up = await createDirectUpload(editFile.name, editFile.size, durationSeconds)
         await uploadToCloudflare(up.uploadURL, editFile, (p) => setEditProgress({ label: t("club.personal-analysis.uploading", "Subiendo tu partido…"), percent: p }))
-        setEditProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
+        setEditProgress({ label: t("club.personal-analysis.processing", "Preparando tu vídeo… puede tardar unos minutos. No cierres esta pantalla."), percent: 100 })
         await waitForVideoReady(up.uid)
         uid = up.uid
       }
@@ -244,7 +253,7 @@ const PendingCard = ({ request, onUpdated }: { request: PersonalAnalysisItem; on
       onUpdated(await editPersonalAnalysis(request.id, { uid, durationSeconds, note: editNote.trim() }))
       setEditing(false)
     } catch (err) {
-      setEditError(err instanceof Error ? err.message : t("club.personal-analysis.edit-error", "No se pudieron guardar los cambios."))
+      setEditError(friendlyError(err, t("club.personal-analysis.edit-error", "No se pudieron guardar los cambios. Revisa tu conexión e inténtalo de nuevo.")))
     } finally {
       setEditBusy(false)
       setEditProgress(null)
@@ -270,7 +279,10 @@ const PendingCard = ({ request, onUpdated }: { request: PersonalAnalysisItem; on
           {editError && <p className="text-xs text-red-300">{editError}</p>}
           {editProgress && (
             <div>
-              <p className="mb-1 text-xs text-white/50">{editProgress.label}</p>
+              <p className="mb-1 text-xs text-white/50">
+                {editProgress.label}
+                {editProgress.percent > 0 && editProgress.percent < 100 && ` ${editProgress.percent}%`}
+              </p>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
                 <div className="h-full rounded-full bg-neon-cyan transition-all" style={{ width: `${editProgress.percent}%` }} />
               </div>
