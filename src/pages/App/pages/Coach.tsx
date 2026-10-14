@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Navigate } from "react-router-dom"
-import { Sparkles, UploadCloud } from "lucide-react"
+import { Sparkles, UploadCloud, Video } from "lucide-react"
 import { useApi } from "../../../lib/hooks/useApi"
 import {
   getMyPersonalAnalysis,
@@ -123,6 +123,23 @@ const SubmitForm = ({
 
   return (
     <div className="space-y-3">
+      {/* Cómo grabar (reporte de beta #86): sin los cuatro jugadores en plano, Guille no puede
+          leer las decisiones. Va antes de elegir el archivo, que es cuando sirve. */}
+      <div className="rounded-xl border border-neon-cyan/25 bg-neon-cyan/[0.04] p-4">
+        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-neon-cyan">
+          <Video className="h-4 w-4" />
+          {t("club.personal-analysis.recording.title", "Cómo grabar tu partido")}
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-white/80">
+          {t("club.personal-analysis.recording.main", "Graba desde detrás de la pista, a la altura del cristal, para que se vean los cuatro jugadores y toda la pista.")}
+        </p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed text-white/60">
+          <li>{t("club.personal-analysis.recording.tip-mount", "Un soporte con imán para el cristal o la valla funciona muy bien.")}</li>
+          <li>{t("club.personal-analysis.recording.tip-club", "Si tu club tiene cámara en la pista, pídeles la grabación.")}</li>
+          <li>{t("club.personal-analysis.recording.tip-chair", "Si no tienes nada, pon el móvil en horizontal encima de una silla detrás de la pista.")}</li>
+        </ul>
+      </div>
+
       <FileDrop file={file} onFile={setFile} label={t("club.personal-analysis.upload-label", "Sube 20 min de uno de tus partidos")} />
       <p className="text-xs leading-relaxed text-white/50">
         {t("club.personal-analysis.upload-retention", "Solo lo ve nuestro equipo, para analizarlo. Borramos tu vídeo original a los 3 meses de entregarte el análisis.")}{" "}
