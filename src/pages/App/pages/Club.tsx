@@ -63,7 +63,7 @@ const QuestionsCard = () => {
   }
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+    <section id="tour-club-questions" className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
       <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">{t("club.questions.title", "Tus preguntas")}</h2>
       {/* El texto de ayuda deja claro que las preguntas no tienen respuesta individual. */}
       <p className="mb-3 mt-1.5 text-xs leading-relaxed text-white/50">
@@ -201,7 +201,7 @@ const Club = () => {
 
           {/* Masterclasses (en código siguen siendo "sesiones"): fila ACOTADA a SESSIONS_PREVIEW_COUNT, nunca el histórico completo —
               eso vive en /app/club/sesiones para que este hub no crezca sin tope mes a mes. */}
-          <section>
+          <section id="tour-club-masterclasses">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">{t("club.sessions.title", "Masterclasses")}</h2>

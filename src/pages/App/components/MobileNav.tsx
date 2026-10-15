@@ -39,6 +39,8 @@ const MobileNav = () => {
         <NavLink
           key={to}
           to={to}
+          // Anclas del tour de bienvenida (lib/onboarding/tour.ts).
+          id={to === "/app/explorar" ? "tour-explorar-mobile" : to === "/app/club" ? "tour-club-mobile" : undefined}
           className={({ isActive }) =>
             `flex flex-1 flex-col items-center gap-1 py-1 text-[10px] font-medium transition-colors ${
               isActive ? "text-neon-cyan" : "text-white/50"

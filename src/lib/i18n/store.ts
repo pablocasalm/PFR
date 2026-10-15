@@ -111,6 +111,20 @@ export const t = (key: string, fallback?: string, params?: I18nParams) => transl
 /** Idioma activo en este momento, fuera de React (p. ej. el tour de bienvenida). */
 export const getLanguage = () => state.lang
 
+/** Se resuelve cuando ya se ha intentado cargar el diccionario del idioma (ready). Para lo que
+ * fija sus textos una sola vez al crearse, como el tour de bienvenida: si arrancase antes, se
+ * quedaría con los textos de respaldo en español aunque la cuenta esté en inglés. */
+export function whenI18nReady(): Promise<void> {
+  if (state.ready) return Promise.resolve()
+  return new Promise((resolve) => {
+    const unsubscribe = subscribe(() => {
+      if (!state.ready) return
+      unsubscribe()
+      resolve()
+    })
+  })
+}
+
 /** Hook de i18n: { t, lang, languages, ready, setLanguage }. Re-renderiza al cambiar de idioma. */
 export function useI18n() {
   const s = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)

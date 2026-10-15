@@ -81,3 +81,14 @@
 .driver-popover-arrow-side-right.driver-popover-arrow {
   border-right-color: #0c1220 !important;
 }
+
+/* Tour de bienvenida: anillo que late alrededor del enlace que hay que pulsar (paso "Entra en
+   Club", lib/onboarding/tour.ts). */
+@keyframes tour-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(40, 240, 224, 0.55); }
+  100% { box-shadow: 0 0 0 12px rgba(40, 240, 224, 0); }
+}
+.tour-pulse {
+  border-radius: 9999px;
+  animation: tour-pulse 1.4s ease-out infinite;
+}

@@ -63,7 +63,7 @@ const Header = () => {
           <NavLink
             key={to}
             to={to}
-            id={to === "/app/como-funciona" ? "tour-como-funciona-desktop" : undefined}
+            id={to === "/app/como-funciona" ? "tour-como-funciona-desktop" : to === "/app/explorar" ? "tour-explorar-desktop" : undefined}
             className={({ isActive }) =>
               `relative text-sm font-medium transition-colors ${
                 isActive ? "text-neon-cyan" : "text-white/60 hover:text-white"
@@ -100,6 +100,7 @@ const Header = () => {
             del avatar, no desde aquí. */}
         <NavLink
           to="/app/club"
+          id="tour-club-desktop"
           className={({ isActive }) =>
             `flex items-center gap-1.5 text-sm font-medium transition-colors ${
               isActive ? "text-neon-cyan" : hasFeature(user, "monthlyPicks") ? "text-white/60 hover:text-white" : "text-white/35 hover:text-white/55"

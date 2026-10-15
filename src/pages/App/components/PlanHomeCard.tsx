@@ -23,7 +23,7 @@ const PlanHomeCard = ({ situations }: { situations: PlanSituation[] }) => {
   const active = situations.find((s) => s.id === activeId) ?? situations[0]
 
   return (
-    <section className="rounded-2xl border border-neon-cyan/30 bg-neon-cyan/[0.04] p-4 sm:p-5">
+    <section id="tour-plan-home" className="rounded-2xl border border-neon-cyan/30 bg-neon-cyan/[0.04] p-4 sm:p-5">
       {/* Sin "Ver todo" arriba: el enlace "Ver los N clips de este foco" de abajo ya lleva a Club. */}
       <h2 className="mb-3 text-sm font-bold uppercase tracking-[0.12em] text-white">
         {t("inicio.section.monthly-pick", "El plan del mes")}
