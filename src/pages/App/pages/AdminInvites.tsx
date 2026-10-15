@@ -9,6 +9,8 @@ import {
   listInviteRequests,
   deleteInviteRequest,
   sendInviteTestEmails,
+  sendBetaEmailsTest,
+  sendMasterclassNotice,
   type InviteCode,
   type InviteStatus,
   type InviteRequestItem,
@@ -126,6 +128,11 @@ const AdminInvites = () => {
   const [inviteTestTo, setInviteTestTo] = useState("")
   const [inviteTestBusy, setInviteTestBusy] = useState(false)
   const [inviteTestMsg, setInviteTestMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  // Aviso de masterclass: `masterclassCount` != null = diálogo de confirmación abierto.
+  const [masterclassCount, setMasterclassCount] = useState<number | null>(null)
+  const [masterclassBusy, setMasterclassBusy] = useState(false)
+  const [masterclassMsg, setMasterclassMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   const emails = parseEmails(raw)
 
@@ -267,21 +274,56 @@ const AdminInvites = () => {
     }
   }
 
-  const sendInviteTest = async () => {
+  // `after`: los emails de después de activar la cuenta (encuestas, día 13 y masterclass); si
+  // no, la invitación y los dos recordatorios.
+  const sendInviteTest = async (after: boolean) => {
     const to = inviteTestTo.trim().toLowerCase()
     if (!to.includes("@") || inviteTestBusy) return
     setInviteTestBusy(true)
     setInviteTestMsg(null)
     try {
-      await sendInviteTestEmails(to, inviteLang)
+      if (after) await sendBetaEmailsTest(to, inviteLang)
+      else await sendInviteTestEmails(to, inviteLang)
       setInviteTestMsg({
         ok: true,
-        text: t("admin-invites.test.sent", "Enviados a {email}: la invitación y los dos recordatorios, con un código de prueba. No se ha enviado a nadie más.", { email: to }),
+        text: after
+          ? t("admin-invites.test.sent-after", "Enviados a {email}: las encuestas de los días 4 y 12, el email del día 13 y el aviso de masterclass. No se ha enviado a nadie más.", { email: to })
+          : t("admin-invites.test.sent", "Enviados a {email}: la invitación y los dos recordatorios, con un código de prueba. No se ha enviado a nadie más.", { email: to }),
       })
     } catch (err) {
       setInviteTestMsg({ ok: false, text: err instanceof Error ? err.message : t("admin-invites.announce.error", "No se pudo enviar el email.") })
     } finally {
       setInviteTestBusy(false)
+    }
+  }
+
+  // Aviso de masterclass: primero se pide cuántos lo recibirían (sin enviar) y se confirma.
+  const prepareMasterclass = async () => {
+    if (masterclassBusy) return
+    setMasterclassBusy(true)
+    setMasterclassMsg(null)
+    try {
+      const res = await sendMasterclassNotice(true)
+      setMasterclassCount(res.count)
+    } catch (err) {
+      setMasterclassMsg({ ok: false, text: err instanceof Error ? err.message : t("admin-invites.announce.error", "No se pudo enviar el email.") })
+    } finally {
+      setMasterclassBusy(false)
+    }
+  }
+
+  const sendMasterclassForReal = async () => {
+    if (masterclassBusy) return
+    setMasterclassBusy(true)
+    try {
+      const res = await sendMasterclassNotice(false)
+      setMasterclassCount(null)
+      setMasterclassMsg({ ok: true, text: t("admin-invites.masterclass.sent", "Aviso enviado a {count} personas.", { count: res.count }) })
+    } catch (err) {
+      setMasterclassCount(null)
+      setMasterclassMsg({ ok: false, text: err instanceof Error ? err.message : t("admin-invites.announce.error", "No se pudo enviar el email.") })
+    } finally {
+      setMasterclassBusy(false)
     }
   }
 
@@ -389,7 +431,7 @@ const AdminInvites = () => {
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
           <p className="text-sm font-medium text-white">{t("admin-invites.test.title", "Envío de prueba")}</p>
           <p className="mt-1 text-xs text-white/50">
-            {t("admin-invites.test.help", "Manda la invitación y los dos recordatorios (a los 3 y a los 6 días), en el idioma elegido arriba, solo a esta dirección. Lleva un código de prueba que no sirve para registrarse.")}
+            {t("admin-invites.test.help", "Solo a esta dirección y en el idioma elegido arriba. «Enviar prueba» manda la invitación y los dos recordatorios (a los 3 y a los 6 días), con un código que no sirve para registrarse. El otro botón manda las encuestas de los días 4 y 12, el email del día 13 y el aviso de masterclass.")}
           </p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <input
@@ -399,18 +441,73 @@ const AdminInvites = () => {
               placeholder={t("admin-invites.test.placeholder", "tu@email.com")}
               className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
             />
+          </div>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
             <button
-              onClick={sendInviteTest}
+              onClick={() => sendInviteTest(false)}
               disabled={!inviteTestTo.includes("@") || inviteTestBusy}
-              className="shrink-0 rounded-lg border border-neon-cyan/40 px-4 py-2 text-sm font-semibold text-neon-cyan transition hover:bg-neon-cyan/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-neon-cyan/40 px-4 py-2 text-sm font-semibold text-neon-cyan transition hover:bg-neon-cyan/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {inviteTestBusy ? t("common.sending", "Enviando...") : t("admin-invites.test.cta", "Enviar prueba")}
+            </button>
+            <button
+              onClick={() => sendInviteTest(true)}
+              disabled={!inviteTestTo.includes("@") || inviteTestBusy}
+              className="rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t("admin-invites.test.cta-after", "Probar encuestas, día 13 y masterclass")}
             </button>
           </div>
           {inviteTestMsg && (
             <p className={`mt-2 text-xs ${inviteTestMsg.ok ? "text-neon-cyan" : "text-red-300"}`}>{inviteTestMsg.text}</p>
           )}
         </div>
+
+        {/* Aviso de masterclass: envío único y real, a todos los usuarios con acceso. */}
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <p className="text-sm font-medium text-white">{t("admin-invites.masterclass.title", "Aviso de masterclass nueva")}</p>
+          <p className="mt-1 text-xs text-white/50">
+            {t("admin-invites.masterclass.help", "Cuando se publique una masterclass, avisa por email a todos los usuarios con acceso, cada uno en su idioma. Antes de enviar te dice a cuántas personas llegará.")}
+          </p>
+          <button
+            onClick={prepareMasterclass}
+            disabled={masterclassBusy}
+            className="mt-3 flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Megaphone className="h-4 w-4" />
+            {t("admin-invites.masterclass.cta", "Avisar de la masterclass")}
+          </button>
+          {masterclassMsg && (
+            <p className={`mt-2 text-xs ${masterclassMsg.ok ? "text-neon-cyan" : "text-red-300"}`}>{masterclassMsg.text}</p>
+          )}
+        </div>
+
+        {masterclassCount !== null && (
+          <Dialog title={t("admin-invites.masterclass.title", "Aviso de masterclass nueva")} onClose={() => setMasterclassCount(null)}>
+            <p className="mt-3 text-sm text-white">
+              {t("admin-invites.masterclass.confirm", "Vas a enviar el aviso a {count} personas.", { count: masterclassCount })}
+            </p>
+            <p className="mt-2 text-sm text-amber-300">
+              {t("admin-invites.masterclass.warning", "Es un envío real y no se puede deshacer. Haz antes la prueba a tu email.")}
+            </p>
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
+              <button
+                onClick={() => setMasterclassCount(null)}
+                disabled={masterclassBusy}
+                className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-white/70 transition hover:text-white disabled:opacity-50"
+              >
+                {t("common.cancel", "Cancelar")}
+              </button>
+              <button
+                onClick={sendMasterclassForReal}
+                disabled={masterclassBusy || masterclassCount === 0}
+                className="rounded-lg bg-neon-cyan px-4 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {masterclassBusy ? t("common.sending", "Enviando...") : t("admin-invites.announce.confirm-cta", "Sí, enviar ahora")}
+              </button>
+            </div>
+          </Dialog>
+        )}
       </div>
 
       {/* Solicitudes pendientes: gente que ha pedido acceso (landing o "pedir otro código").

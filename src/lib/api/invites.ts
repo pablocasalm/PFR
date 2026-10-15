@@ -85,3 +85,13 @@ export const sendAnnounceTest = (testTo: string) =>
 /** POST /api/admin/invite-requests/announce (Admin) → envío real del email de acceso anticipado a esas solicitudes. */
 export const sendAnnounce = (ids: number[]) =>
   apiPost<AnnounceResult>("/api/admin/invite-requests/announce", { ids })
+
+/** POST /api/admin/beta-emails/test (Admin) → los emails de después de activar la cuenta
+ * (encuestas de los días 4 y 12, día 13 y aviso de masterclass), solo a esa dirección. */
+export const sendBetaEmailsTest = (to: string, language: string) =>
+  apiPost<{ ok: boolean; sent: number }>("/api/admin/beta-emails/test", { to, language })
+
+/** POST /api/admin/beta-emails/masterclass (Admin) → aviso de masterclass nueva a todos los
+ * usuarios con acceso. Con `dryRun` solo devuelve a cuántos llegaría. */
+export const sendMasterclassNotice = (dryRun: boolean) =>
+  apiPost<{ ok: boolean; dryRun: boolean; count: number }>("/api/admin/beta-emails/masterclass", { dryRun })
