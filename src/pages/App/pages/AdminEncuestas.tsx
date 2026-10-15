@@ -26,13 +26,20 @@ const AdminEncuestas = () => {
   const [exporting, setExporting] = useState(false)
   const survey = SURVEYS[surveyId]
 
+  // Solo al entrar y al cambiar de encuesta. Ojo: `t` NO puede ir en las dependencias — useI18n
+  // devuelve una función nueva en cada render, y con ella aquí la petición se repetía sin fin
+  // (cada respuesta provoca otro render, que vuelve a pedir) — §15 oct, ~1.800 peticiones.
   useEffect(() => {
+    let cancelled = false
     setRows(null)
     setError(null)
     getSurveyResponses(surveyId)
-      .then(setRows)
-      .catch((err) => setError(err instanceof Error ? err.message : t("admin-surveys.error", "No se pudieron cargar las respuestas.")))
-  }, [surveyId, t])
+      .then((data) => !cancelled && setRows(data))
+      .catch((err) => !cancelled && setError(err instanceof Error ? err.message : "No se pudieron cargar las respuestas."))
+    return () => {
+      cancelled = true
+    }
+  }, [surveyId])
 
   const answered = rows?.filter((r) => r.submittedAtUtc) ?? []
   const pending = rows?.filter((r) => !r.submittedAtUtc) ?? []
