@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Navigate, useNavigate, useSearchParams, useLocation } from "react-router-dom"
 import { useAuth } from "./store"
 import { requestInvite, getInviteInfo } from "../api/invites"
+import { ApiError } from "../api/client"
 import LegalLinks, { LegalLink } from "../ui/LegalLinks"
 import { requestPasswordReset } from "../api/auth"
 import { useI18n, setLanguage } from "../i18n/store"
@@ -36,6 +37,9 @@ const LoginPage = () => {
   // El enlace de invitación solo lleva el código (el email no viaja en la URL): se le pregunta
   // al backend a qué email pertenece para dejarlo ya escrito. Si falla (código gastado o sin
   // red), la persona lo escribe a mano y el registro lo valida igual.
+  // Si la invitación caducó (7 días sin crear la contraseña), responde 410 y se avisa antes de
+  // que la persona rellene un formulario que no va a funcionar.
+  const [inviteExpired, setInviteExpired] = useState(false)
   useEffect(() => {
     if (!inviteFromUrl || emailFromUrl) return
     let cancelled = false
@@ -45,7 +49,9 @@ const LoginPage = () => {
         setEmail((current) => current || info.email)
         setEmailOnly((current) => current || info.email)
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (!cancelled && err instanceof ApiError && err.status === 410) setInviteExpired(true)
+      })
     return () => {
       cancelled = true
     }
@@ -174,6 +180,17 @@ const LoginPage = () => {
           </form>
         ) : (
           <form onSubmit={submit} className="mt-7 space-y-3">
+            {mode === "register" && inviteExpired && inviteCode.trim() === inviteFromUrl && (
+              <div className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+                <p className="font-semibold text-amber-200">{t("login.invite-expired.title", "Esta invitación ha caducado")}</p>
+                <p className="mt-1">
+                  {t(
+                    "login.invite-expired.text",
+                    "Han pasado los 7 días para crear la contraseña. Sigues en la lista de espera: si quedan plazas, o en el lanzamiento público, te avisaremos. Si crees que es un error, escríbenos a hello@padelfilmroom.com.",
+                  )}
+                </p>
+              </div>
+            )}
             {mode === "register" && (
               <>
                 <input

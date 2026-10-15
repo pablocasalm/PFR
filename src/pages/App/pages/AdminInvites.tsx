@@ -8,7 +8,9 @@ import {
   deleteInvite,
   listInviteRequests,
   deleteInviteRequest,
+  sendInviteTestEmails,
   type InviteCode,
+  type InviteStatus,
   type InviteRequestItem,
   type BillingPlan,
 } from "../../../lib/api/invites"
@@ -42,7 +44,10 @@ const fmt = (iso: string | null, lang: string): string => {
   return d.toLocaleString(lang === "en" ? "en-US" : "es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
 }
 
-type Filter = "all" | "pending" | "used"
+type Filter = "all" | "pending" | "used" | "expired"
+
+// Por si la API todavía no manda el estado (servidor sin publicar): usado o pendiente.
+const statusOf = (c: InviteCode): InviteStatus => c.status ?? (c.used ? "activated" : "pending")
 type InviteLang = "es" | "en"
 
 /** Selector Español / English: el mismo para las invitaciones manuales y para "Invitar". */
@@ -116,6 +121,11 @@ const AdminInvites = () => {
   const [announceBusy, setAnnounceBusy] = useState(false)
   const [announceMsg, setAnnounceMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [testTo, setTestTo] = useState("")
+
+  // Envío de prueba de la invitación y los dos recordatorios, solo a una dirección.
+  const [inviteTestTo, setInviteTestTo] = useState("")
+  const [inviteTestBusy, setInviteTestBusy] = useState(false)
+  const [inviteTestMsg, setInviteTestMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   const emails = parseEmails(raw)
 
@@ -257,6 +267,31 @@ const AdminInvites = () => {
     }
   }
 
+  const sendInviteTest = async () => {
+    const to = inviteTestTo.trim().toLowerCase()
+    if (!to.includes("@") || inviteTestBusy) return
+    setInviteTestBusy(true)
+    setInviteTestMsg(null)
+    try {
+      await sendInviteTestEmails(to, inviteLang)
+      setInviteTestMsg({
+        ok: true,
+        text: t("admin-invites.test.sent", "Enviados a {email}: la invitación y los dos recordatorios, con un código de prueba. No se ha enviado a nadie más.", { email: to }),
+      })
+    } catch (err) {
+      setInviteTestMsg({ ok: false, text: err instanceof Error ? err.message : t("admin-invites.announce.error", "No se pudo enviar el email.") })
+    } finally {
+      setInviteTestBusy(false)
+    }
+  }
+
+  // Quien dejó caducar su invitación pierde la plaza de esta beta, no su sitio en la lista: si
+  // quedan plazas se le puede invitar de nuevo (código nuevo, otros 7 días).
+  const reinvite = async (c: InviteCode) => {
+    if (!window.confirm(t("admin-invites.confirm.reinvite", "¿Enviar una invitación nueva a {email}? Tendrá otros 7 días para crear su contraseña.", { email: c.email }))) return
+    await inviteFromRequest(c.email, c.language === "en" ? "en" : "es")
+  }
+
   const remove = async (c: InviteCode) => {
     if (!window.confirm(t("admin-invites.confirm.delete-code", "¿Eliminar el código de {email}?", { email: c.email }))) return
     try {
@@ -277,11 +312,13 @@ const AdminInvites = () => {
     }
   }
 
-  const usedCount = codes.filter((c) => c.used).length
-  const pendingCount = codes.length - usedCount
+  const usedCount = codes.filter((c) => statusOf(c) === "activated").length
+  const pendingCount = codes.filter((c) => statusOf(c) === "pending").length
+  const expiredCount = codes.filter((c) => statusOf(c) === "expired").length
   const filtered = useMemo(() => {
-    if (filter === "pending") return codes.filter((c) => !c.used)
-    if (filter === "used") return codes.filter((c) => c.used)
+    if (filter === "pending") return codes.filter((c) => statusOf(c) === "pending")
+    if (filter === "used") return codes.filter((c) => statusOf(c) === "activated")
+    if (filter === "expired") return codes.filter((c) => statusOf(c) === "expired")
     return codes
   }, [codes, filter])
 
@@ -347,6 +384,33 @@ const AdminInvites = () => {
         >
           {sending ? t("common.sending", "Enviando...") : t("admin-invites.generate-cta", "Generar y enviar ({count})", { count: emails.length })}
         </button>
+
+        {/* Prueba: invitación + recordatorios a una sola dirección, en el idioma elegido arriba. */}
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <p className="text-sm font-medium text-white">{t("admin-invites.test.title", "Envío de prueba")}</p>
+          <p className="mt-1 text-xs text-white/50">
+            {t("admin-invites.test.help", "Manda la invitación y los dos recordatorios (a los 3 y a los 6 días), en el idioma elegido arriba, solo a esta dirección. Lleva un código de prueba que no sirve para registrarse.")}
+          </p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <input
+              type="email"
+              value={inviteTestTo}
+              onChange={(e) => setInviteTestTo(e.target.value)}
+              placeholder={t("admin-invites.test.placeholder", "tu@email.com")}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
+            />
+            <button
+              onClick={sendInviteTest}
+              disabled={!inviteTestTo.includes("@") || inviteTestBusy}
+              className="shrink-0 rounded-lg border border-neon-cyan/40 px-4 py-2 text-sm font-semibold text-neon-cyan transition hover:bg-neon-cyan/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {inviteTestBusy ? t("common.sending", "Enviando...") : t("admin-invites.test.cta", "Enviar prueba")}
+            </button>
+          </div>
+          {inviteTestMsg && (
+            <p className={`mt-2 text-xs ${inviteTestMsg.ok ? "text-neon-cyan" : "text-red-300"}`}>{inviteTestMsg.text}</p>
+          )}
+        </div>
       </div>
 
       {/* Solicitudes pendientes: gente que ha pedido acceso (landing o "pedir otro código").
@@ -601,6 +665,7 @@ const AdminInvites = () => {
           <button onClick={() => setFilter("all")} className={tabCls(filter === "all")}>{t("explorar.type.all", "Todos")} ({codes.length})</button>
           <button onClick={() => setFilter("pending")} className={tabCls(filter === "pending")}>{t("admin-invites.pending", "Pendientes")} ({pendingCount})</button>
           <button onClick={() => setFilter("used")} className={tabCls(filter === "used")}>{t("admin-invites.used", "Usados")} ({usedCount})</button>
+          <button onClick={() => setFilter("expired")} className={tabCls(filter === "expired")}>{t("admin-invites.expired", "Caducados")} ({expiredCount})</button>
         </div>
 
         {loading ? (
@@ -628,14 +693,25 @@ const AdminInvites = () => {
                     <td className="px-4 py-3 text-white/90">{c.email}</td>
                     <td className="px-4 py-3 font-mono font-semibold tracking-wide text-neon-cyan">{c.code}</td>
                     <td className="px-4 py-3">
-                      {c.used ? (
+                      {statusOf(c) === "activated" ? (
                         <span className="rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-2 py-0.5 text-[11px] font-semibold text-neon-cyan">
                           {t("admin-invites.used-col", "Usado")}
+                        </span>
+                      ) : statusOf(c) === "expired" ? (
+                        <span className="rounded-full border border-red-400/40 bg-red-400/10 px-2 py-0.5 text-[11px] font-semibold text-red-300">
+                          {t("admin-invites.expired-single", "Caducado")}
                         </span>
                       ) : (
                         <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
                           {t("admin-invites.pending-single", "Pendiente")}
                         </span>
+                      )}
+                      {/* Pendientes con caducidad: hasta cuándo y cuántos recordatorios llevan. */}
+                      {statusOf(c) === "pending" && c.expiresAtUtc && (
+                        <p className="mt-1 whitespace-nowrap text-[11px] text-white/45">
+                          {t("admin-invites.expires-on", "Caduca: {date}", { date: fmt(c.expiresAtUtc, lang) })}
+                          {c.remindersSent > 0 && ` · ${t("admin-invites.reminders-sent", "{count} recordatorio(s)", { count: c.remindersSent })}`}
+                        </p>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -655,6 +731,16 @@ const AdminInvites = () => {
                           {copied === c.link ? <Check className="h-3.5 w-3.5 text-neon-cyan" /> : <Copy className="h-3.5 w-3.5" />}
                           {copied === c.link ? t("clip.copied-short", "Copiado") : t("admin-invites.link", "Link")}
                         </button>
+                        {statusOf(c) === "expired" && (
+                          <button
+                            onClick={() => reinvite(c)}
+                            disabled={invitingEmail === c.email}
+                            className="flex items-center gap-1.5 whitespace-nowrap text-xs text-neon-cyan/80 transition hover:text-neon-cyan disabled:opacity-50"
+                          >
+                            <Send className="h-3.5 w-3.5" />
+                            {t("admin-invites.reinvite", "Volver a invitar")}
+                          </button>
+                        )}
                         <button
                           onClick={() => remove(c)}
                           className="flex items-center gap-1.5 text-xs text-white/50 transition hover:text-red-400"

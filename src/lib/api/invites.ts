@@ -9,7 +9,8 @@ export const requestInvite = (email: string, language: string) =>
   apiPost<{ ok: boolean; message?: string }>("/api/invite-requests", { email, language })
 
 /** GET /api/invites/{code} (público) → email e idioma de una invitación sin usar. La pantalla
- * de registro lo usa para rellenar el email: el enlace de invitación ya no lo lleva en la URL. */
+ * de registro lo usa para rellenar el email: el enlace de invitación ya no lo lleva en la URL.
+ * Si la invitación ha caducado responde 410 (ApiError con status 410). */
 export const getInviteInfo = (code: string) =>
   apiGet<{ email: string; language: string }>(`/api/invites/${encodeURIComponent(code)}`)
 
@@ -31,10 +32,23 @@ export type InviteCode = {
   used: boolean
   usedAtUtc: string | null
   createdAtUtc: string
+  /** Hasta cuándo se puede canjear (las de la lista de espera: 7 días). Null = no caduca. */
+  expiresAtUtc: string | null
+  /** "activated" (ya creó su cuenta), "pending" o "expired" (7 días sin crear la contraseña). */
+  status: InviteStatus
+  /** Recordatorios enviados (0, 1 o 2: a los 3 y a los 6 días). */
+  remindersSent: number
   planType: BillingPlan
   language: string
   link: string
 }
+
+export type InviteStatus = "activated" | "pending" | "expired"
+
+/** POST /api/admin/invites/test-emails (Admin) → la invitación y los dos recordatorios, con un
+ * código de prueba, solo a esa dirección. No crea ninguna invitación. */
+export const sendInviteTestEmails = (to: string, language: string) =>
+  apiPost<{ ok: boolean; sent: number }>("/api/admin/invites/test-emails", { to, language })
 
 /** GET /api/admin/invites (Admin) → todos los códigos generados, con su estado. */
 export const listInvites = () => apiGet<InviteCode[]>("/api/admin/invites")
