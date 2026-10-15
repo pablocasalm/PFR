@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
 import { Check, ClipboardList } from "lucide-react"
 import { useI18n } from "../../../lib/i18n/store"
 import { ApiError } from "../../../lib/api/client"
-import { getSurveyStatus, submitSurvey, type SurveyAnswers } from "../../../lib/api/surveys"
-import { SURVEYS, isAnswered, isRequired, isVisible, type SurveyQuestion } from "../surveys/definitions"
+import { getSurveyStatus, submitSurvey, type SurveyAnswers, type SurveyConsents } from "../../../lib/api/surveys"
+import { COACH_EXTRA, SURVEYS, isAnswered, isRequired, isVisible, type SurveyDefinition, type SurveyQuestion } from "../surveys/definitions"
 
 /**
  * Encuesta de la beta (/app/encuesta/:surveyId), a la que se llega desde el email del día 4 o del
@@ -43,7 +43,7 @@ const Question = ({
   const value = answers[q.id]
   const required = isRequired(q, answers)
   const title = (
-    <span className="block font-display text-base font-bold leading-snug text-white">
+    <span className={`block leading-snug ${q.followUp ? "text-sm font-medium text-white/80" : "font-display text-base font-bold text-white"}`}>
       {index > 0 && <span className="mr-2 text-neon-cyan">{index}.</span>}
       {t(...q.label)}
       {!required && <span className="ml-2 text-xs font-normal text-white/40">{t("survey.optional", "(opcional)")}</span>}
@@ -51,19 +51,53 @@ const Question = ({
   )
 
   return (
-    <fieldset className="space-y-3">
+    <fieldset className="space-y-3" data-question={q.id}>
       {q.intro && <p className="text-sm text-white/60">{t(...q.intro)}</p>}
       <legend className="contents">{title}</legend>
       {q.help && <p className="text-xs leading-relaxed text-white/50">{t(...q.help)}</p>}
 
-      {q.type === "single" && (
+      {q.type === "single" && q.inline && (
+        // Escala (1 a 5): en fila, un botón por número.
+        <div className="flex gap-2" role="radiogroup">
+          {q.options!.map((o) => {
+            const on = value === o.value
+            return (
+              <button
+                key={o.value}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => onChange(q.id, o.value)}
+                className={`h-12 flex-1 rounded-xl border text-base font-bold transition ${
+                  on ? "border-neon-cyan bg-neon-cyan text-midnight" : "border-white/10 bg-white/[0.02] text-white/80 hover:border-white/25"
+                }`}
+              >
+                {t(...o.label)}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {q.type === "single" && !q.inline && (
         <div className="space-y-2" role="radiogroup">
           {q.options!.map((o) => {
             const on = value === o.value
             return (
-              <button key={o.value} type="button" role="radio" aria-checked={on} onClick={() => onChange(q.id, o.value)} className={optionCls(on)}>
-                <Marker on={on} square={false} />
-                {t(...o.label)}
+              <button key={o.value} type="button" role="radio" aria-checked={on} onClick={() => onChange(q.id, o.value)} className={`${optionCls(on)} ${o.description ? "items-start" : ""}`}>
+                <span className={o.description ? "mt-0.5" : ""}>
+                  <Marker on={on} square={false} />
+                </span>
+                {o.description ? (
+                  // Plan (día 12): nombre, descripción y precio, como pide la especificación.
+                  <span className="min-w-0">
+                    <span className="block font-semibold text-white">{t(...o.label)}</span>
+                    <span className="mt-1 block text-xs leading-relaxed text-white/60">{t(...o.description)}</span>
+                    {o.price && <span className="mt-1 block text-xs font-semibold text-neon-cyan">{t(...o.price)}</span>}
+                  </span>
+                ) : (
+                  t(...o.label)
+                )}
               </button>
             )
           })}
@@ -105,44 +139,88 @@ const Question = ({
   )
 }
 
+/** Preguntas visibles de una encuesta, con su número (las de seguimiento no llevan). */
+const QuestionList = ({ def, answers, onChange }: { def: SurveyDefinition; answers: SurveyAnswers; onChange: (id: string, v: SurveyAnswers[string] | undefined) => void }) => {
+  const numbered = def.questions.filter((q) => !q.followUp)
+  return (
+    <div className="space-y-8">
+      {def.questions
+        .filter((q) => isVisible(q, answers))
+        .map((q) => (
+          <Question key={q.id} q={q} index={q.followUp ? 0 : numbered.indexOf(q) + 1} answers={answers} onChange={onChange} />
+        ))}
+    </div>
+  )
+}
+
+const Check2 = ({ checked, onChange, children }: { checked: boolean; onChange: (v: boolean) => void; children: ReactNode }) => (
+  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-sm text-white/85">
+    <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#28f0e0]" />
+    <span>{children}</span>
+  </label>
+)
+
+const setAnswer = (prev: SurveyAnswers, id: string, value: SurveyAnswers[string] | undefined) => {
+  const next = { ...prev }
+  if (value === undefined || (Array.isArray(value) && value.length === 0)) delete next[id]
+  else next[id] = value
+  return next
+}
+
+/** Solo lo que se ve: si una pregunta de seguimiento se ocultó al cambiar de respuesta, no va. */
+const visibleAnswers = (def: SurveyDefinition, answers: SurveyAnswers) => {
+  const out: SurveyAnswers = {}
+  for (const q of def.questions) if (isVisible(q, answers) && isAnswered(answers[q.id])) out[q.id] = answers[q.id]
+  return out
+}
+
+const missingIn = (def: SurveyDefinition, answers: SurveyAnswers) =>
+  def.questions.filter((q) => isVisible(q, answers) && isRequired(q, answers) && !isAnswered(answers[q.id]))
+
 const Encuesta = () => {
   const { surveyId = "" } = useParams()
   const { t } = useI18n()
   const survey = SURVEYS[surveyId]
   const [status, setStatus] = useState<"loading" | "open" | "submitted" | "done">("loading")
   const [answers, setAnswers] = useState<SurveyAnswers>({})
+  // Día 12: bloque de Coach (si le toca) y las tres autorizaciones, sin marcar de partida.
+  const [showCoach, setShowCoach] = useState(false)
+  const [coachAnswers, setCoachAnswers] = useState<SurveyAnswers>({})
+  const [consents, setConsents] = useState<SurveyConsents>({ publishText: false, publishName: false, contactVideo: false })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!survey) return
     getSurveyStatus(survey.id)
-      .then((s) => setStatus(s.submitted ? "submitted" : "open"))
+      .then((s) => {
+        setShowCoach(!!s.coachExtra)
+        setStatus(s.submitted ? "submitted" : "open")
+      })
       .catch(() => setStatus("open"))
   }, [survey])
 
-  const visible = useMemo(() => (survey ? survey.questions.filter((q) => isVisible(q, answers)) : []), [survey, answers])
-  const missing = visible.filter((q) => isRequired(q, answers) && !isAnswered(answers[q.id]))
+  const missing = useMemo(
+    () => (survey ? [...missingIn(survey, answers), ...(showCoach ? missingIn(COACH_EXTRA, coachAnswers) : [])] : []),
+    [survey, answers, showCoach, coachAnswers],
+  )
+  // Las autorizaciones solo se piden si ha escrito el mensaje para otros jugadores.
+  const askConsents = !!survey?.consentsAfter && isAnswered(answers[survey.consentsAfter])
 
   if (!survey) return <Navigate to="/app/inicio" replace />
 
-  const onChange = (id: string, value: SurveyAnswers[string] | undefined) =>
-    setAnswers((prev) => {
-      const next = { ...prev }
-      if (value === undefined || (Array.isArray(value) && value.length === 0)) delete next[id]
-      else next[id] = value
-      return next
-    })
+  const onChange = (id: string, value: SurveyAnswers[string] | undefined) => setAnswers((prev) => setAnswer(prev, id, value))
+  const onCoachChange = (id: string, value: SurveyAnswers[string] | undefined) => setCoachAnswers((prev) => setAnswer(prev, id, value))
 
   const send = async () => {
     if (busy || missing.length > 0) return
     setBusy(true)
     setError(null)
-    // Solo lo que se ve: si cambió una respuesta y una pregunta de seguimiento se ocultó, no va.
-    const payload: SurveyAnswers = {}
-    for (const q of visible) if (isAnswered(answers[q.id])) payload[q.id] = answers[q.id]
     try {
-      await submitSurvey(survey.id, payload)
+      await submitSurvey(survey.id, visibleAnswers(survey, answers), {
+        coachAnswers: showCoach ? visibleAnswers(COACH_EXTRA, coachAnswers) : undefined,
+        consents: askConsents ? consents : undefined,
+      })
       setStatus("done")
       window.scrollTo({ top: 0 })
     } catch (err) {
@@ -195,18 +273,37 @@ const Encuesta = () => {
             </div>
           </div>
 
-          <div className="space-y-8">
-            {visible.map((q) => (
-              <Question
-                key={q.id}
-                q={q}
-                // Las preguntas de seguimiento no llevan número propio.
-                index={q.id.includes("_detalle") || q.id.includes("_motivo") ? 0 : survey.questions.filter((x) => !x.id.includes("_detalle") && !x.id.includes("_motivo")).indexOf(q) + 1}
-                answers={answers}
-                onChange={onChange}
-              />
-            ))}
-          </div>
+          <QuestionList def={survey} answers={answers} onChange={onChange} />
+
+          {/* Autorizaciones del testimonio: tres casillas independientes, sin marcar. El texto
+              del "detalle" va solo encima de la del vídeo (especificación, día 12). */}
+          {askConsents && (
+            <section className="mt-8 space-y-3">
+              <h2 className="text-sm font-bold text-white">{t("survey.d12.consents.title", "¿Podemos usar lo que has escrito?")}</h2>
+              <p className="text-xs text-white/50">{t("survey.d12.consents.help", "Marca solo lo que quieras. Puedes no marcar nada.")}</p>
+              <Check2 checked={consents.publishText} onChange={(v) => setConsents((c) => ({ ...c, publishText: v }))}>
+                {t("survey.d12.consent.publish-text", "Podéis publicar mi texto, sin cambiar el sentido.")}
+              </Check2>
+              <Check2 checked={consents.publishName} onChange={(v) => setConsents((c) => ({ ...c, publishName: v }))}>
+                {t("survey.d12.consent.publish-name", "Podéis mostrar mi nombre.")}
+              </Check2>
+              <p className="pt-2 text-xs leading-relaxed text-white/60">
+                {t("survey.d12.consent.video-help", "Si te animas a grabar un vídeo vertical de 20–30 segundos contando qué opinas de PFR, tendremos un detalle contigo.")}
+              </p>
+              <Check2 checked={consents.contactVideo} onChange={(v) => setConsents((c) => ({ ...c, contactVideo: v }))}>
+                {t("survey.d12.consent.contact-video", "Podéis contactarme para grabar un vídeo vertical de 20–30 segundos.")}
+              </Check2>
+            </section>
+          )}
+
+          {/* Día 12 con Coach: el bloque extra, en el mismo formulario. */}
+          {showCoach && (
+            <section className="mt-10 border-t border-white/10 pt-8">
+              <h2 className="font-display text-xl font-bold text-white">{t(...COACH_EXTRA.title)}</h2>
+              <p className="mb-6 mt-1 text-sm text-white/60">{t(...COACH_EXTRA.subtitle)}</p>
+              <QuestionList def={COACH_EXTRA} answers={coachAnswers} onChange={onCoachChange} />
+            </section>
+          )}
 
           {error && <p className="mt-6 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
           <div className="mt-8 flex flex-wrap items-center gap-3">

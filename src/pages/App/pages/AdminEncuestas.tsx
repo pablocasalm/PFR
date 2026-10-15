@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { ClipboardList, Download } from "lucide-react"
 import { useI18n } from "../../../lib/i18n/store"
 import { downloadSurveyCsv, getSurveyResponses, type AdminSurveyResponse } from "../../../lib/api/surveys"
-import { SURVEYS } from "../surveys/definitions"
+import { ADMIN_SURVEYS as SURVEYS } from "../surveys/definitions"
 
 /**
  * AdminEncuestas — respuestas de las encuestas de la beta, por persona (solo Admin). Para que
@@ -79,7 +79,7 @@ const AdminEncuestas = () => {
           <select value={surveyId} onChange={(e) => setSurveyId(e.target.value)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-base text-white sm:text-sm">
             {surveyIds.map((id) => (
               <option key={id} value={id}>
-                {id}
+                {{ d4: "Día 4", d12: "Día 12", coach_extra: "Día 12 · Coach" }[id] ?? id}
               </option>
             ))}
           </select>
@@ -127,6 +127,13 @@ const AdminEncuestas = () => {
                   )
                 })}
             </dl>
+            {r.consentPublishText != null && (
+              <p className="mt-3 text-xs text-white/50">
+                {t("admin-surveys.consents", "Autorizaciones")}: {t("admin-surveys.consent.text", "texto")} {r.consentPublishText ? "✓" : "✗"} ·{" "}
+                {t("admin-surveys.consent.name", "nombre")} {r.consentPublishName ? "✓" : "✗"} · {t("admin-surveys.consent.video", "vídeo")}{" "}
+                {r.consentContactVideo ? "✓" : "✗"}
+              </p>
+            )}
           </li>
         ))}
       </ul>

@@ -7,11 +7,15 @@ export type SurveyAnswers = Record<string, SurveyAnswer>
 
 /** GET /api/surveys/{id} → si ya la ha respondido (solo se responde una vez). */
 export const getSurveyStatus = (surveyId: string) =>
-  apiGet<{ surveyId: string; submitted: boolean; submittedAtUtc: string | null }>(`/api/surveys/${surveyId}`)
+  apiGet<{ surveyId: string; submitted: boolean; submittedAtUtc: string | null; coachExtra?: boolean }>(`/api/surveys/${surveyId}`)
 
-/** POST /api/surveys/{id} → envía las respuestas. 409 si ya estaba respondida. */
-export const submitSurvey = (surveyId: string, answers: SurveyAnswers) =>
-  apiPost<{ ok: boolean }>(`/api/surveys/${surveyId}`, { answers })
+/** Autorizaciones del testimonio (día 12): independientes, sin marcar de partida. */
+export type SurveyConsents = { publishText: boolean; publishName: boolean; contactVideo: boolean }
+
+/** POST /api/surveys/{id} → envía las respuestas (y, en el día 12, el bloque de Coach y las
+ * autorizaciones). 409 si ya estaba respondida. */
+export const submitSurvey = (surveyId: string, answers: SurveyAnswers, extra?: { coachAnswers?: SurveyAnswers; consents?: SurveyConsents }) =>
+  apiPost<{ ok: boolean }>(`/api/surveys/${surveyId}`, { answers, ...extra })
 
 /** Una respuesta tal como la ve el panel de admin. */
 export type AdminSurveyResponse = {
@@ -24,6 +28,9 @@ export type AdminSurveyResponse = {
   sentAtUtc: string | null
   submittedAtUtc: string | null
   answers: Record<string, SurveyAnswer> | null
+  consentPublishText?: boolean | null
+  consentPublishName?: boolean | null
+  consentContactVideo?: boolean | null
 }
 
 /** GET /api/admin/surveys/{id}/responses (Admin). */
