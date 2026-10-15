@@ -25,6 +25,8 @@ const Coach = lazy(() => import("../../pages/App/pages/Coach"))
 const SesionesArchivo = lazy(() => import("../../pages/App/pages/SesionesArchivo"))
 const AdminSesiones = lazy(() => import("../../pages/App/pages/AdminSesiones"))
 const AdminCoach = lazy(() => import("../../pages/App/pages/AdminCoach"))
+const Encuesta = lazy(() => import("../../pages/App/pages/Encuesta"))
+const AdminEncuestas = lazy(() => import("../../pages/App/pages/AdminEncuestas"))
 
 const RequireAuth = lazy(() => import("../../lib/auth/RequireAuth"))
 const RequirePublisher = lazy(() => import("../../lib/auth/RequirePublisher"))
@@ -74,6 +76,10 @@ const router = createBrowserRouter([
       { path: "admin/sesiones", element: withSuspense(<RequirePublisher><AdminSesiones /></RequirePublisher>) },
       { path: "admin/preguntas", element: <Navigate to="/app/admin/sesiones?tab=questions" replace /> },
       { path: "admin/coach", element: withSuspense(<RequireAdmin><AdminCoach /></RequireAdmin>) },
+      { path: "admin/encuestas", element: withSuspense(<RequireAdmin><AdminEncuestas /></RequireAdmin>) },
+      // Encuestas de la beta (email del día 4/12). Sin RequireSubscription: se pueden responder
+      // aunque la prueba haya terminado.
+      { path: "encuesta/:surveyId", element: withSuspense(<Encuesta />) },
       // Club/Coach (§rediseño Club/Coach): ya no van detrás de RequireFeature — se abren a los
       // 3 tiers, y cada pantalla decide sección a sección qué mostrar entero y qué mostrar
       // como escaparate bloqueado con CTA a precios.
