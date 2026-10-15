@@ -64,10 +64,50 @@ const waitForStableElement = (id: string, timeoutMs = 8000) =>
     tick()
   })
 
-/** Vuelve a colocar foco y ventanita un poco después de cada paso, por si la página se ha movido
- * mientras tanto (imágenes que cargan, scroll hasta el elemento). */
-const settle = (tour: Driver) => {
-  for (const ms of [150, 500, 1200]) window.setTimeout(() => tour.isActive() && tour.refresh(), ms)
+/** Elemento de un paso, tal y como lo resuelve driver.js (puede ser id, elemento o función). */
+const stepElement = (step: DriveStep | undefined): Element | null => {
+  const target = step?.element
+  if (!target) return null
+  if (typeof target === "function") return target() ?? null
+  return typeof target === "string" ? document.querySelector(target) : target
+}
+
+/**
+ * Desplaza la página hasta el elemento del paso siguiente ANTES de pasar a él. Si se deja a
+ * driver.js, primero pinta la ventanita donde estaba la anterior, luego desplaza y entonces la
+ * mueve: se ve un salto (§reporte de Pablo, 15 oct). Centrado si cabe; si no, arriba, por debajo
+ * de la cabecera fija. Los elementos fijos (menú, barra inferior) no necesitan desplazamiento.
+ */
+const HEADER_OFFSET = 90
+const scrollToStep = (step: DriveStep | undefined) => {
+  const el = stepElement(step)
+  if (!el || getComputedStyle(el).position === "fixed" || el.closest("header, nav.fixed")) return
+  const r = el.getBoundingClientRect()
+  const visible = r.top >= HEADER_OFFSET && r.bottom <= window.innerHeight - 80
+  if (visible) return
+  const fits = r.height < window.innerHeight - HEADER_OFFSET - 160
+  const top = fits ? r.top + window.scrollY - (window.innerHeight - r.height) / 2 : r.top + window.scrollY - HEADER_OFFSET
+  window.scrollTo({ top: Math.max(0, top) })
+}
+
+/** Pasa al paso siguiente/anterior con la página ya colocada (dos frames para que pinte). */
+const moveWithScroll = (tour: Driver, steps: DriveStep[], direction: 1 | -1) => {
+  const index = tour.getActiveIndex() ?? 0
+  scrollToStep(steps[index + direction])
+  requestAnimationFrame(() => requestAnimationFrame(() => (direction === 1 ? tour.moveNext() : tour.movePrevious())))
+}
+
+/** Si el elemento se ha movido después de señalarlo (algo que terminó de cargar), recoloca foco
+ * y ventanita una sola vez. Si no se ha movido, no toca nada: recolocar "por si acaso" también se
+ * ve como un salto. */
+const fixIfMoved = (tour: Driver, element: Element | undefined) => {
+  if (!element) return
+  const before = element.getBoundingClientRect()
+  window.setTimeout(() => {
+    if (!tour.isActive()) return
+    const after = element.getBoundingClientRect()
+    if (Math.abs(after.top - before.top) > 4 || Math.abs(after.left - before.left) > 4) tour.refresh()
+  }, 700)
 }
 
 // Anillo que late alrededor de "Club" en el paso que invita a pulsarlo (estilo en index.css).
@@ -80,6 +120,13 @@ export function startOnboardingTour(navigate: NavigateFunction) {
 }
 
 function runTour(navigate: NavigateFunction) {
+  // La app desplaza con suavidad (scroll-behavior: smooth en index.css). Durante el tour eso hace
+  // que el elemento siga moviéndose mientras se coloca la ventanita, y se ve un salto: mientras
+  // dure, el desplazamiento es instantáneo. Se restaura al cerrar (onDestroyed).
+  const root = document.documentElement
+  const previousScrollBehavior = root.style.scrollBehavior
+  root.style.scrollBehavior = "auto"
+
   const finish = (tour: Driver) => {
     tour.destroy()
     markOnboardingSeenAndSync()
@@ -94,9 +141,12 @@ function runTour(navigate: NavigateFunction) {
     navigate("/app/club")
     window.scrollTo({ top: 0 })
     await waitForStableElement("tour-club-masterclasses")
-    tour.moveNext()
+    moveWithScroll(tour, steps, 1)
   }
   let clubLink: Element | undefined
+  // Se rellena al crear el tour; los manejadores de Siguiente/Atrás la necesitan para saber qué
+  // elemento viene después.
+  let steps: DriveStep[] = []
 
   const tour = driver({
     showProgress: true,
@@ -109,9 +159,15 @@ function runTour(navigate: NavigateFunction) {
     // añade a todos los que no fijan sus botones (ver withCloseButton, al final).
     allowClose: false,
     onCloseClick: () => finish(tour),
-    // Para todos los pasos salvo los que tienen su propio onHighlighted (que también lo llaman).
-    onHighlighted: () => settle(tour),
-    steps: withCloseButton([
+    onDestroyed: () => {
+      root.style.scrollBehavior = previousScrollBehavior
+    },
+    // Para todos los pasos salvo los que tienen su propio onHighlighted (que también lo llama).
+    onHighlighted: (element) => fixIfMoved(tour, element),
+    // Para todos los pasos salvo los que tienen su propio onNextClick (Club y el último).
+    onNextClick: () => moveWithScroll(tour, steps, 1),
+    onPrevClick: () => moveWithScroll(tour, steps, -1),
+    steps: (steps = withCloseButton([
       {
         popover: {
           title: t("onboarding.v2.welcome.title", "Bienvenido a Padel Film Room"),
@@ -146,7 +202,7 @@ function runTour(navigate: NavigateFunction) {
       {
         element: byLayout("tour-club-desktop", "tour-club-mobile"),
         onHighlighted: (element) => {
-          settle(tour)
+          fixIfMoved(tour, element)
           clubLink = element
           element?.classList.add(PULSE_CLS)
           element?.addEventListener("click", goToClub)
@@ -209,7 +265,7 @@ function runTour(navigate: NavigateFunction) {
           },
         },
       },
-    ]),
+    ])),
   })
 
   tour.drive()
