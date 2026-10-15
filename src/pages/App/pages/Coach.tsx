@@ -9,6 +9,7 @@ import {
   submitPersonalAnalysis,
   editPersonalAnalysis,
   type MyPersonalAnalysis,
+  COACH_WAIVER_VERSION,
 } from "../../../lib/api/personalAnalysis"
 import { readVideoDuration, uploadToCloudflare } from "../../../lib/api/admin"
 import SidePanel from "../../../lib/ui/SidePanel"
@@ -74,11 +75,15 @@ const Choice = <T extends string>({
 /** Formulario de envío del partido (dentro del panel lateral). */
 const SubmitForm = ({
   lastProfile,
+  needsWaiver,
   onSubmitted,
 }: {
   lastProfile: MyPersonalAnalysis["lastPlayerProfile"]
+  /** Primer envío: hay que aceptar la renuncia al desistimiento (el backend también lo exige). */
+  needsWaiver: boolean
   onSubmitted: (created: PersonalAnalysisItem) => void
 }) => {
+  const [waiverAccepted, setWaiverAccepted] = useState(false)
   const { t } = useI18n()
   const [file, setFile] = useState<File | null>(null)
   const [note, setNote] = useState("")
@@ -96,7 +101,7 @@ const SubmitForm = ({
   const playerReady = side !== "" && hand !== "" && start !== "" && look.trim() !== ""
 
   const submit = async () => {
-    if (!file || busy || side === "" || hand === "" || start === "" || !look.trim()) return
+    if (!file || busy || side === "" || hand === "" || start === "" || !look.trim() || (needsWaiver && !waiverAccepted)) return
     setBusy(true)
     setError(null)
     setProgress({ label: t("club.personal-analysis.uploading", "Subiendo tu partido…"), percent: 0 })
@@ -111,6 +116,7 @@ const SubmitForm = ({
         dur,
         { playerSide: side, playerHand: hand, playerStart: start, playerLook: look.trim(), matchContext: context.trim() || undefined },
         note.trim() || undefined,
+        needsWaiver ? COACH_WAIVER_VERSION : undefined,
       )
       onSubmitted(created)
     } catch (err) {
@@ -218,9 +224,28 @@ const SubmitForm = ({
           </div>
         </div>
       )}
+      {/* Antes de subir nada: enviar el partido es pedir que empiece el servicio, y es entonces
+          cuando se renuncia al desistimiento (casilla aparte, sin marcar). Solo la primera vez. */}
+      {needsWaiver && (
+        <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-relaxed text-white/75">
+          <input
+            type="checkbox"
+            checked={waiverAccepted}
+            onChange={(e) => setWaiverAccepted(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[#28f0e0]"
+          />
+          <span>
+            {t(
+              `coach.waiver.${COACH_WAIVER_VERSION}.text`,
+              "Pido que empecéis ya con mi análisis y entiendo que, una vez entregado, pierdo el derecho de desistimiento.",
+            )}{" "}
+            <LegalLink doc="terms" />
+          </span>
+        </label>
+      )}
       <button
         onClick={submit}
-        disabled={!file || !playerReady || busy}
+        disabled={!file || !playerReady || busy || (needsWaiver && !waiverAccepted)}
         className="flex items-center justify-center gap-2 rounded-lg bg-neon-cyan px-4 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <UploadCloud className="h-4 w-4" />
@@ -505,9 +530,10 @@ const Coach = () => {
         >
           <SubmitForm
             lastProfile={current?.lastPlayerProfile}
+            needsWaiver={current?.coachWaiverAccepted === false}
             onSubmitted={(created) => {
               // El recién enviado pasa a ser "el actual"; el que lo era baja al historial.
-              setOverride({ ...current, canSubmit: false, request: created, history: requestDelivered && request ? [request, ...history] : history })
+              setOverride({ ...current, canSubmit: false, coachWaiverAccepted: true, request: created, history: requestDelivered && request ? [request, ...history] : history })
               setSending(false)
             }}
           />

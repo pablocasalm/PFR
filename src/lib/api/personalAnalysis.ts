@@ -38,7 +38,15 @@ export type MyPersonalAnalysis = {
   currentPeriodEndsAtUtc?: string | null
   /** Lado y mano del último envío, para traerlos ya rellenos en el siguiente. */
   lastPlayerProfile?: { playerSide?: PlayerSide | null; playerHand?: PlayerSide | null } | null
+  /** Si ya aceptó la renuncia al desistimiento. false: el envío pide marcar la casilla. */
+  coachWaiverAccepted?: boolean
 }
+
+/** Versión del texto de renuncia al desistimiento que se acepta al enviar el primer partido.
+ * Tiene que coincidir con CoachWaiver.Version del backend: si cambia el texto, se suben las dos
+ * (y la clave de traducción, que lleva la versión en el nombre) para que cada aceptación guardada
+ * diga qué texto se aceptó. */
+export const COACH_WAIVER_VERSION = "v1"
 
 /** Un análisis ya entregado, tal como lo ve quien ya no tiene Coach (grupo de Mi Lista): solo
  * el vídeo de Guille y sus prioridades, sin el vídeo original ni el formulario de envío. */
@@ -62,8 +70,8 @@ export type PlayerInfo = {
 }
 
 /** POST /api/club/personal-analysis → envía el partido ya subido. */
-export const submitPersonalAnalysis = (uid: string, durationSeconds: number, player: PlayerInfo, note?: string) =>
-  apiPost<PersonalAnalysisItem>("/api/club/personal-analysis", { uid, durationSeconds, note, ...player })
+export const submitPersonalAnalysis = (uid: string, durationSeconds: number, player: PlayerInfo, note?: string, coachWaiverVersion?: string) =>
+  apiPost<PersonalAnalysisItem>("/api/club/personal-analysis", { uid, durationSeconds, note, ...player, coachWaiverVersion })
 
 /** POST …/{id}/priorities/{priorityId}/logs → el alumno anota un partido en una prioridad. */
 export const addPriorityLog = (requestId: number, priorityId: number, log: { matchDate: string; result: PriorityResult; comment?: string }) =>
