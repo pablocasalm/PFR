@@ -39,16 +39,36 @@ const byLayout = (desktopId: string, mobileId: string) => () =>
 // enseña el paso centrado, sin señalar nada — el texto sigue teniendo sentido.
 const optional = (id: string) => () => document.getElementById(id) as Element
 
-/** Espera a que aparezca un elemento (la pantalla de Club monta tras navegar). */
-const waitForElement = (id: string, timeoutMs = 8000) =>
+/**
+ * Espera a que un elemento exista Y se haya quedado quieto. Al llegar a Club, la sección existe
+ * enseguida pero la pantalla sigue cargando (el plan, las masterclasses) y lo empuja hacia abajo:
+ * si el tour señalase entonces, la ventanita se quedaría donde estaba el elemento y el foco donde
+ * acaba (§reporte de Pablo, 15 oct). Quieto = misma posición en varias lecturas seguidas.
+ */
+const waitForStableElement = (id: string, timeoutMs = 8000) =>
   new Promise<void>((resolve) => {
     const start = Date.now()
+    let last = ""
+    let stableReads = 0
     const tick = () => {
-      if (document.getElementById(id) || Date.now() - start > timeoutMs) return resolve()
-      window.setTimeout(tick, 100)
+      const el = document.getElementById(id)
+      if (el) {
+        const r = el.getBoundingClientRect()
+        const pos = `${Math.round(r.top + window.scrollY)}:${Math.round(r.height)}`
+        stableReads = pos === last ? stableReads + 1 : 0
+        last = pos
+      }
+      if (stableReads >= 4 || Date.now() - start > timeoutMs) return resolve()
+      window.setTimeout(tick, 120)
     }
     tick()
   })
+
+/** Vuelve a colocar foco y ventanita un poco después de cada paso, por si la página se ha movido
+ * mientras tanto (imágenes que cargan, scroll hasta el elemento). */
+const settle = (tour: Driver) => {
+  for (const ms of [150, 500, 1200]) window.setTimeout(() => tour.isActive() && tour.refresh(), ms)
+}
 
 // Anillo que late alrededor de "Club" en el paso que invita a pulsarlo (estilo en index.css).
 const PULSE_CLS = "tour-pulse"
@@ -72,7 +92,8 @@ function runTour(navigate: NavigateFunction) {
     if (goingToClub) return
     goingToClub = true
     navigate("/app/club")
-    await waitForElement("tour-club-masterclasses")
+    window.scrollTo({ top: 0 })
+    await waitForStableElement("tour-club-masterclasses")
     tour.moveNext()
   }
   let clubLink: Element | undefined
@@ -88,6 +109,8 @@ function runTour(navigate: NavigateFunction) {
     // añade a todos los que no fijan sus botones (ver withCloseButton, al final).
     allowClose: false,
     onCloseClick: () => finish(tour),
+    // Para todos los pasos salvo los que tienen su propio onHighlighted (que también lo llaman).
+    onHighlighted: () => settle(tour),
     steps: withCloseButton([
       {
         popover: {
@@ -123,6 +146,7 @@ function runTour(navigate: NavigateFunction) {
       {
         element: byLayout("tour-club-desktop", "tour-club-mobile"),
         onHighlighted: (element) => {
+          settle(tour)
           clubLink = element
           element?.classList.add(PULSE_CLS)
           element?.addEventListener("click", goToClub)
