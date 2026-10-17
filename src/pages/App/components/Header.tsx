@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
-import { Search, ChevronDown, LogOut, BookOpen, Bookmark, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, Lock, MessageSquarePlus, ClipboardList } from "lucide-react"
+import { Search, ChevronDown, LogOut, BookOpen, Bookmark, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, Lock, MessageSquarePlus, ClipboardList, BarChart3 } from "lucide-react"
 import { useAuth, canPublish, isAdmin, hasFeature, type AuthUser } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import SearchOverlay from "./SearchOverlay"
@@ -302,6 +302,16 @@ const SessionControl = () => {
               >
                 <ClipboardList className="h-4 w-4" />
                 {t("admin-surveys.title", "Encuestas")}
+              </Link>
+            )}
+            {isAdmin(user) && (
+              <Link
+                to="/app/admin/metricas"
+                onClick={() => setMenuOpen(false)}
+                className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
+              >
+                <BarChart3 className="h-4 w-4" />
+                {t("admin-metrics.title", "Métricas")}
               </Link>
             )}
             {isAdmin(user) && (

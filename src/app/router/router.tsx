@@ -27,6 +27,7 @@ const AdminSesiones = lazy(() => import("../../pages/App/pages/AdminSesiones"))
 const AdminCoach = lazy(() => import("../../pages/App/pages/AdminCoach"))
 const Encuesta = lazy(() => import("../../pages/App/pages/Encuesta"))
 const AdminEncuestas = lazy(() => import("../../pages/App/pages/AdminEncuestas"))
+const AdminMetricas = lazy(() => import("../../pages/App/pages/AdminMetricas"))
 
 const RequireAuth = lazy(() => import("../../lib/auth/RequireAuth"))
 const RequirePublisher = lazy(() => import("../../lib/auth/RequirePublisher"))
@@ -77,6 +78,7 @@ const router = createBrowserRouter([
       { path: "admin/preguntas", element: <Navigate to="/app/admin/sesiones?tab=questions" replace /> },
       { path: "admin/coach", element: withSuspense(<RequireAdmin><AdminCoach /></RequireAdmin>) },
       { path: "admin/encuestas", element: withSuspense(<RequireAdmin><AdminEncuestas /></RequireAdmin>) },
+      { path: "admin/metricas", element: withSuspense(<RequireAdmin><AdminMetricas /></RequireAdmin>) },
       // Encuestas de la beta (email del día 4/12). Sin RequireSubscription: se pueden responder
       // aunque la prueba haya terminado.
       { path: "encuesta/:surveyId", element: withSuspense(<Encuesta />) },
