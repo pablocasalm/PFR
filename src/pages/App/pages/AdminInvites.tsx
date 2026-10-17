@@ -186,9 +186,10 @@ const AdminInvites = () => {
     setInviteTarget(r)
   }
 
-  // Quién no ha recibido todavía el email de acceso anticipado: los únicos a los que se puede enviar.
-  const notAnnounced = useMemo(() => requests.filter((r) => !r.announcedAtUtc), [requests])
-  const announcedCount = requests.length - notAnnounced.length
+  // Quién no ha recibido todavía el email de acceso anticipado y tampoco está confirmado: los
+  // únicos a los que se puede enviar. Quien se apunta desde el 17/10 ya entra confirmado y no lo necesita.
+  const notAnnounced = useMemo(() => requests.filter((r) => !r.announcedAtUtc && !r.confirmedAtUtc), [requests])
+  const announcedCount = useMemo(() => requests.filter((r) => r.announcedAtUtc).length, [requests])
 
   const openAnnounce = () => {
     setAnnounceIds(new Set(notAnnounced.map((r) => r.id)))
