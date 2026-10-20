@@ -392,14 +392,24 @@ const MiCuenta = () => {
               >
                 {portalLoading ? t("mi-cuenta.opening", "Abriendo...") : t("mi-cuenta.manage-subscription", "Gestionar suscripción")}
               </button>
-            ) : (
+            ) : null}
+            {/* Cambiar de plan va por Precios: ahí el servidor elige el precio que toca (fundador o
+                normal). El portal de Stripe no ofrece cambio de plan libre. */}
+            {PAYMENTS_ENABLED && subStatus && subStatus !== "None" && subStatus !== "Canceled" ? (
+              <Link
+                to="/app/precios"
+                className="ml-3 inline-block rounded-lg border border-white/15 px-5 py-2.5 text-sm font-bold text-white/80 transition hover:text-white"
+              >
+                {t("mi-cuenta.change-plan", "Cambiar de plan")}
+              </Link>
+            ) : !(PAYMENTS_ENABLED && subStatus && subStatus !== "None") ? (
               <Link
                 to="/app/precios"
                 className="inline-block rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
               >
                 {t("mi-cuenta.see-plans", "Ver planes")}
               </Link>
-            )}
+            ) : null}
           </section>
         )}
 

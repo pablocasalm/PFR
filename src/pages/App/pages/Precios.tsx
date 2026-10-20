@@ -6,7 +6,7 @@ import { PAYMENTS_ENABLED } from "../../../lib/payments"
 import { trackActivity } from "../../../lib/api/activity"
 import { LegalLink } from "../../../lib/ui/LegalLinks"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
-import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../../../lib/api/billing"
+import { changePlan, createCheckoutSession, getBillingPlans, type BillingPlans } from "../../../lib/api/billing"
 
 /**
  * Pantalla de precios / paywall (§Stripe 3 planes, Fase 4). Comparativa de los 3 planes.
@@ -46,11 +46,23 @@ const PLANS: { tier: PlanTier; price: number; availability: (t: TFunc) => string
 const currencyFormat = (amount: number, lang: string) =>
   new Intl.NumberFormat(lang === "en" ? "en-US" : "es-ES", { style: "currency", currency: "EUR" }).format(amount)
 
-const PlanCard = ({ plan, isCurrent, backend }: { plan: (typeof PLANS)[number]; isCurrent: boolean; backend: BillingPlans | null }) => {
+const PlanCard = ({
+  plan,
+  isCurrent,
+  hasSubscription,
+  backend,
+}: {
+  plan: (typeof PLANS)[number]
+  isCurrent: boolean
+  /** Ya paga una suscripción: el botón cambia de plan en vez de abrir otro Checkout. */
+  hasSubscription: boolean
+  backend: BillingPlans | null
+}) => {
   const { t, lang } = useI18n()
-  // Solo en el modo de prueba: el precio mensual que el backend tiene para este plan (tabla
-  // PricingPlans) y el salto al checkout de Stripe.
+  // El precio que le toca a quien mira, leído de Stripe por el servidor (fundador o normal,
+  // España o resto del mundo). Si no llega, el de PLANS.
   const backendPrice = backend?.plans?.find((p) => p.tier === plan.tier)?.prices?.find((p) => p.interval === "Monthly") ?? null
+  const coachFull = plan.tier === "Coach" && !!backend?.coachFull && !isCurrent
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const subscribe = async () => {
@@ -58,7 +70,7 @@ const PlanCard = ({ plan, isCurrent, backend }: { plan: (typeof PLANS)[number]; 
     setBusy(true)
     setError(null)
     try {
-      const { url } = await createCheckoutSession("Monthly", plan.tier)
+      const { url } = hasSubscription ? await changePlan(plan.tier) : await createCheckoutSession("Monthly", plan.tier)
       window.location.href = url
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo abrir el pago.")
@@ -89,10 +101,19 @@ const PlanCard = ({ plan, isCurrent, backend }: { plan: (typeof PLANS)[number]; 
         {t(`precios.tier.${plan.tier.toLowerCase()}`, PLAN_NAME[plan.tier])}
       </h2>
       <p className="mt-2 text-3xl font-bold text-white">
-        {currencyFormat(plan.price, lang)}
+        {currencyFormat(backendPrice?.displayAmount ?? plan.price, lang)}
         <span className="text-sm font-normal text-white/50"> / {t("precios.interval.monthly", "mensual")}</span>
       </p>
-      <p className="mt-1 text-xs text-white/40">{t("precios.availability-label", "Disponibilidad:")} {plan.availability(t)}</p>
+      {backend?.isFounder && (
+        <p className="mt-1 text-xs font-semibold text-neon-lime">
+          {backend.founderSlotsLeft
+            ? t("precios.founder-left", "Precio fundador · quedan {count} plazas", { count: backend.founderSlotsLeft })
+            : t("precios.founder", "Precio fundador")}
+        </p>
+      )}
+      <p className="mt-1 text-xs text-white/40">
+        {t("precios.availability-label", "Disponibilidad:")} {coachFull ? t("precios.availability.full", "Completo") : plan.availability(t)}
+      </p>
 
       <ul className="mt-5 flex-1 space-y-2.5 text-sm">
         {FEATURE_ROWS.map((row) => {
@@ -118,11 +139,11 @@ const PlanCard = ({ plan, isCurrent, backend }: { plan: (typeof PLANS)[number]; 
           <button
             type="button"
             onClick={subscribe}
-            disabled={!backendPrice || busy}
+            disabled={!backendPrice || busy || (hasSubscription && isCurrent) || coachFull}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-400 py-3 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CreditCard className="h-4 w-4" />
-            {busy ? "Abriendo Stripe…" : "Suscribirme (prueba)"}
+            {busy ? "Abriendo Stripe…" : hasSubscription ? "Cambiar a este plan (prueba)" : "Suscribirme (prueba)"}
           </button>
           {error && <p className="text-xs text-red-300">{error}</p>}
         </div>
@@ -144,9 +165,12 @@ const Precios = () => {
   const { t } = useI18n()
   const { user } = useAuth()
   const [backend, setBackend] = useState<BillingPlans | null>(null)
+  const hasSubscription = ["Active", "Trialing", "PastDue"].includes(user?.subscriptionStatus ?? "")
   useEffect(() => {
     trackActivity("pricing_view") // métricas internas: quién llega a ver los precios
-    if (PAYMENTS_ENABLED) getBillingPlans().then(setBackend).catch(() => {})
+    // Precios reales (de Stripe, vía servidor) también con los pagos cerrados: así lo que se
+    // enseña coincide con lo que se cobrará.
+    getBillingPlans().then(setBackend).catch(() => {})
   }, [])
 
   return (
@@ -165,7 +189,13 @@ const Precios = () => {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {PLANS.map((plan) => (
-          <PlanCard key={plan.tier} plan={plan} isCurrent={user?.planTier === plan.tier} backend={backend} />
+          <PlanCard
+            key={plan.tier}
+            plan={plan}
+            isCurrent={user?.planTier === plan.tier}
+            hasSubscription={hasSubscription}
+            backend={backend}
+          />
         ))}
       </div>
 

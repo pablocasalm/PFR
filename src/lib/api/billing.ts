@@ -22,6 +22,12 @@ export type BillingPlans = {
    * consumiendo tal cual PFR_Landing. No quitar hasta que la landing también migre a `plans`. */
   prices: PriceOption[]
   plans: TierPlan[]
+  /** Los precios de `plans` son los de fundador (para quien mira). */
+  isFounder?: boolean
+  /** Plazas de fundador libres ahora mismo (0 si se ha cerrado). */
+  founderSlotsLeft?: number
+  /** Coach ya tiene sus 5 personas: no se puede contratar. */
+  coachFull?: boolean
 }
 
 /** GET /api/billing/plans → precios (mensual/anual) por tier y país. Pública, no necesita sesión. */
@@ -36,3 +42,7 @@ export const createCheckoutSession = (interval: BillingInterval, tier: PlanTier 
 /** POST /api/billing/portal → URL del Customer Portal de Stripe (cancelar, cambiar método de
  * pago, ver facturas). */
 export const createPortalSession = () => apiPost<{ url: string }>("/api/billing/portal")
+
+/** POST /api/billing/change-plan → URL del portal de Stripe en la confirmación del cambio de
+ * plan. El precio (fundador o normal, España o resto) lo elige el servidor. */
+export const changePlan = (tier: PlanTier) => apiPost<{ url: string }>("/api/billing/change-plan", { tier })
