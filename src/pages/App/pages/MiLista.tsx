@@ -13,6 +13,7 @@ import SaveButton from "../../../lib/saved/SaveButton"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
 import { useTaxonomy, conceptRank, type Taxonomy } from "../../../lib/taxonomy"
+import { ConceptsToWork } from "../components/StarterTest"
 
 /**
  * MiLista — biblioteca personal del usuario (§12), con carpetas:
@@ -458,6 +459,9 @@ const MiLista = () => {
         <EmptyState />
       ) : (
         <>
+          {/* Test inicial: conceptos para trabajar (o la invitación a hacer el test). */}
+          <ConceptsToWork managing={managing} />
+
           {/* Carpetas: Todo, las del usuario, las del sistema y «Nueva». */}
           <div>
             <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-hide sm:mx-0 sm:px-0">

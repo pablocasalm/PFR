@@ -17,6 +17,7 @@ import LockedTeaser from "../components/LockedTeaser"
 import PlanHomeCard from "../components/PlanHomeCard"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
+import { StarterTestBanner } from "../components/StarterTest"
 
 /**
  * Inicio — Dashboard principal. Consume GET /api/home (endpoint con forma de pantalla).
@@ -196,6 +197,8 @@ const Inicio = () => {
   return (
     <main className="w-full space-y-12 py-8">
       <BetaBanner />
+      {/* Test inicial: debajo del de la beta, hasta que lo haga o lo cierre. */}
+      <StarterTestBanner />
 
       {/* Continúa viendo — solo si hay contenido iniciado y no completado */}
       {continueWatching.length > 0 && (

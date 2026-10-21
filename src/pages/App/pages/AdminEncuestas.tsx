@@ -3,6 +3,7 @@ import { ClipboardList, Download } from "lucide-react"
 import { useI18n } from "../../../lib/i18n/store"
 import { downloadSurveyCsv, getSurveyResponses, type AdminSurveyResponse } from "../../../lib/api/surveys"
 import { ADMIN_SURVEYS as SURVEYS } from "../surveys/definitions"
+import { downloadStarterTestCsv } from "../../../lib/api/starterTest"
 
 /**
  * AdminEncuestas — respuestas de las encuestas de la beta, por persona (solo Admin). Para que
@@ -91,6 +92,14 @@ const AdminEncuestas = () => {
         >
           <Download className="h-4 w-4" />
           {t("admin-surveys.export", "Exportar CSV")}
+        </button>
+        {/* Test inicial «¿Por dónde empiezo?»: respuestas de todos, en CSV. */}
+        <button
+          onClick={() => downloadStarterTestCsv().catch(() => setError(t("admin-surveys.export-error", "No se pudo exportar.")))}
+          className="flex items-center gap-1.5 rounded-lg border border-neon-lime/30 px-3 py-2 text-sm font-semibold text-neon-lime/90 transition hover:text-neon-lime"
+        >
+          <Download className="h-4 w-4" />
+          {t("admin-surveys.export-starter-test", "Test inicial (CSV)")}
         </button>
       </div>
 

@@ -8,6 +8,7 @@ import LegalLinks from "../../../lib/ui/LegalLinks"
 import { getMyProfile, updateProfile, changePassword, updateMyPreferences, type ProfileResponse } from "../../../lib/api/profile"
 import { createPortalSession } from "../../../lib/api/billing"
 import { useI18n, setLanguage, type TFunc } from "../../../lib/i18n/store"
+import { StarterTestCallout } from "../components/StarterTest"
 
 /**
  * Mi cuenta — autogestión básica del perfil (§MVP): ver email/plan/rol, cambiar nombre visible,
@@ -232,6 +233,9 @@ const MiCuenta = () => {
             </button>
           ))}
         </nav>
+
+        {/* Test inicial: «Termina de configurar tu cuenta» hasta que lo haga (aunque cierre el banner de Inicio). */}
+        {section === "perfil" && <StarterTestCallout from="account" />}
 
         {/* Perfil: identidad + rol/plan + nombre visible */}
         {section === "perfil" && (

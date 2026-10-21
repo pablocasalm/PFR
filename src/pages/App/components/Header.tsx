@@ -7,6 +7,7 @@ import SearchOverlay from "./SearchOverlay"
 import NewsBell from "./NewsBell"
 import { TOUR_OPEN_FEEDBACK_EVENT } from "./FeedbackButton"
 import LanguageSelector from "./LanguageSelector"
+import { useStarterTest } from "../../../lib/starterTest"
 
 /**
  * Header compartido del nuevo dashboard (/app).
@@ -189,6 +190,8 @@ const SessionControl = () => {
   const { t } = useI18n()
   const [menuOpen, setMenuOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const { data: starterTest } = useStarterTest()
+  const testPending = !!starterTest && !starterTest.completed
 
   useEffect(() => {
     // El header tiene backdrop-blur, y eso convierte a `fixed` en descendientes en algo anclado al
@@ -217,6 +220,8 @@ const SessionControl = () => {
           {isAdmin(user) && (user.coachUnread ?? 0) > 0 && (
             <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-midnight bg-neon-lime" aria-hidden />
           )}
+          {/* Test inicial sin hacer: punto rojo, como una notificación, hasta que lo haga. */}
+          {testPending && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-midnight bg-red-500" aria-hidden />}
         </span>
         {/* En las pantallas más estrechas (320 px) la flecha no cabe: el avatar ya se entiende como menú. */}
         <ChevronDown className="hidden h-4 w-4 text-white/60 min-[360px]:block" />
@@ -235,6 +240,7 @@ const SessionControl = () => {
             >
               <UserCircle className="h-4 w-4" />
               {t("mi-cuenta.title", "Mi cuenta")}
+              {testPending && <span className="ml-auto h-2 w-2 rounded-full bg-red-500" aria-label={t("starter-test.pending", "Tienes el test inicial pendiente")} />}
             </Link>
             {/* Mi Lista, también solo por debajo de xl: la barra inferior prioriza Coach y Club (ver MobileNav). */}
             <Link

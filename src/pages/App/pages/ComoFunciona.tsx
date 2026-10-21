@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import { Link } from "react-router-dom"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
+import { StarterTestCallout } from "../components/StarterTest"
 
 /**
  * Bloques y conceptos de ejemplo de esta página: son los reales del catálogo (mismos nombres
@@ -728,6 +729,11 @@ const ComoFunciona = () => {
               <span className="sep">→</span> {t("como-funciona.method.jugar", "Jugar")} <span className="sep">→</span>{" "}
               <span className="last">{t("como-funciona.method.volver", "Volver")}</span>
             </p>
+
+            {/* Test inicial: donde termina el tour, es el siguiente paso natural. */}
+            <div className="reveal" style={{ maxWidth: "36rem", margin: "2.5rem auto 0" }}>
+              <StarterTestCallout from="how_it_works" />
+            </div>
 
             <div className="cta-final reveal">
               <Link to="/app/explorar">{t("como-funciona.cta-final", "Ir a Explorar →")}</Link>

@@ -26,6 +26,7 @@ const SesionesArchivo = lazy(() => import("../../pages/App/pages/SesionesArchivo
 const AdminSesiones = lazy(() => import("../../pages/App/pages/AdminSesiones"))
 const AdminCoach = lazy(() => import("../../pages/App/pages/AdminCoach"))
 const Encuesta = lazy(() => import("../../pages/App/pages/Encuesta"))
+const TestInicial = lazy(() => import("../../pages/App/pages/TestInicial"))
 const AdminEncuestas = lazy(() => import("../../pages/App/pages/AdminEncuestas"))
 const AdminMetricas = lazy(() => import("../../pages/App/pages/AdminMetricas"))
 
@@ -81,6 +82,8 @@ const router = createBrowserRouter([
       { path: "admin/metricas", element: withSuspense(<RequireAdmin><AdminMetricas /></RequireAdmin>) },
       // Encuestas de la beta (email del día 4/12). Sin RequireSubscription: se pueden responder
       // aunque la prueba haya terminado.
+      // El test inicial vive junto a las encuestas; la ruta fija gana a la de :surveyId.
+      { path: "encuesta/test", element: withSuspense(<TestInicial />) },
       { path: "encuesta/:surveyId", element: withSuspense(<Encuesta />) },
       // Club/Coach (§rediseño Club/Coach): ya no van detrás de RequireFeature — se abren a los
       // 3 tiers, y cada pantalla decide sección a sección qué mostrar entero y qué mostrar
