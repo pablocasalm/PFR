@@ -161,7 +161,7 @@ const AdminMetricas = () => {
       </div>
 
       {/* Pestañas */}
-      <div role="tablist" className="mb-6 flex gap-1 overflow-x-auto border-b border-white/10">
+      <div role="tablist" className="mb-6 flex gap-1 border-b border-white/10">
         {(
           [
             ["people", t("admin-metrics.tab.people", "Personas")],
