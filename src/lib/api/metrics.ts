@@ -67,3 +67,34 @@ export type AdminMetrics = {
 /** GET /api/admin/metrics (Admin). */
 export const getAdminMetrics = (f: MetricsFilters) =>
   apiGet<AdminMetrics>(`/api/admin/metrics?days=${f.days}&wave=${encodeURIComponent(f.wave)}&tier=${f.tier}&excludeTeam=${f.excludeTeam}`)
+
+export type ContentStat = { id: string; title: string; titleEn: string | null; people: number; completed: number; minutes: number }
+export type KeyCount = { key: string; count: number }
+
+/** Métricas v2: actividad por día, contenido más visto y lista de espera. */
+export type MetricsInsights = {
+  generatedAtUtc: string
+  days: MetricsDays
+  /** Un día por fila (Madrid, yyyy-MM-dd); con `days=0`, los últimos 90. */
+  daily: { day: string; people: number; minutes: number }[]
+  content: {
+    clips: ContentStat[]
+    analyses: ContentStat[]
+    sessions: ContentStat[]
+    concepts: { id: number; nameEs: string; nameEn: string | null; people: number }[]
+  }
+  waitlist: {
+    total: number
+    inPeriod: number
+    daily: { day: string; count: number }[]
+    funnel: { signedUp: number; confirmed: number; invited: number; activated: number }
+    source: KeyCount[]
+    country: KeyCount[]
+    device: KeyCount[]
+    language: KeyCount[]
+  }
+}
+
+/** GET /api/admin/metrics/insights (Admin). No le afectan la oleada ni el plan. */
+export const getMetricsInsights = (days: MetricsDays, excludeTeam: boolean) =>
+  apiGet<MetricsInsights>(`/api/admin/metrics/insights?days=${days}&excludeTeam=${excludeTeam}`)
