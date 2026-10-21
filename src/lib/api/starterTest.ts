@@ -16,6 +16,8 @@ export type ConceptCard = {
   clipCount: number
   /** "test" si lo puso el test; null si lo guardó el usuario. */
   source: string | null
+  /** Clips de este concepto que ya ha visto enteros (Mi Juego). */
+  watched?: number
 }
 
 export type StarterTestStatus = { completed: boolean; dismissed: boolean; concepts: ConceptCard[] }
@@ -42,8 +44,11 @@ export const getStarterTestStatus = () => apiGet<StarterTestStatus>("/api/starte
 export const submitStarterTest = (answers: StarterTestAnswers) =>
   apiPost<{ unsure: boolean; concepts: ConceptCard[] }>("/api/starter-test", answers)
 
-/** POST /api/starter-test/dismiss → cierra el banner de Inicio para siempre. */
+/** POST /api/starter-test/dismiss → cerró el banner de Inicio (solo métricas: vuelve a salir en la próxima visita). */
 export const dismissStarterTest = () => apiPost<{ ok: boolean }>("/api/starter-test/dismiss")
+
+/** POST /api/saved/concepts/{id} → «Seguir este concepto» (guardado a mano). */
+export const followConcept = (id: number) => apiPost<{ ok: boolean }>(`/api/saved/concepts/${id}`)
 
 /** DELETE /api/saved/concepts/{id} → quitar un concepto de «Conceptos para trabajar». */
 export const removeSavedConcept = (id: number) => apiDelete<{ ok: boolean }>(`/api/saved/concepts/${id}`)

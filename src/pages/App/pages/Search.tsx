@@ -15,6 +15,8 @@ import EnglishBadge from "../components/EnglishBadge"
 import ErrorScreen from "../components/ErrorScreen"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
+import { FollowConceptButton } from "../components/StarterTest"
+import { useTaxonomy } from "../../../lib/taxonomy"
 
 /**
  * Search — Pantalla de Resultados (§11). Destino común de búsqueda, "Ver todo",
@@ -262,6 +264,8 @@ const Search = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base, filters.type, filters.sort])
 
+  const tax = useTaxonomy()
+  const conceptId = filters.concept ? tax.byConcept.get(filters.concept)?.id : undefined
   const chips = appliedChips(filters, t)
   const activeCount = chips.length
   const empty = !loading && !error && results.length === 0
@@ -318,9 +322,13 @@ const Search = () => {
     <main className="w-full py-6">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_300px]">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">
-            {headerTitle(filters, t, blocks?.find((b) => b.nameEs === filters.block)?.nameEn)}
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">
+              {headerTitle(filters, t, blocks?.find((b) => b.nameEs === filters.block)?.nameEn)}
+            </h1>
+            {/* Filtrado por un concepto: se puede seguir (va a «Conceptos para trabajar»). */}
+            {conceptId != null && <FollowConceptButton conceptId={conceptId} />}
+          </div>
 
           {/* Tabs por tipo (§11) */}
           <div className="mt-6 flex items-center gap-6 border-b border-white/10">

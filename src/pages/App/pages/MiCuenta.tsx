@@ -234,11 +234,11 @@ const MiCuenta = () => {
           ))}
         </nav>
 
-        {/* Test inicial: «Termina de configurar tu cuenta» hasta que lo haga (aunque cierre el banner de Inicio). */}
-        {section === "perfil" && <StarterTestCallout from="account" />}
-
-        {/* Perfil: identidad + rol/plan + nombre visible */}
+        {/* Perfil: identidad + rol/plan + nombre visible. Encima, el test inicial («Termina de
+            configurar tu cuenta») hasta que lo haga; van juntos en la columna de contenido. */}
         {section === "perfil" && (
+          <div className="min-w-0 space-y-4">
+          <StarterTestCallout from="account" />
           <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
             <div className="mb-4 flex items-center gap-3 border-b border-white/10 pb-4">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-neon-cyan text-sm font-bold text-midnight">
@@ -294,6 +294,7 @@ const MiCuenta = () => {
               </button>
             </form>
           </section>
+          </div>
         )}
 
         {/* Preferencias: idioma y subtítulos por defecto */}

@@ -5,6 +5,7 @@ import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
 import CardRow from "../../../lib/ui/CardRow"
 import ContentCard from "./ContentCard"
+import { useStarterTest } from "../../../lib/starterTest"
 
 /**
  * Situaciones de "El plan del mes" (§Club) — acordeón de 2 a 4 situaciones, una abierta a la
@@ -21,8 +22,17 @@ const SituationBody = ({ situation }: { situation: PlanSituation }) => {
   // Opcional: los planes anteriores no lo tienen. En inglés, si falta la traducción, se enseña
   // el texto en español antes que dejar el foco sin su parte práctica.
   const tryIt = situation.tryIt ? pickText(situation.tryIt, situation.tryItEn ?? undefined, lang) : ""
+  // Si algún clip de esta situación trabaja uno de tus «Conceptos para trabajar», se marca.
+  const { data: starter } = useStarterTest()
+  const mine = (starter?.concepts ?? []).filter((c) => situation.clips.some((clip) => clip.concepts.includes(c.nameEs)))
   return (
     <div className="space-y-5 px-4 pb-4 sm:px-5 sm:pb-5">
+      {mine.length > 0 && (
+        <p className="inline-flex flex-wrap items-center gap-1.5 rounded-full border border-neon-lime/40 bg-neon-lime/10 px-3 py-1 text-xs font-semibold text-neon-lime">
+          {t("club.plan.your-concept", "Trabaja tus conceptos:")}{" "}
+          {mine.map((c) => `#${pickText(c.nameEs, c.nameEn, lang)}`).join(" · ")}
+        </p>
+      )}
       <div>
         <h4 className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-neon-cyan">{t("club.plan.recognize", "Qué reconocer")}</h4>
         <p className="text-sm leading-relaxed text-white/80">{pickText(situation.recognize, situation.recognizeEn ?? undefined, lang)}</p>

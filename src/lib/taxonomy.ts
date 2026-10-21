@@ -6,7 +6,7 @@ import { useApi } from "./hooks/useApi"
  * Taxonomía de bloques y conceptos con su numeración (Base de conocimiento): "3.2" es el 2.º
  * concepto DEL BLOQUE 3, no el 2.º concepto en general. Sale de GET /api/blocks.
  */
-export type ConceptCode = { code: string; blockNumber: number; conceptNumber: number; block: BlockOption }
+export type ConceptCode = { id: number; code: string; blockNumber: number; conceptNumber: number; block: BlockOption }
 
 export type Taxonomy = {
   blocks: BlockOption[]
@@ -23,7 +23,7 @@ export const buildTaxonomy = (blocks: BlockOption[]): Taxonomy => {
     byBlock.set(b.nameEs, b)
     for (const c of b.concepts ?? []) {
       if (!b.number || !c.number) continue
-      byConcept.set(c.nameEs, { code: `${b.number}.${c.number}`, blockNumber: b.number, conceptNumber: c.number, block: b })
+      byConcept.set(c.nameEs, { id: c.id, code: `${b.number}.${c.number}`, blockNumber: b.number, conceptNumber: c.number, block: b })
     }
   }
   return { blocks, byConcept, byBlock }

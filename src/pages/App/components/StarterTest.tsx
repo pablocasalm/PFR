@@ -1,9 +1,9 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Compass, X } from "lucide-react"
+import { Check, Compass, Plus, X } from "lucide-react"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
-import { dismissStarterTest, removeSavedConcept, trackTestEvent, type ConceptCard } from "../../../lib/api/starterTest"
+import { dismissStarterTest, followConcept, removeSavedConcept, trackTestEvent, type ConceptCard } from "../../../lib/api/starterTest"
 import { invalidateStarterTest, testHref, useStarterTest } from "../../../lib/starterTest"
 
 /**
@@ -108,7 +108,8 @@ export const StarterTestCallout = ({ from }: { from: "how_it_works" | "account" 
   if (!data || (from === "account" && data.completed)) return null
 
   return (
-    <section className="rounded-2xl border border-neon-lime/30 bg-neon-lime/[0.05] p-5 text-left">
+    // <div> y no <section>: Cómo funciona da estilo propio (márgenes, alto) a todas sus <section>.
+    <div className="rounded-2xl border border-neon-lime/30 bg-neon-lime/[0.05] p-5 text-left">
       <p className="text-xs font-bold uppercase tracking-[0.14em] text-neon-lime">
         {from === "account" ? t("starter-test.account.kicker", "Termina de configurar tu cuenta") : t("starter-test.how.kicker", "Siguiente paso")}
       </p>
@@ -122,7 +123,7 @@ export const StarterTestCallout = ({ from }: { from: "how_it_works" | "account" 
       >
         {data.completed ? t("starter-test.retake", "Repetir el test") : t("starter-test.take", "Hacer el test")}
       </Link>
-    </section>
+    </div>
   )
 }
 
@@ -167,6 +168,89 @@ export const ConceptsToWork = ({ managing }: { managing: boolean }) => {
             {data.completed ? t("starter-test.retake", "Repetir el test") : t("starter-test.take", "Hacer el test")}
           </Link>
         </div>
+      )}
+    </section>
+  )
+}
+
+/** «Seguir este concepto» (Explorar filtrado por un concepto): lo añade o lo quita de
+ * «Conceptos para trabajar» en Mi Lista. */
+export const FollowConceptButton = ({ conceptId }: { conceptId: number }) => {
+  const { t } = useI18n()
+  const { data } = useStarterTest()
+  const [busy, setBusy] = useState(false)
+  if (!data) return null
+  const following = data.concepts.some((c) => c.id === conceptId)
+
+  const toggle = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      await (following ? removeSavedConcept(conceptId) : followConcept(conceptId))
+      invalidateStarterTest()
+    } catch {
+      // Sin red: el botón se queda como estaba.
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={busy}
+      aria-pressed={following}
+      className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition disabled:opacity-60 ${
+        following ? "border-neon-cyan bg-neon-cyan/15 text-neon-cyan" : "border-white/20 text-white hover:border-neon-cyan/50"
+      }`}
+    >
+      {following ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+      {following ? t("starter-test.follow.on", "Siguiendo") : t("starter-test.follow.off", "Seguir este concepto")}
+    </button>
+  )
+}
+
+/** Mi Juego: progreso en tus conceptos para trabajar ("#3.2 Mantener · 3 de 8 clips vistos"). */
+export const ConceptProgress = () => {
+  const { t, lang } = useI18n()
+  const { data } = useStarterTest()
+  if (!data) return null
+
+  return (
+    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+      <h2 className="text-lg font-bold text-white">{t("starter-test.progress.title", "Tus conceptos para trabajar")}</h2>
+      {data.concepts.length === 0 ? (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <p className="flex-1 text-sm text-white/60">{t("starter-test.mylist.empty", "¿No sabes por dónde empezar? Te recomendamos 2 conceptos en 3 preguntas.")}</p>
+          <Link to={testHref("account")} className="shrink-0 rounded-lg bg-neon-cyan px-4 py-2 text-xs font-bold text-midnight">
+            {data.completed ? t("starter-test.retake", "Repetir el test") : t("starter-test.take", "Hacer el test")}
+          </Link>
+        </div>
+      ) : (
+        <ul className="mt-4 space-y-4">
+          {data.concepts.map((c) => {
+            const seen = Math.min(c.watched ?? 0, c.clipCount)
+            const pct = c.clipCount > 0 ? Math.round((100 * seen) / c.clipCount) : 0
+            return (
+              <li key={c.id}>
+                <Link to={`/app/search?concept=${encodeURIComponent(c.nameEs)}`} className="block">
+                  <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm">
+                    <span className="font-semibold text-neon-cyan">
+                      {c.code && <span className="mr-1 font-mono text-xs opacity-70">{c.code}</span>}#{pickText(c.nameEs, c.nameEn, lang)}
+                    </span>
+                    <span className="shrink-0 text-xs text-white/50">
+                      {t("starter-test.progress.count", "{seen} de {total} clips vistos", { seen, total: c.clipCount })}
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                    <div className="h-full rounded-full bg-neon-cyan/70" style={{ width: `${pct}%` }} />
+                  </div>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
       )}
     </section>
   )
