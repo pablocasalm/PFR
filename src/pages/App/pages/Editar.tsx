@@ -22,6 +22,8 @@ import {
 import { getBlocks } from "../../../lib/api/blocks"
 import { useApi } from "../../../lib/hooks/useApi"
 import CatalogPicker from "../components/CatalogPicker"
+import ConceptPicker from "../components/ConceptPicker"
+import { useTaxonomy } from "../../../lib/taxonomy"
 import FileDrop from "../components/FileDrop"
 import ConceptTranslationPanel from "../components/ConceptTranslationPanel"
 import { useI18n } from "../../../lib/i18n/store"
@@ -49,6 +51,7 @@ const Editar = () => {
   const isClip = type === "clip"
   const { data: blocksData } = useApi(getBlocks, [], "blocks")
   const blockNames = (blocksData ?? []).map((b) => b.nameEs)
+  const tax = useTaxonomy()
   const { data: conceptCatalog } = useApi(getConcepts, [], "concepts")
 
   const [loading, setLoading] = useState(true)
@@ -128,14 +131,6 @@ const Editar = () => {
     setGroups((gs) => gs.map((g, j) => (j === gi ? { ...g, ...patch } : g)))
   const addGroup = () => setGroups((gs) => [...gs, { block: blockNames[0] ?? "", concepts: [] }])
   const removeGroup = (gi: number) => setGroups((gs) => gs.filter((_, j) => j !== gi))
-
-  // Mismo motivo que en Publicar.tsx: sugerir en el picker los conceptos ya escritos en
-  // otros grupos de este mismo bloque, aunque todavía no se hayan guardado.
-  const conceptsForBlock = (block: string) => {
-    const set = new Set<string>()
-    for (const g of groups) if (g.block === block) for (const concept of g.concepts) set.add(concept)
-    return Array.from(set)
-  }
 
   const allSelectedConcepts = groups.flatMap((g) => g.concepts)
 
@@ -304,7 +299,9 @@ const Editar = () => {
                     className={`${inputCls} flex-1`}
                   >
                     {blockNames.map((b) => (
-                      <option key={b} value={b} className="bg-midnight">{b}</option>
+                      <option key={b} value={b} className="bg-midnight">
+                        {tax.byBlock.get(b)?.number ? `${tax.byBlock.get(b)!.number} · ${b}` : b}
+                      </option>
                     ))}
                   </select>
                   {groups.length > 1 && (
@@ -313,15 +310,7 @@ const Editar = () => {
                     </button>
                   )}
                 </div>
-                <CatalogPicker
-                  type="concept"
-                  multi
-                  block={g.block}
-                  selected={g.concepts}
-                  onChange={(v) => updateGroup(gi, { concepts: v })}
-                  placeholder={t("publicar.field.concept-placeholder", "Busca o crea un concepto…")}
-                  extraSuggestions={conceptsForBlock(g.block)}
-                />
+                <ConceptPicker block={g.block} selected={g.concepts} onChange={(v) => updateGroup(gi, { concepts: v })} />
               </div>
             ))}
             <button onClick={addGroup} className="flex items-center gap-1.5 text-xs font-medium text-neon-cyan transition hover:brightness-110">

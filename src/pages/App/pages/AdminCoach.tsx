@@ -11,7 +11,6 @@ import {
 } from "../../../lib/api/personalAnalysis"
 import { createDirectUpload, uploadToCloudflare, readVideoDuration, createPublishToken, waitForVideoReady, getConcepts, type ConceptOption } from "../../../lib/api/admin"
 import { getBlocks, type BlockOption } from "../../../lib/api/blocks"
-import { getExplore } from "../../../lib/api/explore"
 import type { AnalysisPriority, PriorityResult } from "../../../lib/api/types"
 import { AnalysisSheet, ResultBadge } from "../components/CoachAnalysis"
 import { useResultLabels } from "../components/coachResultLabels"
@@ -222,7 +221,7 @@ const PriorityEditor = ({
             <option value="">{t("admin-coach.priority.no-block", "Sin bloque")}</option>
             {blocks.filter((b) => b.id != null).map((b) => (
               <option key={b.id} value={b.id}>
-                {b.nameEs}
+                {b.number ? `${b.number} · ${b.nameEs}` : b.nameEs}
               </option>
             ))}
           </select>
@@ -644,30 +643,22 @@ const AdminCoach = () => {
   // Catálogo para etiquetar las prioridades con su bloque y sus conceptos.
   const [blocks, setBlocks] = useState<BlockOption[]>([])
   const [concepts, setConcepts] = useState<ConceptOption[]>([])
-  // Qué conceptos tiene cada bloque, por nombre: lo da la biblioteca de Explorar (los conceptos
-  // con los que se han publicado los clips de ese bloque).
-  const [conceptNamesByBlock, setConceptNamesByBlock] = useState<Record<string, string[]>>({})
   useEffect(() => {
     refresh()
     getBlocks().then(setBlocks).catch(() => {})
     getConcepts().then(setConcepts).catch(() => {})
-    getExplore()
-      .then((explore) => setConceptNamesByBlock(Object.fromEntries(explore.sections.map((s) => [s.block, s.concepts]))))
-      .catch(() => {}) // sin esto se sigue pudiendo etiquetar buscando por texto
   }, [])
 
+  // Conceptos de cada bloque: los del catálogo (GET /api/blocks), en su orden y con su número de
+  // la Base de conocimiento en el nombre ("3.2 Mantener"). Catálogo cerrado: solo estos.
   const blockConcepts = useMemo<BlockConcepts>(() => {
-    const byName = new Map(concepts.map((c) => [c.nameEs, c]))
     const result: BlockConcepts = {}
     for (const b of blocks) {
       if (b.id == null) continue
-      result[String(b.id)] = (conceptNamesByBlock[b.nameEs] ?? [])
-        .map((name) => byName.get(name))
-        .filter((c): c is ConceptOption => c != null)
-        .sort((a, z) => a.nameEs.localeCompare(z.nameEs, "es"))
+      result[String(b.id)] = (b.concepts ?? []).map((c) => ({ id: c.id, nameEs: `${b.number}.${c.number} ${c.nameEs}`, nameEn: c.nameEn }))
     }
     return result
-  }, [blocks, concepts, conceptNamesByBlock])
+  }, [blocks])
 
   const pending = items.filter((i) => i.status !== "Delivered")
   const delivered = items.filter((i) => i.status === "Delivered")

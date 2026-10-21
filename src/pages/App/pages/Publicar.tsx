@@ -4,6 +4,8 @@ import { createDirectUpload, uploadToCloudflare, uploadCaptions, readVideoDurati
 import { getBlocks } from "../../../lib/api/blocks"
 import { useApi } from "../../../lib/hooks/useApi"
 import CatalogPicker from "../components/CatalogPicker"
+import ConceptPicker from "../components/ConceptPicker"
+import { useTaxonomy, type Taxonomy } from "../../../lib/taxonomy"
 import FileDrop from "../components/FileDrop"
 import ConceptTranslationPanel from "../components/ConceptTranslationPanel"
 import { useI18n } from "../../../lib/i18n/store"
@@ -46,33 +48,15 @@ const emptyClip = (defaultBlock: string): ClipDraft => ({
 })
 const emptyChapter = (): ChapterDraft => ({ time: "", title: "", titleEn: "" })
 
-/**
- * Catálogo de referencia bloque→conceptos (§ Importar JSON), con la misma numeración anidada
- * que se usa en los códigos "bloque.concepto" del JSON (p. ej. "4.2" = 2º concepto del bloque 4).
- * Derivado de datos reales de uso (/api/explore) y confirmado con el usuario — el número de
- * bloque solo indexa esta tabla; el nombre resultante se valida contra el catálogo real de
- * bloques (blockNames) al importar, por si hubiera cambiado.
- */
-const CONCEPT_CATALOG: { block: string; concepts: string[] }[] = [
-  { block: "Juego desde el fondo", concepts: ["Decisiones", "Presión", "Defensa"] },
-  { block: "Transición defensa-ataque", concepts: ["Media pista", "Subir", "Recuperar"] },
-  // 3.4 "Presión" se sustituye por "Posición" (era un duplicado del 3.1 "Presión en red";
-  // el 1.2 "Presión" del bloque 1 no se toca, es un concepto distinto).
-  { block: "Juego en la red", concepts: ["Presión en red", "Mantener", "Espacios", "Posición"] },
-  { block: "Uso del globo", concepts: ["Timing", "Globo"] },
-  { block: "Gestión del ritmo del punto", concepts: ["Paciencia", "Bajar ritmo", "Cambio ritmo"] },
-  { block: "Lectura táctica del rival", concepts: ["Lectura", "Insistencia", "Detectar Espacios"] },
-  { block: "Uso táctico de golpes", concepts: ["Volea", "Bandeja", "Saque", "Resto", "Remate", "Chiquita"] },
-  { block: "Juego en pareja", concepts: ["Sincronía", "Comunicación", "Cubrir"] },
-]
-
-/** "4.2" → { block: "Uso del globo", concept: "Globo" }. null si el código no es válido. */
-const resolveConceptCode = (code: string): { block: string; concept: string } | null => {
+/** "4.2" → { block: "Uso del globo", concept: "Globo" } con la numeración de la Base de
+ * conocimiento (bloque 4, 2.º concepto DE ESE BLOQUE), leída de la base de datos (GET /api/blocks).
+ * null si el código no existe. */
+const resolveConceptCode = (tax: Taxonomy, code: string): { block: string; concept: string } | null => {
   const m = code.trim().match(/^(\d+)\.(\d+)$/)
   if (!m) return null
-  const block = CONCEPT_CATALOG[Number(m[1]) - 1]
-  const concept = block?.concepts[Number(m[2]) - 1]
-  return block && concept ? { block: block.block, concept } : null
+  const block = tax.blocks.find((b) => b.number === Number(m[1]))
+  const concept = block?.concepts?.find((c) => c.number === Number(m[2]))
+  return block && concept ? { block: block.nameEs, concept: concept.nameEs } : null
 }
 
 type ImportChapter = { time: string; title: string; title_en?: string }
@@ -119,6 +103,7 @@ const Publicar = () => {
   const { t } = useI18n()
   const { data: blocksData } = useApi(getBlocks, [], "blocks")
   const blockNames = (blocksData ?? []).map((b) => b.nameEs)
+  const tax = useTaxonomy()
   const { data: conceptCatalog } = useApi(getConcepts, [], "concepts")
 
   const [step, setStep] = useState<1 | 2>(1)
@@ -193,7 +178,7 @@ const Publicar = () => {
     const newClips: ClipDraft[] = json.clips.map((c) => {
       const byBlock = new Map<string, string[]>()
       for (const code of c.tags ?? []) {
-        const resolved = resolveConceptCode(code)
+        const resolved = resolveConceptCode(tax, code)
         if (!resolved) {
           warnings.push(t("publicar.import.bad-code", 'Código de concepto no reconocido: "{code}" (clip "{title}")', { code, title: c.title }))
           continue
@@ -236,17 +221,6 @@ const Publicar = () => {
 
   const removeGroup = (ci: number, gi: number) =>
     setClips((cs) => cs.map((c, idx) => (idx === ci ? { ...c, groups: c.groups.filter((_, j) => j !== gi) } : c)))
-
-  // Conceptos ya escritos en OTROS clips de este mismo bloque, todavía sin guardar (el
-  // análisis + todos sus clips se publican juntos en una sola petición al final) — para que
-  // el buscador de conceptos los sugiera aunque el backend aún no los conozca (§ ver
-  // CatalogPicker). Evita que "Subir" en un clip y "subir" en otro acaben siendo conceptos
-  // distintos en BD solo por no haberse visto el uno al otro mientras se publicaban.
-  const conceptsForBlock = (block: string) => {
-    const set = new Set<string>()
-    for (const c of clips) for (const g of c.groups) if (g.block === block) for (const concept of g.concepts) set.add(concept)
-    return Array.from(set)
-  }
 
   // Todos los conceptos seleccionados en cualquier clip, para el panel de traducción (§ abajo).
   const allSelectedConcepts = clips.flatMap((c) => c.groups.flatMap((g) => g.concepts))
@@ -680,7 +654,9 @@ const Publicar = () => {
                         className={`${inputCls} flex-1`}
                       >
                         {blockNames.map((b) => (
-                          <option key={b} value={b} className="bg-midnight">{b}</option>
+                          <option key={b} value={b} className="bg-midnight">
+                            {tax.byBlock.get(b)?.number ? `${tax.byBlock.get(b)!.number} · ${b}` : b}
+                          </option>
                         ))}
                       </select>
                       {clip.groups.length > 1 && (
@@ -689,15 +665,7 @@ const Publicar = () => {
                         </button>
                       )}
                     </div>
-                    <CatalogPicker
-                      type="concept"
-                      multi
-                      block={g.block}
-                      selected={g.concepts}
-                      onChange={(v) => updateGroup(ci, gi, { concepts: v })}
-                      placeholder={t("publicar.field.concept-placeholder", "Busca o crea un concepto…")}
-                      extraSuggestions={conceptsForBlock(g.block)}
-                    />
+                    <ConceptPicker block={g.block} selected={g.concepts} onChange={(v) => updateGroup(ci, gi, { concepts: v })} />
                   </div>
                 ))}
                 <button onClick={() => addGroup(ci)} className="flex items-center gap-1.5 text-xs font-medium text-neon-cyan transition hover:brightness-110">
