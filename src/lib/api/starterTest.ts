@@ -59,6 +59,26 @@ export const trackTestEvent = (type: TestEvent, detail?: string) => {
   apiPost<{ ok: boolean }>("/api/activity", { type, detail }).catch(() => {})
 }
 
+export type CountRow = { key: string; count: number }
+export type StarterTestSummary = {
+  /** Personas que lo han terminado (cuenta su última respuesta del periodo). */
+  responses: number
+  people: { started: number; completed: number; abandoned: number; watchedClips: number; wentToExplore: number }
+  /** Paso ("1"|"2"|"3") en el que salieron quienes lo dejaron. */
+  abandonStep: CountRow[]
+  gameLevel: CountRow[]
+  playtomicLevel: CountRow[]
+  frequency: CountRow[]
+  phrases: CountRow[]
+  concepts: { id: number; nameEs: string; nameEn: string | null; count: number }[]
+  origin: CountRow[]
+  language: CountRow[]
+}
+
+/** GET /api/admin/starter-test/summary (Admin) → datos de las gráficas. `days` 0 = desde el principio. */
+export const getStarterTestSummary = (days: number, excludeTeam: boolean) =>
+  apiGet<StarterTestSummary>(`/api/admin/starter-test/summary?days=${days}&excludeTeam=${excludeTeam}`)
+
 /** GET /api/admin/starter-test/export (Admin) → CSV con todas las respuestas. */
 export async function downloadStarterTestCsv() {
   const blob = await apiGetBlob("/api/admin/starter-test/export")

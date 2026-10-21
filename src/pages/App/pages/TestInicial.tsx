@@ -1,17 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { ArrowLeft, Check, Compass, X } from "lucide-react"
-import { useI18n, type TFunc } from "../../../lib/i18n/store"
-import {
-  submitStarterTest,
-  trackTestEvent,
-  type ConceptCard,
-  type Frequency,
-  type GameLevel,
-  type Phrase,
-  type PlaytomicLevel,
-  type TestOrigin,
-} from "../../../lib/api/starterTest"
+import { useI18n } from "../../../lib/i18n/store"
+import { submitStarterTest, trackTestEvent, type ConceptCard, type Frequency, type GameLevel, type Phrase, type PlaytomicLevel, type TestOrigin } from "../../../lib/api/starterTest"
+import { FREQUENCY, GAME, PHRASES, PLAYTOMIC } from "../../../lib/starterTestOptions"
 import { invalidateStarterTest } from "../../../lib/starterTest"
 import { ConceptChip } from "../components/StarterTest"
 
@@ -21,42 +13,6 @@ import { ConceptChip } from "../components/StarterTest"
  * sale solo de la pregunta 3; el nivel de Playtomic (obligatorio, con «No uso Playtomic») y la
  * frecuencia son solo un dato. El resultado se guarda en Mi Lista.
  */
-
-const GAME: { value: GameLevel; label: (t: TFunc) => string }[] = [
-  { value: "new", label: (t) => t("starter-test.q1.new", "Llevo poco tiempo jugando") },
-  { value: "friends", label: (t) => t("starter-test.q1.friends", "Juego partidos con amigos con regularidad") },
-  { value: "amateur", label: (t) => t("starter-test.q1.amateur", "Juego americanas o liga amateur") },
-  { value: "tournaments", label: (t) => t("starter-test.q1.tournaments", "Compito en torneos") },
-]
-
-const PLAYTOMIC: { value: PlaytomicLevel; es: string; en: string }[] = [
-  { value: "none", es: "No uso Playtomic", en: "I don't use Playtomic" },
-  { value: "lt1", es: "Menos de 1", en: "Less than 1" },
-  { value: "1.0", es: "1,0–1,49", en: "1.0–1.49" },
-  { value: "1.5", es: "1,5–2,49", en: "1.5–2.49" },
-  { value: "2.5", es: "2,5–3,49", en: "2.5–3.49" },
-  { value: "3.5", es: "3,5–4,49", en: "3.5–4.49" },
-  { value: "4.5", es: "4,5–5,49", en: "4.5–5.49" },
-  { value: "5.5", es: "5,5 o más", en: "5.5 or higher" },
-]
-
-const FREQUENCY: { value: Frequency; label: (t: TFunc) => string }[] = [
-  { value: "1", label: (t) => t("starter-test.q2.1", "1 o menos") },
-  { value: "2-3", label: (t) => t("starter-test.q2.2-3", "2 o 3") },
-  { value: "4+", label: (t) => t("starter-test.q2.4", "4 o más") },
-]
-
-const PHRASES: { value: Phrase; label: (t: TFunc) => string }[] = [
-  { value: "lose_net", label: (t) => t("starter-test.q3.lose-net", "Me quitan la red enseguida") },
-  { value: "defend_back", label: (t) => t("starter-test.q3.defend-back", "Me cuesta defender desde el fondo") },
-  { value: "when_net", label: (t) => t("starter-test.q3.when-net", "No sé cuándo subir a la red") },
-  { value: "lobs", label: (t) => t("starter-test.q3.lobs", "Tiro globos, pero no me funcionan") },
-  { value: "rush", label: (t) => t("starter-test.q3.rush", "Me precipito y quiero acabar el punto demasiado pronto") },
-  { value: "volleys", label: (t) => t("starter-test.q3.volleys", "Mis voleas no hacen daño") },
-  { value: "partner", label: (t) => t("starter-test.q3.partner", "Con mi compañero no nos coordinamos") },
-  { value: "read", label: (t) => t("starter-test.q3.read", "No sé leer al rival") },
-  { value: "unsure", label: (t) => t("starter-test.q3.unsure", "No lo tengo claro") },
-]
 
 const ORIGINS: TestOrigin[] = ["how_it_works", "home_banner", "my_list", "account"]
 

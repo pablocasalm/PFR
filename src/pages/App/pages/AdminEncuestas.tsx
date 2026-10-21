@@ -3,14 +3,18 @@ import { ClipboardList, Download } from "lucide-react"
 import { useI18n } from "../../../lib/i18n/store"
 import { downloadSurveyCsv, getSurveyResponses, type AdminSurveyResponse } from "../../../lib/api/surveys"
 import { ADMIN_SURVEYS as SURVEYS } from "../surveys/definitions"
-import { downloadStarterTestCsv } from "../../../lib/api/starterTest"
+import StarterTestCharts from "../components/admin/StarterTestCharts"
 
 /**
  * AdminEncuestas — respuestas de las encuestas de la beta, por persona (solo Admin). Para que
  * Andrea agrupe dudas para la masterclass y contacte con quien tenga fricciones o esté muy
  * contento. Lista en pantalla y exportación a CSV (una columna por pregunta). La oleada se
- * deduce de la fecha de invitación.
+ * deduce de la fecha de invitación. La opción «Test inicial» del selector muestra en su lugar las
+ * gráficas de respuestas del test «¿Por dónde empiezo?».
  */
+
+/** Valor del selector para el test inicial (no es una encuesta). */
+const STARTER = "starter-test"
 
 const fmt = (iso: string | null, lang: string) => {
   if (!iso) return "—"
@@ -25,12 +29,14 @@ const AdminEncuestas = () => {
   const [rows, setRows] = useState<AdminSurveyResponse[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
+  const isStarter = surveyId === STARTER
   const survey = SURVEYS[surveyId]
 
   // Solo al entrar y al cambiar de encuesta. Ojo: `t` NO puede ir en las dependencias — useI18n
   // devuelve una función nueva en cada render, y con ella aquí la petición se repetía sin fin
   // (cada respuesta provoca otro render, que vuelve a pedir) — §15 oct, ~1.800 peticiones.
   useEffect(() => {
+    if (surveyId === STARTER) return
     let cancelled = false
     setRows(null)
     setError(null)
@@ -71,95 +77,96 @@ const AdminEncuestas = () => {
         <div className="mr-auto">
           <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{t("admin-surveys.title", "Encuestas")}</h1>
           <p className="text-sm text-white/60">
-            {rows
+            {isStarter
+              ? t("admin-starter.subtitle", "Test inicial «¿Por dónde empiezo?»")
+              : rows
               ? t("admin-surveys.counts", "{answered} respondidas · {pending} enviadas sin responder", { answered: answered.length, pending: pending.length })
               : t("common.loading", "Cargando...")}
           </p>
         </div>
-        {surveyIds.length > 1 && (
-          <select value={surveyId} onChange={(e) => setSurveyId(e.target.value)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-base text-white sm:text-sm">
-            {surveyIds.map((id) => (
-              <option key={id} value={id}>
-                {{ d4: "Día 4", d12: "Día 12", coach_extra: "Día 12 · Coach" }[id] ?? id}
-              </option>
-            ))}
-          </select>
+        <select value={surveyId} onChange={(e) => setSurveyId(e.target.value)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-base text-white sm:text-sm">
+          {surveyIds.map((id) => (
+            <option key={id} value={id}>
+              {{ d4: "Día 4", d12: "Día 12", coach_extra: "Día 12 · Coach" }[id] ?? id}
+            </option>
+          ))}
+          <option value={STARTER}>{t("admin-starter.option", "Test inicial")}</option>
+        </select>
+        {!isStarter && (
+          <button
+            onClick={exportCsv}
+            disabled={exporting}
+            className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold text-white/80 transition hover:text-white disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" />
+            {t("admin-surveys.export", "Exportar CSV")}
+          </button>
         )}
-        <button
-          onClick={exportCsv}
-          disabled={exporting}
-          className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold text-white/80 transition hover:text-white disabled:opacity-50"
-        >
-          <Download className="h-4 w-4" />
-          {t("admin-surveys.export", "Exportar CSV")}
-        </button>
-        {/* Test inicial «¿Por dónde empiezo?»: respuestas de todos, en CSV. */}
-        <button
-          onClick={() => downloadStarterTestCsv().catch(() => setError(t("admin-surveys.export-error", "No se pudo exportar.")))}
-          className="flex items-center gap-1.5 rounded-lg border border-neon-lime/30 px-3 py-2 text-sm font-semibold text-neon-lime/90 transition hover:text-neon-lime"
-        >
-          <Download className="h-4 w-4" />
-          {t("admin-surveys.export-starter-test", "Test inicial (CSV)")}
-        </button>
       </div>
 
-      {error && <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+      {isStarter ? (
+        <StarterTestCharts />
+      ) : (
+        <>
+        {error && <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
-      {rows && rows.length === 0 && (
-        <p className="text-sm text-white/40">{t("admin-surveys.empty", "Todavía no se ha enviado ni respondido esta encuesta.")}</p>
-      )}
+        {rows && rows.length === 0 && (
+          <p className="text-sm text-white/40">{t("admin-surveys.empty", "Todavía no se ha enviado ni respondido esta encuesta.")}</p>
+        )}
 
-      <ul className="max-w-3xl space-y-3">
-        {answered.map((r) => (
-          <li key={r.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <p className="text-sm font-semibold text-white">
-                {r.displayName ? `${r.displayName} · ` : ""}
-                <span className="font-normal text-white/70">{r.email}</span>
-              </p>
-              <p className="text-xs text-white/40">
-                {r.language.toUpperCase()} · {t("admin-surveys.answered-at", "respondida")} {fmt(r.submittedAtUtc, lang)} · {t("admin-surveys.invited-at", "invitado")}{" "}
-                {fmt(r.invitedAtUtc, lang)}
-              </p>
-            </div>
-            <dl className="mt-3 space-y-2">
-              {survey.questions
-                .filter((q) => r.answers && r.answers[q.id] !== undefined)
-                .map((q) => {
-                  const v = r.answers![q.id]
-                  const text = Array.isArray(v) ? v.map((x) => optionLabel(q.id, x)).join(" · ") : q.type === "text" ? v : optionLabel(q.id, v)
-                  return (
-                    <div key={q.id}>
-                      <dt className="text-xs text-white/45">{t(...q.label)}</dt>
-                      <dd className="whitespace-pre-wrap break-words text-sm text-white/90">{text}</dd>
-                    </div>
-                  )
-                })}
-            </dl>
-            {r.consentPublishText != null && (
-              <p className="mt-3 text-xs text-white/50">
-                {t("admin-surveys.consents", "Autorizaciones")}: {t("admin-surveys.consent.text", "texto")} {r.consentPublishText ? "✓" : "✗"} ·{" "}
-                {t("admin-surveys.consent.name", "nombre")} {r.consentPublishName ? "✓" : "✗"} · {t("admin-surveys.consent.video", "vídeo")}{" "}
-                {r.consentContactVideo ? "✓" : "✗"}
-              </p>
-            )}
-          </li>
-        ))}
-      </ul>
+        <ul className="max-w-3xl space-y-3">
+          {answered.map((r) => (
+            <li key={r.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-sm font-semibold text-white">
+                  {r.displayName ? `${r.displayName} · ` : ""}
+                  <span className="font-normal text-white/70">{r.email}</span>
+                </p>
+                <p className="text-xs text-white/40">
+                  {r.language.toUpperCase()} · {t("admin-surveys.answered-at", "respondida")} {fmt(r.submittedAtUtc, lang)} · {t("admin-surveys.invited-at", "invitado")}{" "}
+                  {fmt(r.invitedAtUtc, lang)}
+                </p>
+              </div>
+              <dl className="mt-3 space-y-2">
+                {survey.questions
+                  .filter((q) => r.answers && r.answers[q.id] !== undefined)
+                  .map((q) => {
+                    const v = r.answers![q.id]
+                    const text = Array.isArray(v) ? v.map((x) => optionLabel(q.id, x)).join(" · ") : q.type === "text" ? v : optionLabel(q.id, v)
+                    return (
+                      <div key={q.id}>
+                        <dt className="text-xs text-white/45">{t(...q.label)}</dt>
+                        <dd className="whitespace-pre-wrap break-words text-sm text-white/90">{text}</dd>
+                      </div>
+                    )
+                  })}
+              </dl>
+              {r.consentPublishText != null && (
+                <p className="mt-3 text-xs text-white/50">
+                  {t("admin-surveys.consents", "Autorizaciones")}: {t("admin-surveys.consent.text", "texto")} {r.consentPublishText ? "✓" : "✗"} ·{" "}
+                  {t("admin-surveys.consent.name", "nombre")} {r.consentPublishName ? "✓" : "✗"} · {t("admin-surveys.consent.video", "vídeo")}{" "}
+                  {r.consentContactVideo ? "✓" : "✗"}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
 
-      {pending.length > 0 && (
-        <details className="mt-8 max-w-3xl">
-          <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-white/60">
-            {t("admin-surveys.pending", "Enviadas sin responder")} ({pending.length})
-          </summary>
-          <ul className="mt-3 space-y-1 text-sm text-white/70">
-            {pending.map((r) => (
-              <li key={r.id}>
-                {r.email} <span className="text-xs text-white/40">· {t("admin-surveys.sent-at", "enviada")} {fmt(r.sentAtUtc, lang)}</span>
-              </li>
-            ))}
-          </ul>
-        </details>
+        {pending.length > 0 && (
+          <details className="mt-8 max-w-3xl">
+            <summary className="cursor-pointer text-sm font-bold uppercase tracking-wide text-white/60">
+              {t("admin-surveys.pending", "Enviadas sin responder")} ({pending.length})
+            </summary>
+            <ul className="mt-3 space-y-1 text-sm text-white/70">
+              {pending.map((r) => (
+                <li key={r.id}>
+                  {r.email} <span className="text-xs text-white/40">· {t("admin-surveys.sent-at", "enviada")} {fmt(r.sentAtUtc, lang)}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+        </>
       )}
     </main>
   )
