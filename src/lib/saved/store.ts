@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react"
 import type { ContentItem } from "../api/types"
 import { getSavedList, toggleSaved } from "../api/saved"
+import { forgetItemInFolders, itemKey } from "./folders"
 
 /**
  * Mi Lista — fuente de verdad de la UI, sincronizada con el backend (/api/saved).
@@ -47,11 +48,20 @@ export function isSaved(id: string) {
  */
 export function toggleSavedItem(item: ContentItem) {
   const previous = items
-  commit(isSaved(item.id) ? items.filter((i) => i.id !== item.id) : [item, ...items])
+  const wasSaved = isSaved(item.id)
+  commit(wasSaved ? items.filter((i) => i.id !== item.id) : [item, ...items])
+  // Quitarlo de Mi Lista lo saca también de todas sus carpetas (el servidor hace lo mismo).
+  if (wasSaved) forgetItemInFolders(itemKey(item))
   toggleSaved(item.type, item.id).catch(() => {
     // Revertir al estado anterior si el servidor falla (p. ej. sin sesión / red caída).
     commit(previous)
   })
+}
+
+/** Lo marca como guardado en la UI sin llamar al servidor (cuando ya lo ha guardado otra
+ * petición, p. ej. «Guardar en…» o añadir a una carpeta). */
+export function markSaved(item: ContentItem) {
+  if (!isSaved(item.id)) commit([item, ...items])
 }
 
 /**

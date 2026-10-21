@@ -1,10 +1,11 @@
 import { Bookmark } from "lucide-react"
 import type { ContentItem } from "../api/types"
 import { useSavedItems, isSaved, toggleSavedItem } from "./store"
+import { openSaveTo } from "./saveTo"
 import { useI18n } from "../i18n/store"
 
 /**
- * Botón "Mi Lista" reutilizable (§9.4): selector de estado guardar/quitar.
+ * Botón "Mi Lista" reutilizable (§9.4): guarda y abre «Guardar en…» (carpetas).
  * - variant "pill": texto + icono (Hero, detalles).
  * - variant "icon": solo icono, para superponer en miniaturas de tarjetas.
  * Frena la navegación cuando va dentro de un <Link>.
@@ -19,7 +20,10 @@ const SaveButton = ({ item, variant = "icon" }: { item: ContentItem; variant?: V
   const onClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    toggleSavedItem(item)
+    // Un toque guarda en Mi Lista (como siempre) y abre «Guardar en…» para elegir carpetas;
+    // si ya estaba guardado, solo abre «Guardar en…» (ahí se puede quitar).
+    if (!saved) toggleSavedItem(item)
+    openSaveTo(item)
   }
 
   const label = saved ? t("save-button.saved", "En Mi Lista") : t("save-button.save", "Mi Lista")

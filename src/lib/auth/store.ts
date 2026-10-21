@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react"
 import { apiLogin, apiRegister, apiLogout, markOnboardingSeen } from "../api/auth"
 import { refreshAccessToken } from "../api/client"
 import { clearSaved } from "../saved/store"
+import { clearFolders } from "../saved/folders"
 import { invalidateApiCache } from "../hooks/useApi"
 import { setLanguage } from "../i18n/store"
 
@@ -178,6 +179,7 @@ export function logout() {
   apiLogout().catch(() => {})
   setState({ token: null, user: null })
   clearSaved() // Mi Lista es por-cuenta: se vacía al salir.
+  clearFolders()
   invalidateApiCache() // no dejar datos cacheados de la cuenta anterior.
 }
 

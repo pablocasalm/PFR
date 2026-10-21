@@ -5,6 +5,8 @@ import MobileNav from "./components/MobileNav"
 import FeedbackButton from "./components/FeedbackButton"
 import ScrollToTop from "../../lib/ui/ScrollToTop"
 import { hydrateSaved } from "../../lib/saved/store"
+import { hydrateFolders } from "../../lib/saved/folders"
+import SaveToSheet from "../../lib/saved/SaveToSheet"
 import { trackActivity } from "../../lib/api/activity"
 import { useAuth, refreshSubscriptionState, applyAccountState, getAuthUser, isAdmin } from "../../lib/auth/store"
 import { startAccountHub, stopAccountHub, onHubEvent, currentUserId } from "../../lib/realtime/accountHub"
@@ -22,6 +24,7 @@ const AppLayout = () => {
   // Al entrar en la zona con sesión, sincroniza Mi Lista con la cuenta (/api/saved).
   useEffect(() => {
     hydrateSaved()
+    hydrateFolders()
     trackActivity("app_open") // métricas internas: días que entra cada usuario
   }, [])
 
@@ -78,6 +81,8 @@ const AppLayout = () => {
         <Outlet />
       </div>
       <MobileNav />
+      {/* «Guardar en…»: la abre el botón de guardar de cualquier tarjeta. */}
+      <SaveToSheet />
       <FeedbackButton />
     </div>
   )
