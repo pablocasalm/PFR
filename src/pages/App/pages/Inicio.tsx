@@ -79,20 +79,22 @@ const ContinueCard = ({ item }: { item: ContentItem }) => {
   return (
     <Link
       to={watchHref(item)}
-      className="flex w-[85vw] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition hover:border-white/20 sm:w-80 sm:flex-row"
+      className="flex w-[85vw] shrink-0 snap-start flex-row overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition hover:border-white/20 sm:w-80"
     >
-      <div className="relative w-full shrink-0 sm:w-32">
-        <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-full sm:h-full sm:min-h-[120px]" />
+      {/* Siempre en horizontal (miniatura pequeña + texto), también en el móvil: apilada, la
+          miniatura a 16:9 ocupaba casi toda la pantalla al entrar y el título quedaba debajo. */}
+      <div className="relative w-28 shrink-0 sm:w-32">
+        <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="h-full min-h-[88px] w-full sm:min-h-[120px]" />
         <span className="absolute inset-0 flex items-center justify-center">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/80 bg-black/30 backdrop-blur-sm sm:h-14 sm:w-14">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/80 bg-black/30 backdrop-blur-sm sm:h-14 sm:w-14">
             <Play className="h-4 w-4 text-white sm:h-5 sm:w-5" fill="currentColor" />
           </span>
         </span>
       </div>
-      <div className="flex flex-1 flex-col justify-center gap-3 p-4">
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-2 p-3 sm:gap-3 sm:p-4">
         <h3 className="line-clamp-2 text-sm font-medium leading-snug text-white">{pickText(item.title, item.titleEn, lang)}</h3>
         <div>
-          <p className="mb-2 text-sm text-neon-cyan">
+          <p className="mb-1.5 text-xs text-neon-cyan sm:mb-2 sm:text-sm">
             {formatDuration(current)} / {formatDuration(item.durationSeconds)}
           </p>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
