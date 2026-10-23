@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { UserCircle, Settings2, CreditCard, Lock, type LucideIcon } from "lucide-react"
 import { useAuth, setLocalDisplayName, PLAN_NAME } from "../../../lib/auth/store"
 import PendingPlanNote from "../components/PendingPlanNote"
@@ -67,7 +67,12 @@ const MiCuenta = () => {
   const SUB_STATUS_LABEL = useMemo(() => subStatusLabel(t), [t])
   const { user } = useAuth()
 
-  const [section, setSection] = useState<Section>("perfil")
+  // ?seccion=suscripcion abre esa sección directamente (enlaces de los emails de facturación).
+  const [searchParams] = useSearchParams()
+  const [section, setSection] = useState<Section>(() => {
+    const s = searchParams.get("seccion")
+    return s === "preferencias" || s === "suscripcion" || s === "seguridad" ? s : "perfil"
+  })
 
   const SECTIONS: { id: Section; label: string; icon: LucideIcon }[] = [
     { id: "perfil", label: t("mi-cuenta.nav.profile", "Perfil"), icon: UserCircle },
