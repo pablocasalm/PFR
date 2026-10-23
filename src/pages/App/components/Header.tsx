@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Link, useNavigate } from "react-router-dom"
-import { Search, ChevronDown, LogOut, BookOpen, Bookmark, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, Lock, MessageSquarePlus, ClipboardList, BarChart3 } from "lucide-react"
+import { Search, ChevronDown, LogOut, BookOpen, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, Lock, MessageSquarePlus, ClipboardList, BarChart2, BarChart3 } from "lucide-react"
 import { useAuth, canPublish, isAdmin, hasFeature, type AuthUser } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import SearchOverlay from "./SearchOverlay"
@@ -242,14 +242,14 @@ const SessionControl = () => {
               {t("mi-cuenta.title", "Mi cuenta")}
               {testPending && <span className="ml-auto h-2 w-2 rounded-full bg-red-500" aria-label={t("starter-test.pending", "Tienes el test inicial pendiente")} />}
             </Link>
-            {/* Mi Lista, también solo por debajo de xl: la barra inferior prioriza Coach y Club (ver MobileNav). */}
+            {/* Mi Juego, también solo por debajo de xl: no cabe en la barra inferior (ver MobileNav). */}
             <Link
-              to="/app/mi-lista"
+              to="/app/mi-juego"
               onClick={() => setMenuOpen(false)}
               className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5 xl:hidden"
             >
-              <Bookmark className="h-4 w-4" />
-              {t("header.nav.mi-lista", "Mi Lista")}
+              <BarChart2 className="h-4 w-4" />
+              {t("header.nav.mi-juego", "Mi Juego")}
             </Link>
             {/* Solo por debajo de xl: en escritorio "Cómo funciona" ya está en el nav. */}
             <Link

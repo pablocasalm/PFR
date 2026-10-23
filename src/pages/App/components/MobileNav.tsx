@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom"
-import { Home, Compass, BarChart2, Crown, Sparkles, Lock } from "lucide-react"
+import { Home, Compass, Bookmark, Crown, Sparkles, Lock } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useAuth, hasFeature, isAdmin, type PlanFeature } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
@@ -10,11 +10,12 @@ import { useI18n } from "../../../lib/i18n/store"
  * para todos los roles: las pestañas de Admin ya no viven en el nav de escritorio (solo
  * en el desplegable del avatar), así que no hace falta un caso especial aquí tampoco.
  *
- * Cinco accesos: Inicio, Explorar, Mi Juego, Coach y Club (orden pedido en el reporte de beta
- * #87: Explorar justo después de Inicio, como estaba antes). Coach y Club salen SIEMPRE, también para quien no tiene ese plan (con un candado
- * pequeño): al entrar, la propia pantalla le lleva a /app/precios, así que la pestaña hace de
- * escaparate. "Mi Lista" y "Cómo funciona" viven en el menú del avatar (Header.tsx), que es
- * también donde apunta el último paso del tour de bienvenida en este layout.
+ * Cinco accesos: Mi Lista, Explorar, Inicio, Club y Coach (orden decidido el 23/10/2026: Inicio en
+ * el centro, y Mi Lista entra en la barra porque aporta más que Mi Juego, que son solo analíticas;
+ * Mi Juego pasa al menú del avatar en Header.tsx, junto a "Cómo funciona", que es también donde
+ * apunta el último paso del tour de bienvenida en este layout). Coach y Club salen SIEMPRE, también
+ * para quien no tiene ese plan (con un candado pequeño): al entrar, la propia pantalla le lleva a
+ * /app/precios, así que la pestaña hace de escaparate.
  *
  * Sin "Buscar": la lupa vive en el Header (junto al avatar, como en escritorio) y abre el
  * overlay de búsqueda en vez de ser una pestaña propia.
@@ -23,11 +24,11 @@ import { useI18n } from "../../../lib/i18n/store"
 // Mismas claves de i18n que Header.tsx (header.nav.*): es el mismo texto, solo cambia el layout.
 // `feature`: función del plan que hace falta para entrar — sin ella, la pestaña lleva candado.
 const ITEMS: { to: string; key: string; label: string; icon: LucideIcon; feature?: PlanFeature }[] = [
-  { to: "/app/inicio", key: "header.nav.inicio", label: "Inicio", icon: Home },
+  { to: "/app/mi-lista", key: "header.nav.mi-lista", label: "Mi Lista", icon: Bookmark },
   { to: "/app/explorar", key: "header.nav.explorar", label: "Explorar", icon: Compass },
-  { to: "/app/mi-juego", key: "header.nav.mi-juego", label: "Mi Juego", icon: BarChart2 },
-  { to: "/app/coach", key: "header.nav.coach", label: "Coach", icon: Sparkles, feature: "personalAnalysis" },
+  { to: "/app/inicio", key: "header.nav.inicio", label: "Inicio", icon: Home },
   { to: "/app/club", key: "header.nav.club", label: "Club", icon: Crown, feature: "monthlyPicks" },
+  { to: "/app/coach", key: "header.nav.coach", label: "Coach", icon: Sparkles, feature: "personalAnalysis" },
 ]
 
 const MobileNav = () => {
