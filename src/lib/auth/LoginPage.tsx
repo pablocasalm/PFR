@@ -83,7 +83,9 @@ const LoginPage = () => {
   const emailFromUrl = params.get("email") ?? ""
   const isRegisterPath = location.pathname === "/register"
   const planParam = params.get("plan")
-  const planFromUrl = PLANS.find((p) => p.toLowerCase() === planParam?.toLowerCase()) ?? null
+  // "Essential" es el nombre visible de Starter (por dentro sigue siendo Starter): valen los dos.
+  const planKey = planParam?.toLowerCase() === "essential" ? "starter" : planParam?.toLowerCase()
+  const planFromUrl = PLANS.find((p) => p.toLowerCase() === planKey) ?? null
 
   const [mode, setMode] = useState<Mode>(inviteFromUrl || isRegisterPath || planFromUrl ? "register" : "login")
   const [email, setEmail] = useState(emailFromUrl)
