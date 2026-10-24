@@ -8,7 +8,7 @@ import { hydrateSaved } from "../../lib/saved/store"
 import { hydrateFolders } from "../../lib/saved/folders"
 import SaveToSheet from "../../lib/saved/SaveToSheet"
 import { trackActivity } from "../../lib/api/activity"
-import { useAuth, refreshSubscriptionState, applyAccountState, getAuthUser, isAdmin, hasActiveSubscription } from "../../lib/auth/store"
+import { useAuth, refreshSubscriptionState, applyAccountState, getAuthUser, isAdmin, hasActiveSubscription, hasFeature } from "../../lib/auth/store"
 import { startAccountHub, stopAccountHub, onHubEvent, currentUserId } from "../../lib/realtime/accountHub"
 import { startOnboardingTour } from "../../lib/onboarding/tour"
 
@@ -68,7 +68,8 @@ const AppLayout = () => {
     // Solo con acceso: sin suscripción no se puede navegar por la app y el tour no tendría sentido.
     if (tourStarted.current || !user || user.hasSeenOnboarding || !hasActiveSubscription(user)) return
     tourStarted.current = true
-    startOnboardingTour(navigate)
+    // Los pasos de Club solo con Club o Coach (con Essential esas pantallas llevan a Precios).
+    startOnboardingTour(navigate, hasFeature(user, "monthlyPicks"))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 

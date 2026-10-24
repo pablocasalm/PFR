@@ -16,22 +16,6 @@ import { StarterTestCallout } from "../components/StarterTest"
  * móvil, sidebar con etiqueta en escritorio) en vez de todo apilado — solo se ve una a la vez.
  */
 
-const roleLabel = (t: TFunc): Record<string, string> => ({
-  User: t("mi-cuenta.role.user", "Beta tester"),
-  ContentCreator: t("mi-cuenta.role.content-creator", "Creador de contenido"),
-  Admin: t("mi-cuenta.role.admin", "Administrador"),
-})
-const planLabel = (t: TFunc): Record<string, string> => ({
-  Free: t("mi-cuenta.plan.free", "Gratis"),
-  TrialThenPaid: t("mi-cuenta.plan.trial", "Prueba 14 días"),
-  Discounted: t("mi-cuenta.plan.discounted", "Descuento"),
-})
-const PLAN_CLS: Record<string, string> = {
-  Free: "border-white/15 bg-white/5 text-white/60",
-  TrialThenPaid: "border-violet-400/40 bg-violet-400/10 text-violet-300",
-  Discounted: "border-neon-lime/40 bg-neon-lime/10 text-neon-lime",
-}
-
 const subStatusLabel = (t: TFunc): Record<string, string> => ({
   None: t("mi-cuenta.sub-status.none", "Sin suscripción de pago"),
   Trialing: t("mi-cuenta.sub-status.trialing", "En prueba"),
@@ -62,8 +46,6 @@ type Section = "perfil" | "preferencias" | "suscripcion" | "seguridad"
 
 const MiCuenta = () => {
   const { t, lang } = useI18n()
-  const ROLE_LABEL = useMemo(() => roleLabel(t), [t])
-  const PLAN_LABEL = useMemo(() => planLabel(t), [t])
   const SUB_STATUS_LABEL = useMemo(() => subStatusLabel(t), [t])
   const { user } = useAuth()
 
@@ -105,6 +87,16 @@ const MiCuenta = () => {
   // Estado y fecha de la suscripción: primero los de la sesión, que se actualizan en tiempo real
   // cuando Stripe aplica un cambio; el perfil (cargado una vez al entrar) queda de respaldo.
   const subStatus = user?.subscriptionStatus ?? profile?.subscriptionStatus
+  // Estado del plan junto a su nombre: el de Stripe si tiene suscripción; si no, gratis (cuenta
+  // del equipo), la prueba de la beta o sin suscripción.
+  const planState = ((): { label: string; cls: string } => {
+    if (subStatus === "Trialing" || subStatus === "Active" || subStatus === "PastDue")
+      return { label: SUB_STATUS_LABEL[subStatus], cls: SUB_STATUS_CLS[subStatus] }
+    if (profile?.planType === "Free") return { label: t("mi-cuenta.plan-state.free", "Gratis"), cls: SUB_STATUS_CLS.None }
+    if (profile?.trialEndsAtUtc && new Date(profile.trialEndsAtUtc) > new Date())
+      return { label: t("mi-cuenta.plan-state.beta-trial", "Prueba gratuita"), cls: SUB_STATUS_CLS.Trialing }
+    return { label: SUB_STATUS_LABEL.None, cls: SUB_STATUS_CLS.None }
+  })()
   const subPeriodEnd = user?.subscriptionCurrentPeriodEndUtc ?? profile?.subscriptionCurrentPeriodEndUtc
 
   const openPortal = async () => {
@@ -256,19 +248,14 @@ const MiCuenta = () => {
             </div>
 
             <dl className="mb-4 divide-y divide-white/10 text-sm">
+              {/* Sin "Rol" (24/10/2026): para quien paga no significa nada. El plan es el de verdad
+                  (Essential, Club o Coach) con su estado, en vez de la categoría de facturación. */}
               <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0">
-                <dt className="text-white/50">{t("mi-cuenta.role", "Rol")}</dt>
-                <dd className="text-white">{profile ? (ROLE_LABEL[profile.role] ?? profile.role) : "—"}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-3 py-2.5">
                 <dt className="text-white/50">{t("mi-cuenta.plan", "Plan")}</dt>
-                <dd>
-                  {profile ? (
-                    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${PLAN_CLS[profile.planType] ?? PLAN_CLS.Free}`}>
-                      {PLAN_LABEL[profile.planType] ?? profile.planType}
-                    </span>
-                  ) : (
-                    "—"
+                <dd className="flex items-center gap-2 text-white">
+                  {user?.planTier ? t(`precios.tier.${user.planTier.toLowerCase()}`, PLAN_NAME[user.planTier]) : "—"}
+                  {profile && (
+                    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${planState.cls}`}>{planState.label}</span>
                   )}
                 </dd>
               </div>

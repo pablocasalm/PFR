@@ -10,6 +10,9 @@ import { t, whenI18nReady } from "../i18n/store"
  * mes → enviar preguntas → feedback → Cómo funciona. Recorrido y textos decididos con Andrea el
  * 15 de octubre de 2026.
  *
+ * Con PFR Essential (sin Club) se saltan los pasos de Club (plan del mes, entrar en Club,
+ * masterclass y preguntas): no tiene esas pantallas y la app le mandaría a Precios (24/10/2026).
+ *
  * Sin paso de idioma: quien entra ahora lo hace por invitación, y la invitación ya fija el idioma
  * de la cuenta (InviteCode.Language → User.PreferredLanguage).
  *
@@ -115,11 +118,11 @@ const PULSE_CLS = "tour-pulse"
 
 /** Arranca el tour cuando ya están cargados los textos del idioma de la cuenta (sus textos se
  * fijan al construirlo). */
-export function startOnboardingTour(navigate: NavigateFunction) {
-  void whenI18nReady().then(() => runTour(navigate))
+export function startOnboardingTour(navigate: NavigateFunction, includeClub: boolean) {
+  void whenI18nReady().then(() => runTour(navigate, includeClub))
 }
 
-function runTour(navigate: NavigateFunction) {
+function runTour(navigate: NavigateFunction, includeClub: boolean) {
   // La app desplaza con suavidad (scroll-behavior: smooth en index.css). Durante el tour eso hace
   // que el elemento siga moviéndose mientras se coloca la ventanita, y se ve un salto: mientras
   // dure, el desplazamiento es instantáneo. Se restaura al cerrar (onDestroyed).
@@ -167,7 +170,7 @@ function runTour(navigate: NavigateFunction) {
     // Para todos los pasos salvo los que tienen su propio onNextClick (Club y el último).
     onNextClick: () => moveWithScroll(tour, steps, 1),
     onPrevClick: () => moveWithScroll(tour, steps, -1),
-    steps: (steps = withCloseButton([
+    steps: (steps = withCloseButton(onlyFor(includeClub, [
       {
         popover: {
           title: t("onboarding.v2.welcome.title", "Bienvenido a Padel Film Room"),
@@ -190,6 +193,7 @@ function runTour(navigate: NavigateFunction) {
         },
       },
       {
+        clubOnly: true,
         element: optional("tour-plan-home"),
         popover: {
           title: t("onboarding.v2.plan.title", "Tu plan del mes"),
@@ -200,6 +204,7 @@ function runTour(navigate: NavigateFunction) {
         },
       },
       {
+        clubOnly: true,
         element: byLayout("tour-club-desktop", "tour-club-mobile"),
         onHighlighted: (element) => {
           fixIfMoved(tour, element)
@@ -222,6 +227,7 @@ function runTour(navigate: NavigateFunction) {
         },
       },
       {
+        clubOnly: true,
         element: optional("tour-club-masterclasses"),
         popover: {
           title: t("onboarding.v2.masterclass.title", "La masterclass del mes"),
@@ -234,6 +240,7 @@ function runTour(navigate: NavigateFunction) {
         },
       },
       {
+        clubOnly: true,
         element: optional("tour-club-questions"),
         popover: {
           title: t("onboarding.v2.questions.title", "Envía tus preguntas"),
@@ -265,11 +272,17 @@ function runTour(navigate: NavigateFunction) {
           },
         },
       },
-    ])),
+    ]))),
   })
 
   tour.drive()
 }
+
+/** Paso del tour; `clubOnly`: solo para quien tiene Club o Coach. */
+type TourStep = DriveStep & { clubOnly?: boolean }
+
+const onlyFor = (includeClub: boolean, steps: TourStep[]): DriveStep[] =>
+  steps.filter((step) => includeClub || !step.clubOnly)
 
 /** Pone Siguiente, Atrás y la "x" en los pasos que no fijan sus propios botones. */
 function withCloseButton(steps: DriveStep[]): DriveStep[] {
