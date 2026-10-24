@@ -30,9 +30,11 @@ export type AuthResponse = {
 export const apiLogin = (email: string, password: string) =>
   apiPostAuth<AuthResponse>("/api/auth/login", { email, password })
 
-/** POST /api/auth/register → crea el usuario y devuelve token. Requiere código de invitación (beta). */
-export const apiRegister = (email: string, password: string, displayName?: string, inviteCode?: string) =>
-  apiPostAuth<AuthResponse>("/api/auth/register", { email, password, displayName, inviteCode })
+/** POST /api/auth/register → crea el usuario y devuelve token. Con código de invitación (beta) o,
+ * si el backend tiene abierto el registro, sin él (llega desde Precios de la landing con un plan:
+ * la cuenta nace sin acceso y entra al suscribirse en Stripe). */
+export const apiRegister = (email: string, password: string, displayName?: string, inviteCode?: string, language?: string) =>
+  apiPostAuth<AuthResponse>("/api/auth/register", { email, password, displayName, inviteCode: inviteCode || undefined, language })
 
 /** POST /api/auth/logout → revoca el refresh token en el servidor (no basta con borrarlo solo en el cliente). */
 export const apiLogout = () => apiPostAuth<{ ok: boolean }>("/api/auth/logout")

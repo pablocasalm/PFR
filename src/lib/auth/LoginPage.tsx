@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Navigate, useNavigate, useSearchParams, useLocation } from "react-router-dom"
-import { useAuth } from "./store"
+import { useAuth, PLAN_NAME, type PlanTier } from "./store"
+import { createCheckoutSession } from "../api/billing"
 import { requestInvite, getInviteInfo } from "../api/invites"
 import { ApiError } from "../api/client"
 import LegalLinks, { LegalLink } from "../ui/LegalLinks"
@@ -12,7 +13,13 @@ import { useI18n, setLanguage } from "../i18n/store"
  * de toda la app. Durante la beta, el registro exige un código de invitación (llega por URL,
  * ?invite=&email=). Si el código está gastado se puede solicitar otro; y hay recuperación de
  * contraseña por email.
+ *
+ * Desde Precios de la landing llega con ?plan=Starter|Club|Coach (24/10/2026): el código pasa a
+ * ser opcional (el backend lo permite con Registration__AllowWithoutInvite) y, en cuanto hay
+ * sesión (al crear la cuenta o al iniciar sesión), se abre Stripe Checkout con ese plan.
  */
+
+const PLANS: PlanTier[] = ["Starter", "Club", "Coach"]
 
 type Mode = "login" | "register" | "request" | "forgot"
 
@@ -26,8 +33,10 @@ const LoginPage = () => {
   const inviteFromUrl = params.get("invite") ?? ""
   const emailFromUrl = params.get("email") ?? ""
   const isRegisterPath = location.pathname === "/register"
+  const planParam = params.get("plan")
+  const planFromUrl = PLANS.find((p) => p.toLowerCase() === planParam?.toLowerCase()) ?? null
 
-  const [mode, setMode] = useState<Mode>(inviteFromUrl || isRegisterPath ? "register" : "login")
+  const [mode, setMode] = useState<Mode>(inviteFromUrl || isRegisterPath || planFromUrl ? "register" : "login")
   const [email, setEmail] = useState(emailFromUrl)
   const [password, setPassword] = useState("")
   const [displayName, setDisplayName] = useState("")
@@ -68,7 +77,26 @@ const LoginPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (isAuthenticated) return <Navigate to="/app/inicio" replace />
+  // Con un plan elegido en la landing: en cuanto hay sesión, a pagar en Stripe. Si no se puede
+  // (ya tiene suscripción, Coach completo…), a la app como siempre.
+  const checkoutStarted = useRef(false)
+  const [checkoutError, setCheckoutError] = useState(false)
+  useEffect(() => {
+    if (!isAuthenticated || !planFromUrl || checkoutStarted.current) return
+    checkoutStarted.current = true
+    createCheckoutSession("Monthly", planFromUrl)
+      .then(({ url }) => window.location.assign(url))
+      .catch(() => setCheckoutError(true))
+  }, [isAuthenticated, planFromUrl])
+
+  if (isAuthenticated && (!planFromUrl || checkoutError)) return <Navigate to={checkoutError ? "/app/precios" : "/app/inicio"} replace />
+  if (isAuthenticated && planFromUrl) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-midnight bg-film-room p-4 text-white">
+        <p className="text-sm text-white/70">{t("login.checkout.opening", "Abriendo el pago seguro de Stripe…")}</p>
+      </div>
+    )
+  }
 
   const isEmailOnly = mode === "request" || mode === "forgot"
 
@@ -88,9 +116,10 @@ const LoginPage = () => {
       if (mode === "login") {
         await login(email.trim(), password)
       } else {
-        await register(email.trim(), password, displayName.trim() || undefined, inviteCode.trim())
+        await register(email.trim(), password, displayName.trim() || undefined, inviteCode.trim(), lang)
       }
-      navigate("/app/inicio", { replace: true })
+      // Con plan, el salto a Stripe lo hace el efecto de arriba al haber sesión.
+      if (!planFromUrl) navigate("/app/inicio", { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : t("login.error.generic", "No se pudo completar la operación."))
     } finally {
@@ -131,6 +160,8 @@ const LoginPage = () => {
     : t("login.title.forgot", "Recuperar contraseña")
   const subtitle =
     mode === "login" ? t("login.subtitle.login", "Accede a tu biblioteca táctica de Padel Film Room.")
+    : mode === "register" && planFromUrl
+      ? t("login.subtitle.register-plan", "Crea tu cuenta para empezar con {plan}. Después pasarás al pago seguro de Stripe.", { plan: PLAN_NAME[planFromUrl] })
     : mode === "register" ? t("login.subtitle.register", "Introduce tu código de invitación para unirte a la beta.")
     : mode === "request" ? t("login.subtitle.request", "¿Tu código ya se ha usado? Pide uno nuevo con tu email.")
     : t("login.subtitle.forgot", "Te enviaremos un enlace para crear una contraseña nueva.")
@@ -203,10 +234,14 @@ const LoginPage = () => {
                 />
                 <input
                   type="text"
-                  required
+                  required={!planFromUrl}
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
-                  placeholder={t("login.field.invite-code", "Código de invitación")}
+                  placeholder={
+                    planFromUrl
+                      ? t("login.field.invite-code-optional", "Código de invitación (opcional)")
+                      : t("login.field.invite-code", "Código de invitación")
+                  }
                   className={inputCls}
                   autoCapitalize="characters"
                 />
@@ -262,7 +297,7 @@ const LoginPage = () => {
                 {t("login.forgot-link", "¿Olvidaste tu contraseña?")}
               </button>
             )}
-            {mode === "register" && (
+            {mode === "register" && !planFromUrl && (
               <button
                 type="button"
                 onClick={() => switchMode("request")}

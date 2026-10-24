@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { Check, Minus, CreditCard, Clock } from "lucide-react"
 import { useAuth, PLAN_NAME, type PlanTier } from "../../../lib/auth/store"
 import PendingPlanNote from "../components/PendingPlanNote"
-import { PAYMENTS_ENABLED } from "../../../lib/payments"
+import { canStartCheckout } from "../../../lib/payments"
 import { trackActivity } from "../../../lib/api/activity"
 import { LegalLink } from "../../../lib/ui/LegalLinks"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
@@ -23,6 +23,9 @@ import { changePlan, createCheckoutSession, getBillingPlans, type BillingPlans }
  *
  * §Prueba local de Stripe (oct 2026): mientras tanto existe un modo de prueba que SÍ conecta los
  * botones con el checkout — ver PAYMENTS_ENABLED en lib/payments.ts. Nunca se activa en la app publicada.
+ *
+ * §24/10/2026: quien no tiene acceso (cuenta creada sin código desde la landing, prueba ya
+ * acabada) sí ve los botones, que abren Stripe Checkout — ver canStartCheckout en lib/payments.ts.
  */
 
 type FeatureRow = { label: (t: TFunc) => string; tiers: PlanTier[] } // qué tiers incluyen esta fila
@@ -50,12 +53,15 @@ const PlanCard = ({
   plan,
   isCurrent,
   hasSubscription,
+  canCheckout,
   backend,
 }: {
   plan: (typeof PLANS)[number]
   isCurrent: boolean
   /** Ya paga una suscripción: el botón cambia de plan en vez de abrir otro Checkout. */
   hasSubscription: boolean
+  /** Puede contratar desde aquí (botón que abre Stripe); si no, "Próximamente". */
+  canCheckout: boolean
   backend: BillingPlans | null
 }) => {
   const { t, lang } = useI18n()
@@ -73,7 +79,7 @@ const PlanCard = ({
       const { url } = hasSubscription ? await changePlan(plan.tier) : await createCheckoutSession("Monthly", plan.tier)
       window.location.href = url
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo abrir el pago.")
+      setError(err instanceof Error ? err.message : t("precios.checkout-error", "No se pudo abrir el pago."))
       setBusy(false)
     }
   }
@@ -131,19 +137,22 @@ const PlanCard = ({
         })}
       </ul>
 
-      {PAYMENTS_ENABLED ? (
-        // Modo de prueba local (textos sin traducir a propósito: no los ve ningún usuario).
+      {canCheckout ? (
         <div className="mt-6 space-y-2">
-          {/* Solo si falta: explica por qué el botón está apagado. */}
-          {backend && !backendPrice && <p className="text-xs text-amber-200/80">Este plan no tiene precio dado de alta todavía.</p>}
           <button
             type="button"
             onClick={subscribe}
             disabled={!backendPrice || busy || (hasSubscription && isCurrent) || coachFull}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-400 py-3 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            className={`flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-bold transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 ${
+              plan.accent ? "bg-neon-cyan text-midnight" : "border border-white/20 bg-white/5 text-white"
+            }`}
           >
             <CreditCard className="h-4 w-4" />
-            {busy ? "Abriendo Stripe…" : hasSubscription ? "Cambiar a este plan (prueba)" : "Suscribirme (prueba)"}
+            {busy
+              ? t("precios.opening-stripe", "Abriendo Stripe…")
+              : hasSubscription
+                ? t("precios.change-to-plan", "Cambiar a este plan")
+                : t("precios.choose-plan", "Elegir este plan")}
           </button>
           {error && <p className="text-xs text-red-300">{error}</p>}
         </div>
@@ -181,7 +190,11 @@ const Precios = () => {
         </span>
         <div>
           <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{t("precios.title", "Suscripción")}</h1>
-          <p className="text-sm text-white/60">{t("precios.subtitle-v2", "Tres niveles de acompañamiento. Muy pronto podrás suscribirte.")}</p>
+          <p className="text-sm text-white/60">
+            {canStartCheckout(user)
+              ? t("precios.subtitle-open", "Elige tu plan. El pago se hace de forma segura en Stripe.")
+              : t("precios.subtitle-v2", "Tres niveles de acompañamiento. Muy pronto podrás suscribirte.")}
+          </p>
         </div>
       </div>
 
@@ -194,6 +207,7 @@ const Precios = () => {
             plan={plan}
             isCurrent={user?.planTier === plan.tier}
             hasSubscription={hasSubscription}
+            canCheckout={canStartCheckout(user)}
             backend={backend}
           />
         ))}

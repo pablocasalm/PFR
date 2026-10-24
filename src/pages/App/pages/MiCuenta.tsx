@@ -390,10 +390,10 @@ const MiCuenta = () => {
 
             {portalError && <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{portalError}</p>}
 
-            {/* El portal de Stripe (cambiar de plan, cancelar) solo con los pagos abiertos — ver
-                lib/payments.ts. Hasta entonces, quien tenga una suscripción de prueba no puede
-                tocarla desde la app publicada. */}
-            {PAYMENTS_ENABLED && subStatus && subStatus !== "None" ? (
+            {/* Portal de Stripe (cancelar, cambiar la tarjeta, facturas) para quien tiene suscripción:
+                desde el 24/10/2026 ya se puede contratar (ver canStartCheckout en lib/payments.ts),
+                así que quien paga tiene que poder cancelar. Todo se hace en Stripe. */}
+            {subStatus && subStatus !== "None" ? (
               <button
                 type="button"
                 onClick={openPortal}
@@ -412,7 +412,7 @@ const MiCuenta = () => {
               >
                 {t("mi-cuenta.change-plan", "Cambiar de plan")}
               </Link>
-            ) : !(PAYMENTS_ENABLED && subStatus && subStatus !== "None") ? (
+            ) : !(subStatus && subStatus !== "None") ? (
               <Link
                 to="/app/precios"
                 className="inline-block rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
