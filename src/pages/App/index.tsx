@@ -8,7 +8,7 @@ import { hydrateSaved } from "../../lib/saved/store"
 import { hydrateFolders } from "../../lib/saved/folders"
 import SaveToSheet from "../../lib/saved/SaveToSheet"
 import { trackActivity } from "../../lib/api/activity"
-import { useAuth, refreshSubscriptionState, applyAccountState, getAuthUser, isAdmin } from "../../lib/auth/store"
+import { useAuth, refreshSubscriptionState, applyAccountState, getAuthUser, isAdmin, hasActiveSubscription } from "../../lib/auth/store"
 import { startAccountHub, stopAccountHub, onHubEvent, currentUserId } from "../../lib/realtime/accountHub"
 import { startOnboardingTour } from "../../lib/onboarding/tour"
 
@@ -65,7 +65,8 @@ const AppLayout = () => {
   // dispositivo — así que sale igual la primera vez que la cuenta entra, venga de donde venga.
   const tourStarted = useRef(false)
   useEffect(() => {
-    if (tourStarted.current || !user || user.hasSeenOnboarding) return
+    // Solo con acceso: sin suscripción no se puede navegar por la app y el tour no tendría sentido.
+    if (tourStarted.current || !user || user.hasSeenOnboarding || !hasActiveSubscription(user)) return
     tourStarted.current = true
     startOnboardingTour(navigate)
     // eslint-disable-next-line react-hooks/exhaustive-deps

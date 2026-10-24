@@ -13,6 +13,7 @@ const Watch = lazy(() => import("../../pages/App/pages/Watch"))
 const Search = lazy(() => import("../../pages/App/pages/Search"))
 const Precios = lazy(() => import("../../pages/App/pages/Precios"))
 const LoginPage = lazy(() => import("../../lib/auth/LoginPage"))
+const SubscribePage = lazy(() => import("../../lib/auth/SubscribePage"))
 const ResetPasswordPage = lazy(() => import("../../lib/auth/ResetPasswordPage"))
 const PlayerTestPage = lazy(() => import("../../lib/player/PlayerTestPage"))
 const Publicar = lazy(() => import("../../pages/App/pages/Publicar"))
@@ -46,6 +47,8 @@ const router = createBrowserRouter([
   { path: "/login", element: withSuspense(<LoginPage />) },
   { path: "/register", element: withSuspense(<LoginPage />) },
   { path: "/reset-password", element: withSuspense(<ResetPasswordPage />) },
+  // Elegir plan sin suscripción: con sesión pero fuera de la app (sin menú ni tour).
+  { path: "/suscripcion", element: withSuspense(<RequireAuth><SubscribePage /></RequireAuth>) },
   // ⚠️ Solo dev: prueba del reproductor sin backend.
   ...(import.meta.env.DEV ? [{ path: "/dev/player", element: withSuspense(<PlayerTestPage />) }] : []),
   {

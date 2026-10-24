@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
+import { Navigate, useLocation } from "react-router-dom"
 import { Check, Minus, CreditCard, Clock } from "lucide-react"
-import { useAuth, PLAN_NAME, type PlanTier } from "../../../lib/auth/store"
+import { useAuth, hasActiveSubscription, PLAN_NAME, type PlanTier } from "../../../lib/auth/store"
 import PendingPlanNote from "../components/PendingPlanNote"
 import { canStartCheckout } from "../../../lib/payments"
 import { trackActivity } from "../../../lib/api/activity"
@@ -170,9 +171,11 @@ const PlanCard = ({
   )
 }
 
-const Precios = () => {
+/** `standalone`: dentro de /suscripcion (fuera de la app, para quien aún no tiene suscripción). */
+const Precios = ({ standalone = false }: { standalone?: boolean }) => {
   const { t } = useI18n()
   const { user } = useAuth()
+  const location = useLocation()
   const [backend, setBackend] = useState<BillingPlans | null>(null)
   const hasSubscription = ["Active", "Trialing", "PastDue"].includes(user?.subscriptionStatus ?? "")
   useEffect(() => {
@@ -181,6 +184,10 @@ const Precios = () => {
     // enseña coincide con lo que se cobrará.
     getBillingPlans().then(setBackend).catch(() => {})
   }, [])
+
+  // Sin suscripción no se entra en la app, ni siquiera a Precios: a /suscripcion, fuera de la app
+  // (sin menú ni tour). Ahí vuelve también quien cierra Stripe sin pagar (?checkout=cancelled).
+  if (!standalone && user && !hasActiveSubscription(user)) return <Navigate to={`/suscripcion${location.search}`} replace />
 
   return (
     <main className="mx-auto w-full max-w-5xl py-8">
@@ -205,7 +212,7 @@ const Precios = () => {
           <PlanCard
             key={plan.tier}
             plan={plan}
-            isCurrent={user?.planTier === plan.tier}
+            isCurrent={!!user && hasActiveSubscription(user) && user.planTier === plan.tier}
             hasSubscription={hasSubscription}
             canCheckout={canStartCheckout(user)}
             backend={backend}

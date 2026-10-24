@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Navigate, useNavigate, useSearchParams, useLocation } from "react-router-dom"
 import { useAuth, PLAN_NAME, type PlanTier } from "./store"
 import { createCheckoutSession } from "../api/billing"
+import { Eye, EyeOff } from "lucide-react"
 import { requestInvite, getInviteInfo } from "../api/invites"
 import { ApiError } from "../api/client"
 import LegalLinks, { LegalLink } from "../ui/LegalLinks"
@@ -16,10 +17,58 @@ import { useI18n, setLanguage } from "../i18n/store"
  *
  * Desde Precios de la landing llega con ?plan=Starter|Club|Coach (24/10/2026): el código pasa a
  * ser opcional (el backend lo permite con Registration__AllowWithoutInvite) y, en cuanto hay
- * sesión (al crear la cuenta o al iniciar sesión), se abre Stripe Checkout con ese plan.
+ * sesión (al crear la cuenta o al iniciar sesión), se abre Stripe Checkout con ese plan, sin
+ * pasar por la app: quien no tiene suscripción no entra (ver RequireSubscription y /suscripcion).
+ * Si Stripe no se puede abrir, se queda aquí con el error y un botón para reintentar.
  */
 
 const PLANS: PlanTier[] = ["Starter", "Club", "Coach"]
+
+/** Campo de contraseña con el ojo para verla. Los dos campos del registro comparten el estado:
+ * al pulsar el ojo se ven (o se ocultan) los dos a la vez. */
+const PasswordInput = ({
+  value,
+  onChange,
+  placeholder,
+  className,
+  autoComplete,
+  visible,
+  onToggle,
+  toggleLabel,
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  className: string
+  autoComplete: string
+  visible: boolean
+  onToggle: () => void
+  toggleLabel: string
+}) => (
+  <div className="relative">
+    <input
+      type={visible ? "text" : "password"}
+      required
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={`${className} pr-12`}
+      autoComplete={autoComplete}
+      autoCapitalize="none"
+      autoCorrect="off"
+      spellCheck={false}
+    />
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={toggleLabel}
+      aria-pressed={visible}
+      className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-white/50 transition hover:text-white"
+    >
+      {visible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+    </button>
+  </div>
+)
 
 type Mode = "login" | "register" | "request" | "forgot"
 
@@ -39,6 +88,8 @@ const LoginPage = () => {
   const [mode, setMode] = useState<Mode>(inviteFromUrl || isRegisterPath || planFromUrl ? "register" : "login")
   const [email, setEmail] = useState(emailFromUrl)
   const [password, setPassword] = useState("")
+  const [passwordRepeat, setPasswordRepeat] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [displayName, setDisplayName] = useState("")
   const [inviteCode, setInviteCode] = useState(inviteFromUrl)
   const [emailOnly, setEmailOnly] = useState(emailFromUrl) // email para "solicitar código" / "recuperar"
@@ -80,20 +131,50 @@ const LoginPage = () => {
   // Con un plan elegido en la landing: en cuanto hay sesión, a pagar en Stripe. Si no se puede
   // (ya tiene suscripción, Coach completo…), a la app como siempre.
   const checkoutStarted = useRef(false)
-  const [checkoutError, setCheckoutError] = useState(false)
-  useEffect(() => {
-    if (!isAuthenticated || !planFromUrl || checkoutStarted.current) return
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
+  const openCheckout = () => {
+    if (!planFromUrl) return
     checkoutStarted.current = true
+    setCheckoutError(null)
     createCheckoutSession("Monthly", planFromUrl)
       .then(({ url }) => window.location.assign(url))
-      .catch(() => setCheckoutError(true))
+      .catch((err) => {
+        // Ya tiene suscripción: a la app, que es donde tiene que estar.
+        if (err instanceof ApiError && err.status === 409 && /suscripci|subscription/i.test(err.message)) {
+          navigate("/app/inicio", { replace: true })
+          return
+        }
+        setCheckoutError(err instanceof Error && err.message ? err.message : t("precios.checkout-error", "No se pudo abrir el pago."))
+      })
+  }
+  useEffect(() => {
+    if (!isAuthenticated || !planFromUrl || checkoutStarted.current) return
+    openCheckout()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, planFromUrl])
 
-  if (isAuthenticated && (!planFromUrl || checkoutError)) return <Navigate to={checkoutError ? "/app/precios" : "/app/inicio"} replace />
+  if (isAuthenticated && !planFromUrl) return <Navigate to="/app/inicio" replace />
   if (isAuthenticated && planFromUrl) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-midnight bg-film-room p-4 text-white">
-        <p className="text-sm text-white/70">{t("login.checkout.opening", "Abriendo el pago seguro de Stripe…")}</p>
+        {checkoutError ? (
+          <div className="w-full max-w-md space-y-4 rounded-2xl border border-white/10 bg-black/40 p-8 text-center">
+            <p className="font-semibold text-white">{t("login.checkout.failed-title", "No hemos podido abrir el pago")}</p>
+            <p className="text-sm text-red-300">{checkoutError}</p>
+            <button
+              type="button"
+              onClick={openCheckout}
+              className="w-full rounded-lg bg-neon-cyan py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
+            >
+              {t("login.checkout.retry", "Volver a intentarlo")}
+            </button>
+            <p className="text-xs text-white/50">
+              {t("login.checkout.help", "Si sigue fallando, escríbenos a hello@padelfilmroom.com.")}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-white/70">{t("login.checkout.opening", "Abriendo el pago seguro de Stripe…")}</p>
+        )}
       </div>
     )
   }
@@ -105,12 +186,17 @@ const LoginPage = () => {
     setError(null)
     setInfo(null)
     setPassword("")
+    setPasswordRepeat("")
   }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setInfo(null)
+    if (mode === "register" && password !== passwordRepeat) {
+      setError(t("login.error.password-mismatch", "Las contraseñas no coinciden."))
+      return
+    }
     setLoading(true)
     try {
       if (mode === "login") {
@@ -256,15 +342,28 @@ const LoginPage = () => {
               className={inputCls}
               autoComplete="email"
             />
-            <input
-              type="password"
-              required
+            <PasswordInput
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={setPassword}
               placeholder={t("login.field.password", "Contraseña")}
               className={inputCls}
               autoComplete={mode === "login" ? "current-password" : "new-password"}
+              visible={showPassword}
+              onToggle={() => setShowPassword((v) => !v)}
+              toggleLabel={showPassword ? t("login.password.hide", "Ocultar contraseña") : t("login.password.show", "Mostrar contraseña")}
             />
+            {mode === "register" && (
+              <PasswordInput
+                value={passwordRepeat}
+                onChange={setPasswordRepeat}
+                placeholder={t("login.field.password-repeat", "Repite la contraseña")}
+                className={inputCls}
+                autoComplete="new-password"
+                visible={showPassword}
+                onToggle={() => setShowPassword((v) => !v)}
+                toggleLabel={showPassword ? t("login.password.hide", "Ocultar contraseña") : t("login.password.show", "Mostrar contraseña")}
+              />
+            )}
 
             {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
