@@ -58,6 +58,8 @@ export const resolveTaxonomyParam = (param: string, idByName: Map<string, number
 
 /** Enlaces a la búsqueda filtrada: siempre por número (la pantalla pone el nombre en el idioma de cada uno). */
 export const conceptSearchHref = (id: number) => `/app/search?concept=${id}`
+/** Varios conceptos: clips de cualquiera de ellos (p. ej. «Sigue aprendiendo» del clip). */
+export const conceptsSearchHref = (ids: number[]) => `/app/search?concept=${ids.join(",")}`
 export const blockSearchHref = (id: number) => `/app/search?block=${id}`
 
 /** Taxonomía numerada (se pide una vez y queda en la caché de useApi). */

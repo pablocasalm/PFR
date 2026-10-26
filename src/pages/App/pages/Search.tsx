@@ -68,12 +68,14 @@ type Filters = { q: string; block: string; concept: string; type: string; sort: 
 
 // `concept` y `block` llegan como número (?concept=12); los nombres, ya en el idioma de la
 // cuenta, los pone la página con la taxonomía (`labels`). Nunca se enseña el valor de la URL.
-type Labels = { concept?: string; block?: string }
+// `concepts`: uno o varios (?concept=22,6 → clips de cualquiera de ellos, p. ej. «Sigue
+// aprendiendo» del clip, reporte #99), ya resueltos a id y con su nombre.
+type Labels = { concepts: { id: number; label: string }[]; block?: string }
 
 // Cabecera adaptada al origen desde el que llega el usuario (§11.1).
 const headerTitle = (f: Filters, t: TFunc, labels: Labels): string => {
   if (f.q) return t("search.title.query", "Resultados para “{q}”", { q: f.q })
-  if (f.concept) return `#${labels.concept ?? ""}`
+  if (f.concept) return labels.concepts.map((c) => `#${c.label}`).join(" · ")
   if (f.block) return labels.block ?? ""
   if (f.feed === "new") return t("inicio.section.new", "Nuevo esta semana")
   if (f.feed === "popular") return t("inicio.section.most-viewed", "Más vistos esta semana")
@@ -84,13 +86,21 @@ const headerTitle = (f: Filters, t: TFunc, labels: Labels): string => {
 }
 
 // Chips de filtros aplicados (§11.3), cada uno removible.
-const appliedChips = (f: Filters, t: TFunc, labels: Labels): { key: keyof Filters; label: string }[] => {
-  const chips: { key: keyof Filters; label: string }[] = []
-  if (f.block) chips.push({ key: "block", label: labels.block ?? "" })
-  if (f.concept) chips.push({ key: "concept", label: `#${labels.concept ?? ""}` })
-  if (f.type) chips.push({ key: "type", label: f.type === "analysis" ? t("explorar.type.analyses", "Análisis") : t("explorar.type.clips", "Clips") })
-  if (f.hasEnglish) chips.push({ key: "hasEnglish", label: t("explorar.filter.has-english", "Con inglés") })
-  if (f.watched) chips.push({ key: "watched", label: f.watched === "seen" ? t("search.filter.seen", "Vistos") : t("search.filter.unseen", "Sin ver") })
+// Cada chip sabe qué cambio de filtros lo quita (`patch`): con varios conceptos, cada uno se
+// quita por separado.
+type Chip = { key: string; label: string; patch: Partial<Filters> }
+const appliedChips = (f: Filters, t: TFunc, labels: Labels): Chip[] => {
+  const chips: Chip[] = []
+  if (f.block) chips.push({ key: "block", label: labels.block ?? "", patch: { block: "" } })
+  for (const c of labels.concepts)
+    chips.push({
+      key: `concept-${c.id}`,
+      label: `#${c.label}`,
+      patch: { concept: labels.concepts.filter((x) => x.id !== c.id).map((x) => x.id).join(",") },
+    })
+  if (f.type) chips.push({ key: "type", label: f.type === "analysis" ? t("explorar.type.analyses", "Análisis") : t("explorar.type.clips", "Clips"), patch: { type: "" } })
+  if (f.hasEnglish) chips.push({ key: "hasEnglish", label: t("explorar.filter.has-english", "Con inglés"), patch: { hasEnglish: "" } })
+  if (f.watched) chips.push({ key: "watched", label: f.watched === "seen" ? t("search.filter.seen", "Vistos") : t("search.filter.unseen", "Sin ver"), patch: { watched: "" } })
   return chips
 }
 
@@ -227,13 +237,19 @@ const Search = () => {
   // Conceptos y bloques por número (26/10/2026): la URL lleva el id; los enlaces viejos con el
   // nombre en español (?concept=Defensa) se convierten al id y se corrige la dirección.
   const tax = useTaxonomy()
-  const conceptId = resolveTaxonomyParam(filters.concept, tax.conceptIdByName)
+  // Uno o varios conceptos (separados por comas). Los que no se reconocen se ignoran.
+  const conceptIds = filters.concept
+    .split(",")
+    .map((part) => resolveTaxonomyParam(part.trim(), tax.conceptIdByName))
+    .filter((id): id is number => id != null)
+  const conceptKey = conceptIds.join(",")
+  const conceptId = conceptIds.length === 1 ? conceptIds[0] : null
   const blockId = resolveTaxonomyParam(filters.block, tax.blockIdByName)
   useEffect(() => {
     const next = new URLSearchParams(params)
     let changed = false
-    if (filters.concept && conceptId != null && filters.concept !== String(conceptId)) {
-      next.set("concept", String(conceptId))
+    if (filters.concept && conceptKey && filters.concept !== conceptKey) {
+      next.set("concept", conceptKey)
       changed = true
     }
     if (filters.block && blockId != null && filters.block !== String(blockId)) {
@@ -242,7 +258,7 @@ const Search = () => {
     }
     if (changed) setParams(next, { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conceptId, blockId, filters.concept, filters.block])
+  }, [conceptKey, blockId, filters.concept, filters.block])
 
   // Ids de cada contenido. Si el backend aún no los manda, salen del nombre con la taxonomía.
   const conceptIdsOf = (i: ContentItem): number[] =>
@@ -270,7 +286,7 @@ const Search = () => {
     return b ? pickText(b.nameEs, b.nameEn, lang) : ""
   }
   const labels: Labels = {
-    concept: conceptId != null ? conceptLabel(conceptId) : undefined,
+    concepts: conceptIds.map((id) => ({ id, label: conceptLabel(id) })),
     block: blockId != null ? blockLabel(blockId) : undefined,
   }
 
@@ -288,7 +304,7 @@ const Search = () => {
   // Un concepto o bloque que no se reconoce (enlace roto) no muestra nada, en vez de todo.
   const base = useMemo(() => {
     let items = searched
-    if (filters.concept) items = conceptId == null ? [] : items.filter((i) => conceptIdsOf(i).includes(conceptId))
+    if (filters.concept) items = conceptIds.length === 0 ? [] : items.filter((i) => conceptIdsOf(i).some((id) => conceptIds.includes(id)))
     if (filters.block) items = blockId == null ? [] : items.filter((i) => blockIdsOf(i).includes(blockId))
     if (filters.hasEnglish) items = items.filter((i) => i.hasEnglishVersion)
     // "Visto" = mismo criterio que la insignia de las tarjetas (`completed`, lo marca el backend).
@@ -296,7 +312,7 @@ const Search = () => {
     if (filters.watched === "unseen") items = items.filter((i) => !i.completed)
     return items
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searched, conceptId, blockId, filters.concept, filters.block, filters.hasEnglish, filters.watched, tax])
+  }, [searched, conceptKey, blockId, filters.concept, filters.block, filters.hasEnglish, filters.watched, tax])
 
   const counts = {
     all: base.length,
@@ -339,8 +355,13 @@ const Search = () => {
       options: allConcepts
         .map((id) => ({ value: String(id), label: `#${conceptLabel(id)}` }))
         .sort((a, b) => a.label.localeCompare(b.label)),
-      isActive: (v) => conceptId != null && String(conceptId) === v,
-      onToggle: (v) => setFilter({ concept: conceptId != null && String(conceptId) === v ? "" : v }),
+      // Varios a la vez: marcar suma, desmarcar quita (clips de cualquiera de los marcados).
+      isActive: (v) => conceptIds.includes(Number(v)),
+      onToggle: (v) => {
+        const id = Number(v)
+        const next = conceptIds.includes(id) ? conceptIds.filter((x) => x !== id) : [...conceptIds, id]
+        setFilter({ concept: next.join(",") })
+      },
     },
     {
       title: t("search.filter.watched", "Vistos"),
@@ -438,7 +459,7 @@ const Search = () => {
               {chips.map((chip) => (
                 <button
                   key={chip.key}
-                  onClick={() => setFilter({ [chip.key]: "" } as Partial<Filters>)}
+                  onClick={() => setFilter(chip.patch)}
                   className="flex items-center gap-1.5 rounded-full border border-neon-cyan/40 bg-neon-cyan/10 px-3 py-1 text-xs font-medium text-neon-cyan transition hover:bg-neon-cyan/20"
                 >
                   {chip.label} <X className="h-3.5 w-3.5" />

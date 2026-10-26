@@ -28,7 +28,7 @@ import WatchedBadge from "../components/WatchedBadge"
 import ErrorScreen from "../components/ErrorScreen"
 import { useAuth } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
-import { useTaxonomy, conceptSearchHref } from "../../../lib/taxonomy"
+import { useTaxonomy, conceptSearchHref, conceptsSearchHref } from "../../../lib/taxonomy"
 import { pickText, pickList } from "../../../lib/i18n/content"
 
 /**
@@ -376,15 +376,21 @@ const ClipComments = ({ social }: { social: ClipSocial }) => {
   )
 }
 
-const RelatedClips = ({ related, vertical = false }: { related: ContentItem[]; vertical?: boolean }) => {
+// «Ver …» lleva a todos los clips que comparten algún concepto con este: el mismo criterio que
+// los 4 de la sección, sin límite (reporte #99: antes el botón no hacía nada).
+const RelatedClips = ({ related, clip, vertical = false }: { related: ContentItem[]; clip: Pick<ClipDetail, "concepts" | "conceptIds">; vertical?: boolean }) => {
   const { t, lang } = useI18n()
+  const tax = useTaxonomy()
+  const ids = clip.conceptIds ?? clip.concepts.map((n) => tax.conceptIdByName.get(n)).filter((id): id is number => id != null)
   return (
   <section className={vertical ? "mt-10 space-y-4" : "space-y-4"}>
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-3">
       <h2 className="text-lg font-bold text-white">{t("watch.keep-learning", "Sigue aprendiendo")}</h2>
-      <button className="flex items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110">
-        {t("clip.related-concepts-cta", "Ver clips de conceptos relacionados")} <ArrowRight className="h-4 w-4" />
-      </button>
+      {ids.length > 0 && (
+        <Link to={conceptsSearchHref(ids)} className="flex items-center gap-1.5 text-right text-sm font-medium text-neon-cyan transition hover:brightness-110">
+          {t("clip.related-concepts-cta", "Ver clips de conceptos relacionados")} <ArrowRight className="h-4 w-4 shrink-0" />
+        </Link>
+      )}
     </div>
     <CardRow
       itemWidth={vertical ? "w-[30vw]" : "w-[40vw]"}
@@ -523,7 +529,7 @@ const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => {
       <ClipComments social={social} />
       {clip.related.length > 0 && (
         <div id="clip-relacionados">
-          <RelatedClips related={clip.related} />
+          <RelatedClips related={clip.related} clip={clip} />
         </div>
       )}
     </main>
@@ -557,7 +563,7 @@ const ClipVertical = ({ clip }: { clip: ClipDetail }) => {
           <ClipComments social={social} />
         </div>
       </div>
-      {clip.related.length > 0 && <RelatedClips related={clip.related} vertical />}
+      {clip.related.length > 0 && <RelatedClips related={clip.related} clip={clip} vertical />}
     </main>
   )
 }
