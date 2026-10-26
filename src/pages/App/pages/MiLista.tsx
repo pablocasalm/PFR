@@ -14,6 +14,7 @@ import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
 import { useTaxonomy, conceptRank, type Taxonomy } from "../../../lib/taxonomy"
 import { ConceptsToWork } from "../components/StarterTest"
+import { useStarterTest } from "../../../lib/starterTest"
 
 /**
  * MiLista — biblioteca personal del usuario (§12), con carpetas:
@@ -278,6 +279,7 @@ type Tab = "all" | "coach" | number
 const MiLista = () => {
   const { t, lang } = useI18n()
   const tax = useTaxonomy()
+  const { data: starterTest } = useStarterTest()
   const saved = useSavedItems()
   const folders = useFolders()
 
@@ -424,7 +426,11 @@ const MiLista = () => {
   }
 
   const nothingSaved = saved.length === 0
-  const nothingAtAll = nothingSaved && recentItems.length === 0 && !hasCoachAnalyses && folders.length === 0
+  // Con conceptos para trabajar (del test inicial o seguidos) Mi Lista no está vacía: antes salía
+  // la pantalla vacía sin ellos, justo después de que el test dijera «los hemos guardado en Mi
+  // Lista» (reporte #97).
+  const hasConceptsToWork = (starterTest?.concepts.length ?? 0) > 0
+  const nothingAtAll = nothingSaved && recentItems.length === 0 && !hasCoachAnalyses && folders.length === 0 && !hasConceptsToWork
   const select = "rounded-lg border border-white/12 bg-white/[0.04] px-2.5 py-2 text-base text-white/80 sm:text-xs"
 
   const tabClass = (on: boolean, extra = "") =>
