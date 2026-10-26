@@ -481,6 +481,15 @@ const Explorar = () => {
             {t("explorar.subtitle", "Encuentra los mejores ejemplos de pádel organizados por conceptos clave.")}
           </p>
         </div>
+        <div className="flex shrink-0 items-center gap-2">
+        {/* Quitar filtros sin abrir el panel (reporte #102): solo si hay alguno puesto. Aquí,
+            junto a Filtros, desde sm; en móvil no cabe en la fila y va debajo (más abajo). */}
+        {activeCount > 0 && (
+          <button onClick={clear} className="hidden items-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium text-white/60 transition hover:text-white sm:flex">
+            <X className="h-4 w-4" />
+            {t("explorar.clear-filters", "Quitar filtros")}
+          </button>
+        )}
         <button
           onClick={() => setShowFilters((v) => !v)}
           aria-expanded={showFilters}
@@ -498,7 +507,15 @@ const Explorar = () => {
             </span>
           )}
         </button>
+        </div>
       </div>
+
+      {activeCount > 0 && (
+        <button onClick={clear} className="-mt-3 flex items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110 sm:hidden">
+          <X className="h-4 w-4" />
+          {t("explorar.clear-filters", "Quitar filtros")}
+        </button>
+      )}
 
       {/* Filtros: en escritorio en línea; en móvil, hoja inferior (mismo patrón que Comentarios en Video). */}
       {showFilters && (

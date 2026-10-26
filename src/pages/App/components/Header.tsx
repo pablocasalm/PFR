@@ -6,7 +6,6 @@ import { useI18n } from "../../../lib/i18n/store"
 import SearchOverlay from "./SearchOverlay"
 import NewsBell from "./NewsBell"
 import { TOUR_OPEN_FEEDBACK_EVENT } from "./FeedbackButton"
-import LanguageSelector from "./LanguageSelector"
 import { useStarterTest } from "../../../lib/starterTest"
 
 /**
@@ -160,8 +159,7 @@ const Header = () => {
         <MessageSquarePlus className="h-5 w-5" />
       </button>
 
-      {/* Idioma */}
-      <LanguageSelector />
+      {/* Sin selector de idioma (reporte #95): se cambia en Mi Cuenta → Preferencias. */}
 
       {/* Noticias */}
       <NewsBell />

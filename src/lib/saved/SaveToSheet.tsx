@@ -9,8 +9,10 @@ import { closeSaveTo, subscribeSaveTo, getSaveTarget } from "./saveTo"
 /**
  * «Guardar en…» (Mi Lista con carpetas): la abre el botón de guardar de cualquier tarjeta. Un
  * contenido puede estar en varias carpetas a la vez. Cada casilla se guarda al momento (si se
- * cierra sin pulsar «Hecho», no se pierde nada). Desmarcar «Mi Lista» lo quita de Mi Lista y de
- * todas sus carpetas. En móvil sale desde abajo; en escritorio, centrada.
+ * cierra sin pulsar «Hecho», no se pierde nada). «Mi Lista» sale siempre marcada y en gris, sin
+ * poder desmarcarse (reporte #92: desmarcarla quitaba el contenido de todo y cerraba la ventana,
+ * y parecía un fallo); para quitarlo de Mi Lista se hace desde la pantalla de Mi Lista. En móvil
+ * sale desde abajo; en escritorio, centrada.
  */
 
 const MAX_NAME = 60
@@ -53,9 +55,9 @@ const SaveToSheet = () => {
 
   const fail = () => setError(t("save-to.error", "No se pudo guardar. Inténtalo de nuevo."))
 
-  const toggleMyList = () => {
-    toggleSavedItem(item)
-    if (saved) closeSaveTo() // quitado de Mi Lista: ya no hay carpetas que elegir
+  // Solo para guardar (si por lo que sea no se había guardado): no se puede quitar desde aquí.
+  const addToMyList = () => {
+    if (!saved) toggleSavedItem(item)
   }
 
   const toggleFolder = (id: number) => {
@@ -96,10 +98,19 @@ const SaveToSheet = () => {
         </div>
 
         <div className="overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          <button type="button" onClick={toggleMyList} className="flex w-full items-center justify-between border-b border-white/5 py-3.5 text-left text-sm text-white">
-            {t("save-to.my-list", "Mi Lista (Todo)")}
-            <Box on={saved} />
-          </button>
+          {saved ? (
+            <div className="flex w-full cursor-default items-center justify-between border-b border-white/5 py-3.5 text-left text-sm text-white/45" aria-disabled="true">
+              {t("save-to.my-list", "Mi Lista (Todo)")}
+              <span className="opacity-60">
+                <Box on />
+              </span>
+            </div>
+          ) : (
+            <button type="button" onClick={addToMyList} className="flex w-full items-center justify-between border-b border-white/5 py-3.5 text-left text-sm text-white">
+              {t("save-to.my-list", "Mi Lista (Todo)")}
+              <Box on={false} />
+            </button>
+          )}
 
           {folders.map((f) => (
             <button
@@ -153,7 +164,7 @@ const SaveToSheet = () => {
             {t("save-to.done", "Hecho")}
           </button>
           <p className="mt-2 text-center text-[11px] text-white/40">
-            {t("save-to.help", "Un contenido puede estar en varias carpetas. Quitarlo de Mi Lista lo quita de todas.")}
+            {t("save-to.help-v2", "Un contenido puede estar en varias carpetas. Para quitarlo de Mi Lista, hazlo desde la pantalla de Mi Lista.")}
           </p>
         </div>
       </div>

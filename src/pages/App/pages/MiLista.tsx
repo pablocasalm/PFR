@@ -307,6 +307,10 @@ const MiLista = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [newFolderName, setNewFolderName] = useState<string | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
+  // Confirmación de «Borrar carpeta» dentro de la app (reporte #93): window.confirm a veces no
+  // se muestra en el iPhone (app en la pantalla de inicio, navegadores integrados) y cuenta como
+  // "Cancelar", así que no se borraba nada.
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // Lo que se ve: la pestaña (Todo o una carpeta), el filtro y el orden.
@@ -414,8 +418,8 @@ const MiLista = () => {
   }
   const confirmDelete = () => {
     if (!activeFolder) return
-    if (!window.confirm(t("mi-lista.folder.delete-confirm", "¿Borrar la carpeta «{name}»? Lo que tiene sigue en Mi Lista.", { name: activeFolder.name }))) return
     deleteFolder(activeFolder.id).catch(fail)
+    setConfirmingDeleteId(null)
     setTab("all")
   }
 
@@ -536,9 +540,25 @@ const MiLista = () => {
                     >
                       <ChevronRight className="h-3.5 w-3.5" />
                     </button>
-                    <button type="button" onClick={confirmDelete} className="flex items-center gap-1 rounded-lg border border-red-400/30 px-2.5 py-1.5 text-red-300 hover:bg-red-500/10">
-                      <Trash2 className="h-3.5 w-3.5" /> {t("mi-lista.folder.delete", "Borrar carpeta")}
-                    </button>
+                    {confirmingDeleteId === activeFolder.id ? (
+                      <div className="flex w-full flex-wrap items-center gap-2 rounded-lg border border-red-400/30 bg-red-500/[0.06] px-3 py-2">
+                        <span className="text-white/80">
+                          {t("mi-lista.folder.delete-confirm", "¿Borrar la carpeta «{name}»? Lo que tiene sigue en Mi Lista.", { name: activeFolder.name })}
+                        </span>
+                        <span className="ml-auto flex gap-2">
+                          <button type="button" onClick={() => setConfirmingDeleteId(null)} className="rounded-lg border border-white/15 px-2.5 py-1.5 text-white/70 hover:text-white">
+                            {t("common.cancel", "Cancelar")}
+                          </button>
+                          <button type="button" onClick={confirmDelete} className="rounded-lg bg-red-500/80 px-2.5 py-1.5 font-semibold text-white hover:bg-red-500">
+                            {t("mi-lista.folder.delete-yes", "Borrar")}
+                          </button>
+                        </span>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => setConfirmingDeleteId(activeFolder.id)} className="flex items-center gap-1 rounded-lg border border-red-400/30 px-2.5 py-1.5 text-red-300 hover:bg-red-500/10">
+                        <Trash2 className="h-3.5 w-3.5" /> {t("mi-lista.folder.delete", "Borrar carpeta")}
+                      </button>
+                    )}
                   </>
                 ) : (
                   <form

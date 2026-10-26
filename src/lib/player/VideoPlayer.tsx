@@ -628,7 +628,10 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   return (
     <div
       ref={containerRef}
-      className={`group relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black ${aspectCls}`}
+      // isolate: las capas de dentro del reproductor (fin de vídeo, controles, burbujas) solo
+      // compiten entre sí; sin esto, la pantalla de fin (z-30) quedaba por encima del menú del
+      // perfil de la cabecera (reporte #100).
+      className={`group relative isolate w-full overflow-hidden rounded-2xl border border-white/10 bg-black ${aspectCls}`}
       onPointerMove={pokeControls}
       onPointerDownCapture={(e) => {
         activePlayer = playerIdRef.current
