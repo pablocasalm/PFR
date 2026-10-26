@@ -156,8 +156,15 @@ export async function login(email: string, password: string) {
   await syncLanguageFromAccount(res)
 }
 
-export async function register(email: string, password: string, displayName?: string, inviteCode?: string, language?: string) {
-  const res = await apiRegister(email, password, displayName, inviteCode, language)
+export async function register(
+  email: string,
+  password: string,
+  displayName?: string,
+  inviteCode?: string,
+  language?: string,
+  newsletter?: { optIn: boolean; textVersion: string },
+) {
+  const res = await apiRegister(email, password, displayName, inviteCode, language, newsletter)
   setState({ token: res.token ?? null, user: toAuthUser(res, email) })
   await syncLanguageFromAccount(res)
 }

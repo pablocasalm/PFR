@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Navigate, useNavigate, useSearchParams, useLocation } from "react-router-dom"
 import { useAuth, PLAN_NAME, type PlanTier } from "./store"
-import { createCheckoutSession } from "../api/billing"
+import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../api/billing"
 import { checkoutErrorText, authErrorText } from "../checkoutErrors"
 import { Eye, EyeOff } from "lucide-react"
 import { requestInvite, getInviteInfo } from "../api/invites"
@@ -24,6 +24,13 @@ import { useI18n, setLanguage } from "../i18n/store"
  */
 
 const PLANS: PlanTier[] = ["Starter", "Club", "Coach"]
+
+// Días de prueba en Stripe para una cuenta nueva (BillingController.TrialForAsync): Essential y
+// Club; Coach paga al momento.
+const TRIAL_DAYS = 7
+// Versión del texto de la casilla de la newsletter: se guarda con el consentimiento. Si el texto
+// cambia, súbela.
+const NEWSLETTER_TEXT_VERSION = "v1"
 
 /** Campo de contraseña con el ojo para verla. Los dos campos del registro comparten el estado:
  * al pulsar el ojo se ven (o se ocultan) los dos a la vez. */
@@ -94,6 +101,14 @@ const LoginPage = () => {
   const [passwordRepeat, setPasswordRepeat] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [displayName, setDisplayName] = useState("")
+  // Casilla de la newsletter (resumen mensual): desmarcada por defecto y opcional.
+  const [newsletter, setNewsletter] = useState(false)
+  // Precio del plan elegido, para el resumen de pago (fundador o normal y de su zona, como en Precios).
+  const [plans, setPlans] = useState<BillingPlans | null>(null)
+  useEffect(() => {
+    if (!planFromUrl) return
+    getBillingPlans().then(setPlans).catch(() => {})
+  }, [planFromUrl])
   const [inviteCode, setInviteCode] = useState(inviteFromUrl)
   const [emailOnly, setEmailOnly] = useState(emailFromUrl) // email para "solicitar código" / "recuperar"
 
@@ -202,7 +217,10 @@ const LoginPage = () => {
       if (mode === "login") {
         await login(email.trim(), password)
       } else {
-        await register(email.trim(), password, displayName.trim() || undefined, inviteCode.trim(), lang)
+        await register(email.trim(), password, displayName.trim() || undefined, inviteCode.trim(), lang, {
+          optIn: newsletter,
+          textVersion: NEWSLETTER_TEXT_VERSION,
+        })
       }
       // Con plan, el salto a Stripe lo hace el efecto de arriba al haber sesión.
       if (!planFromUrl) navigate("/app/inicio", { replace: true })
@@ -239,6 +257,23 @@ const LoginPage = () => {
   // el login (no hay recarga real de página que lo resetee).
   const inputCls =
     "w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/50 focus:outline-none sm:text-sm"
+
+  // Resumen de pago al crear la cuenta con un plan (el paso antes de Stripe): prueba de 7 días en
+  // Essential y Club (cuenta nueva), pago al momento en Coach. Precio: el que dará Stripe.
+  const checkout = (() => {
+    if (!planFromUrl) return null
+    const price = plans?.plans?.find((p) => p.tier === planFromUrl)?.prices?.find((p) => p.interval === "Monthly")
+    const locale = lang === "en" ? "en-GB" : "es-ES"
+    const money = (amount: number, currency: string) => new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount)
+    const firstCharge = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
+    return {
+      tier: planFromUrl,
+      trial: planFromUrl !== "Coach",
+      price: price ? money(price.displayAmount, price.currency) : null,
+      zero: money(0, price?.currency ?? "EUR"),
+      date: firstCharge.toLocaleDateString(locale, { day: "numeric", month: "long" }),
+    }
+  })()
 
   const title =
     mode === "login" ? t("login.title.login", "Inicia sesión")
@@ -309,6 +344,26 @@ const LoginPage = () => {
                 </p>
               </div>
             )}
+            {mode === "register" && checkout && (
+              <div className="rounded-xl border border-neon-cyan/30 bg-neon-cyan/[0.05] px-4 py-3 text-sm">
+                <p className="font-bold text-white">{PLAN_NAME[checkout.tier]}</p>
+                {checkout.trial ? (
+                  <>
+                    <p className="mt-1 text-white/80">{t("checkout.summary.today", "Hoy: {amount}", { amount: checkout.zero })}</p>
+                    {checkout.price && (
+                      <p className="text-white/80">
+                        {t("checkout.summary.first-charge", "Primer cobro el {date}: {price}/mes", { date: checkout.date, price: checkout.price })}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  checkout.price && <p className="mt-1 text-white/80">{t("checkout.summary.today", "Hoy: {amount}", { amount: checkout.price })}</p>
+                )}
+                <p className="mt-1 text-xs text-white/55">
+                  {t("checkout.summary.renewal", "Se renueva cada mes. Cancela cuando quieras desde tu cuenta, sin penalización.")}
+                </p>
+              </div>
+            )}
             {mode === "register" && (
               <>
                 {/* Obligatorio desde el 26/10/2026: es el titular de la tarjeta de Mi Juego y el
@@ -372,13 +427,42 @@ const LoginPage = () => {
 
             {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
-            {/* Al crear la cuenta se aceptan los términos y se informa del tratamiento de datos. */}
+            {/* Casilla de la newsletter (resumen mensual): opcional y desmarcada; no bloquea el botón.
+                Por ahora solo se guarda el consentimiento, todavía no se envía nada. */}
             {mode === "register" && (
+              <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-white/70">
+                <input
+                  type="checkbox"
+                  checked={newsletter}
+                  onChange={(e) => setNewsletter(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-neon-cyan"
+                />
+                {t("checkout.newsletter", "Quiero recibir el resumen mensual de PFR con las novedades. Puedo darme de baja cuando quiera.")}
+              </label>
+            )}
+
+            {/* Al crear la cuenta se aceptan los términos y se informa del tratamiento de datos. Con un
+                plan, la línea legal del documento de Andrea (22/10): deja claro qué se cobra y cuándo. */}
+            {mode === "register" && checkout ? (
+              <p className="text-xs leading-relaxed text-white/50">
+                {checkout.trial
+                  ? t("checkout.legal.trial-prefix", "Al empezar la prueba aceptas los")
+                  : t("checkout.legal.coach-prefix", "Al contratar aceptas los")}{" "}
+                <LegalLink doc="terms" /> {t("checkout.legal.and-read", "y has leído la")} <LegalLink doc="privacy" />.{" "}
+                {checkout.price &&
+                  (checkout.trial
+                    ? t("checkout.legal.trial-suffix", "Hoy no se cobra nada; el {date} se cobrarán {price}/mes salvo que canceles antes.", {
+                        date: checkout.date,
+                        price: checkout.price,
+                      })
+                    : t("checkout.legal.coach-suffix", "Hoy se cobrarán {price}; se renueva cada mes.", { price: checkout.price }))}
+              </p>
+            ) : mode === "register" ? (
               <p className="text-xs leading-relaxed text-white/50">
                 {t("login.legal.register-prefix", "Al crear tu cuenta aceptas los")} <LegalLink doc="terms" /> {t("login.legal.and", "y la")}{" "}
                 <LegalLink doc="privacy" />.
               </p>
-            )}
+            ) : null}
 
             <button
               type="submit"
@@ -389,7 +473,11 @@ const LoginPage = () => {
                 ? t("login.wait", "Un momento...")
                 : mode === "login"
                   ? t("login.cta.login", "Iniciar sesión")
-                  : t("login.cta.register", "Crear cuenta")}
+                  : checkout
+                    ? checkout.trial
+                      ? t("checkout.cta.trial", "Empezar prueba gratis · pago tras 7 días")
+                      : t("checkout.cta.coach", "Contratar y pagar")
+                    : t("login.cta.register", "Crear cuenta")}
             </button>
 
             {mode === "login" && (

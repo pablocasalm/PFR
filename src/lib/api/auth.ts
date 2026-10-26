@@ -33,8 +33,24 @@ export const apiLogin = (email: string, password: string) =>
 /** POST /api/auth/register → crea el usuario y devuelve token. Con código de invitación (beta) o,
  * si el backend tiene abierto el registro, sin él (llega desde Precios de la landing con un plan:
  * la cuenta nace sin acceso y entra al suscribirse en Stripe). */
-export const apiRegister = (email: string, password: string, displayName?: string, inviteCode?: string, language?: string) =>
-  apiPostAuth<AuthResponse>("/api/auth/register", { email, password, displayName, inviteCode: inviteCode || undefined, language })
+export const apiRegister = (
+  email: string,
+  password: string,
+  displayName?: string,
+  inviteCode?: string,
+  language?: string,
+  /** Casilla de la newsletter (resumen mensual) y versión del texto que se vio. */
+  newsletter?: { optIn: boolean; textVersion: string },
+) =>
+  apiPostAuth<AuthResponse>("/api/auth/register", {
+    email,
+    password,
+    displayName,
+    inviteCode: inviteCode || undefined,
+    language,
+    newsletterOptIn: newsletter?.optIn ?? false,
+    newsletterTextVersion: newsletter?.textVersion,
+  })
 
 /** POST /api/auth/logout → revoca el refresh token en el servidor (no basta con borrarlo solo en el cliente). */
 export const apiLogout = () => apiPostAuth<{ ok: boolean }>("/api/auth/logout")
