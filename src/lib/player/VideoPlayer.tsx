@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react"
 import Hls from "hls.js"
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, Captions } from "lucide-react"
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings, Captions, RotateCcw, RotateCw } from "lucide-react"
 import { formatDuration } from "../format"
 import { useI18n } from "../i18n/store"
 
@@ -77,6 +77,15 @@ const BUFFERING_DELAY_MS = 180
 
 /** Tiempo sin mover el ratón ni tocar la pantalla tras el que se ocultan los controles mientras se reproduce. */
 const CONTROLS_HIDE_MS = 3000
+
+// Salto de los botones, el doble toque y las flechas (reporte #101), y margen entre dos toques
+// para que cuenten como doble toque.
+const SKIP_SECONDS = 5
+const DOUBLE_TAP_MS = 300
+
+// Con varios reproductores en pantalla (Panel → Coach: vídeo subido y análisis), las teclas solo
+// mueven el último que se ha tocado o reproducido.
+let activePlayer: object | null = null
 
 const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, chapters = [], onChapterChange, aspect = "16:9", initialPosition, onProgress, onEnded, endSlot, subtitlesDefaultOn = false }, ref) => {
   const { t } = useI18n()
@@ -419,6 +428,85 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     if (v) v.currentTime = Math.max(0, Math.min(seconds, duration || seconds))
   }
 
+  // Saltos de SKIP_SECONDS (reporte de beta #101): doble toque a los lados en móvil, botones y
+  // flechas del teclado. 5 s y no 10 (lo de YouTube): un punto de pádel dura pocos segundos y con
+  // 10 se saltaba la jugada que se quería repetir. Los saltos seguidos se acumulan en la burbuja.
+  const [skipBubble, setSkipBubble] = useState<{ side: -1 | 1; seconds: number } | null>(null)
+  const skipBubbleTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const skipBy = (side: -1 | 1) => {
+    const v = videoRef.current
+    if (!v) return
+    v.currentTime = Math.max(0, Math.min(v.currentTime + side * SKIP_SECONDS, duration || v.duration || v.currentTime))
+    if (side === -1) setEnded(false)
+    setSkipBubble((prev) => ({ side, seconds: prev && prev.side === side ? prev.seconds + SKIP_SECONDS : SKIP_SECONDS }))
+    clearTimeout(skipBubbleTimerRef.current)
+    skipBubbleTimerRef.current = setTimeout(() => setSkipBubble(null), 700)
+  }
+  useEffect(() => () => clearTimeout(skipBubbleTimerRef.current), [])
+
+  // Doble toque (móvil): dos toques seguidos en el mismo tercio lateral saltan. El toque simple
+  // sigue mostrando/ocultando los controles, pero en los laterales espera un instante por si
+  // llega el segundo toque (como YouTube). En el centro, inmediato.
+  // Se escucha en todo el reproductor y no solo en el <video>: el primer toque muestra los
+  // controles y, en un vídeo pequeño, la capa de la barra cubre casi todo, así que el segundo
+  // toque ya no caía sobre el vídeo. Se ignoran botones, barra de progreso y volumen.
+  const lastTapRef = useRef<{ time: number; side: -1 | 0 | 1 } | null>(null)
+  const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => clearTimeout(singleTapTimerRef.current), [])
+  const onTouchTap = (clientX: number) => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const x = clientX - rect.left
+    const side: -1 | 0 | 1 = x < rect.width / 3 ? -1 : x > (rect.width * 2) / 3 ? 1 : 0
+    const now = performance.now()
+    const last = lastTapRef.current
+    lastTapRef.current = { time: now, side }
+    if (side !== 0 && last && last.side === side && now - last.time < DOUBLE_TAP_MS) {
+      clearTimeout(singleTapTimerRef.current)
+      skipBy(side)
+      return
+    }
+    const hide = controlsShownAtDownRef.current
+    clearTimeout(singleTapTimerRef.current)
+    if (side === 0) {
+      if (hide) setControlsActive(false)
+    } else {
+      singleTapTimerRef.current = setTimeout(() => {
+        if (hide) setControlsActive(false)
+      }, DOUBLE_TAP_MS)
+    }
+  }
+
+  // Teclado (ordenador): ← / → saltan, espacio pausa. No mientras se escribe en un campo ni con
+  // el foco en un botón (el espacio ya lo pulsaría).
+  const playerIdRef = useRef<object>({})
+  useEffect(() => {
+    const me = playerIdRef.current
+    if (!activePlayer) activePlayer = me
+    return () => {
+      if (activePlayer === me) activePlayer = null
+    }
+  }, [])
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey) return
+      if (activePlayer !== playerIdRef.current) return
+      const el = e.target as HTMLElement | null
+      const tag = el?.tagName
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        e.preventDefault()
+        skipBy(e.key === "ArrowLeft" ? -1 : 1)
+        pokeControls()
+      } else if (e.key === " " && tag !== "BUTTON") {
+        e.preventDefault()
+        togglePlay()
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  })
+
   // Salto pedido desde fuera del player (lista de capítulos de la página): además de mover el
   // punto de reproducción, arranca el vídeo y lo trae a la vista — si no, con el vídeo aún sin
   // empezar (póster) o con la lista de capítulos por debajo del player en móvil, el clic no
@@ -543,12 +631,21 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       className={`group relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black ${aspectCls}`}
       onPointerMove={pokeControls}
       onPointerDownCapture={(e) => {
+        activePlayer = playerIdRef.current
         controlsShownAtDownRef.current = controlsVisible
         setTouchMode(e.pointerType !== "mouse")
         pokeControls()
       }}
       onPointerLeave={(e) => {
         if (e.pointerType === "mouse") setControlsActive(false)
+      }}
+      onPointerUp={(e) => {
+        if (e.pointerType === "mouse" || !playing || ended) return
+        if ((e.target as HTMLElement).closest("button, input, [data-no-tap]")) {
+          lastTapRef.current = null
+          return
+        }
+        onTouchTap(e.clientX)
       }}
     >
       <video
@@ -561,9 +658,9 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
         // botón de reproducir a pantalla completa, así que este clic solo llega reproduciendo.
         onClick={() => {
           if (!touchMode) togglePlay()
-          else if (controlsShownAtDownRef.current) setControlsActive(false)
         }}
         onPlay={() => {
+          activePlayer = playerIdRef.current
           setPlaying(true)
           setEnded(false)
           setLoading(false)
@@ -666,13 +763,43 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
           vista. Solo el círculo recibe el toque — el resto del vídeo sigue mostrando/ocultando
           controles. Cede el centro al círculo de carga mientras se espera vídeo. */}
       {touchMode && playing && controlsVisible && !buffering && !ended && (
-        <button
-          onClick={togglePlay}
-          className="absolute left-1/2 top-1/2 z-10 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/80 bg-black/40 backdrop-blur-sm"
-          aria-label={t("video-player.pause", "Pausar")}
+        <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-5 sm:gap-8">
+          {/* Saltos de 5 s: más pequeños y discretos que la pausa, para no tapar el vídeo. */}
+          <button
+            onClick={() => skipBy(-1)}
+            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-black/35 text-white/90 backdrop-blur-sm sm:h-11 sm:w-11"
+            aria-label={t("video-player.rewind", "Retroceder 5 segundos")}
+          >
+            <RotateCcw className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="absolute text-[8px] font-bold sm:text-[9px]">{SKIP_SECONDS}</span>
+          </button>
+          <button
+            onClick={togglePlay}
+            className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/80 bg-black/40 backdrop-blur-sm"
+            aria-label={t("video-player.pause", "Pausar")}
+          >
+            <Pause className="h-7 w-7 text-white" fill="currentColor" />
+          </button>
+          <button
+            onClick={() => skipBy(1)}
+            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-black/35 text-white/90 backdrop-blur-sm sm:h-11 sm:w-11"
+            aria-label={t("video-player.forward", "Avanzar 5 segundos")}
+          >
+            <RotateCw className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="absolute text-[8px] font-bold sm:text-[9px]">{SKIP_SECONDS}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Burbuja del salto (doble toque, botones, flechas): «« 5 s» a la izquierda, «5 s »» a la derecha. */}
+      {skipBubble && (
+        <div
+          className={`pointer-events-none absolute top-[12%] z-20 rounded-full bg-black/60 px-3 py-1 text-xs font-bold text-white sm:text-sm ${
+            skipBubble.side === -1 ? "left-[6%]" : "right-[6%]"
+          }`}
         >
-          <Pause className="h-7 w-7 text-white" fill="currentColor" />
-        </button>
+          {skipBubble.side === -1 ? `«« ${skipBubble.seconds} s` : `${skipBubble.seconds} s »»`}
+        </div>
       )}
 
       {/* Subtítulos. Suben por encima de la barra de controles mientras está visible. */}
@@ -731,6 +858,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
             interprete como scroll de la página en móvil — sin esto, el primer intento de
             arrastre se lo quedaba el navegador en vez de la barra. */}
         <div
+          data-no-tap
           className="relative -mt-2 mb-1.5 flex h-5 w-full cursor-pointer touch-none items-center"
           onPointerDown={onScrubStart}
           onPointerMove={onScrubMove}
@@ -759,6 +887,19 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
           <button onClick={togglePlay} className="transition hover:text-neon-cyan" aria-label={playing ? t("video-player.pause", "Pausar") : t("video-player.play", "Reproducir")}>
             {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" fill="currentColor" />}
           </button>
+          {/* Saltos de 5 s en la barra: solo con ratón (en táctil van junto a la pausa central). */}
+          {!touchMode && (
+            <>
+              <button onClick={() => skipBy(-1)} className="relative flex items-center justify-center transition hover:text-neon-cyan" aria-label={t("video-player.rewind", "Retroceder 5 segundos")} title="←">
+                <RotateCcw className="h-5 w-5" />
+                <span className="absolute text-[7px] font-bold">{SKIP_SECONDS}</span>
+              </button>
+              <button onClick={() => skipBy(1)} className="relative flex items-center justify-center transition hover:text-neon-cyan" aria-label={t("video-player.forward", "Avanzar 5 segundos")} title="→">
+                <RotateCw className="h-5 w-5" />
+                <span className="absolute text-[7px] font-bold">{SKIP_SECONDS}</span>
+              </button>
+            </>
+          )}
 
           <div className="flex items-center gap-2">
             <button onClick={toggleMute} className="transition hover:text-neon-cyan" aria-label={muted ? t("video-player.unmute", "Activar sonido") : t("video-player.mute", "Silenciar")}>
