@@ -18,6 +18,7 @@ import PlanHomeCard from "../components/PlanHomeCard"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
 import { StarterTestBanner } from "../components/StarterTest"
+import { useTaxonomy, conceptSearchHref } from "../../../lib/taxonomy"
 
 /**
  * Inicio — Dashboard principal. Consume GET /api/home (endpoint con forma de pantalla).
@@ -108,9 +109,11 @@ const ContinueCard = ({ item }: { item: ContentItem }) => {
 
 const ConceptoCard = ({ concept, icon: Icon }: { concept: PopularConcept; icon: LucideIcon }) => {
   const { lang } = useI18n()
+  const tax = useTaxonomy()
+  const id = concept.id ?? tax.conceptIdByName.get(concept.name)
   return (
     <Link
-      to={`/app/search?concept=${encodeURIComponent(concept.name)}`}
+      to={id != null ? conceptSearchHref(id) : "/app/explorar"}
       className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-left transition hover:border-neon-cyan/40 hover:bg-white/[0.04]"
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan">

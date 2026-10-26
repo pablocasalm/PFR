@@ -5,6 +5,7 @@ import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
 import { dismissStarterTest, followConcept, removeSavedConcept, trackTestEvent, type ConceptCard } from "../../../lib/api/starterTest"
 import { invalidateStarterTest, testHref, useStarterTest } from "../../../lib/starterTest"
+import { conceptSearchHref } from "../../../lib/taxonomy"
 
 /**
  * Entradas al test inicial «¿Por dónde empiezo?» y la fila «Conceptos para trabajar»
@@ -17,7 +18,7 @@ export const ConceptChip = ({ concept, onRemove, track }: { concept: ConceptCard
   return (
     <div className="relative flex min-w-0 flex-1 basis-full sm:basis-[45%]">
       <Link
-        to={`/app/search?concept=${encodeURIComponent(concept.nameEs)}`}
+        to={conceptSearchHref(concept.id)}
         onClick={() => track && trackTestEvent("test_ver_clips", concept.nameEs)}
         className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 transition hover:border-neon-cyan/40"
       >
@@ -234,7 +235,7 @@ export const ConceptProgress = () => {
             const pct = c.clipCount > 0 ? Math.round((100 * seen) / c.clipCount) : 0
             return (
               <li key={c.id}>
-                <Link to={`/app/search?concept=${encodeURIComponent(c.nameEs)}`} className="block">
+                <Link to={conceptSearchHref(c.id)} className="block">
                   <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm">
                     <span className="font-semibold text-neon-cyan">
                       {c.code && <span className="mr-1 font-mono text-xs opacity-70">{c.code}</span>}#{pickText(c.nameEs, c.nameEn, lang)}

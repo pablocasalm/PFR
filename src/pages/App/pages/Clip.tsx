@@ -28,6 +28,7 @@ import WatchedBadge from "../components/WatchedBadge"
 import ErrorScreen from "../components/ErrorScreen"
 import { useAuth } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
+import { useTaxonomy, conceptSearchHref } from "../../../lib/taxonomy"
 import { pickText, pickList } from "../../../lib/i18n/content"
 
 /**
@@ -228,19 +229,31 @@ const SaveActionRail = ({ item }: { item: ContentItem }) => {
 // ---------------------------------------------------------------------------
 
 // Chips clicables (§9.3 "Abrir concepto"): cada uno lleva a la Pantalla de Resultados filtrada.
-const Concepts = ({ concepts }: { concepts: string[] }) => (
-  <div className="flex flex-wrap gap-2">
-    {concepts.map((c) => (
-      <Link
-        key={c}
-        to={`/app/search?concept=${encodeURIComponent(c)}`}
-        className="rounded-full border border-neon-cyan/40 px-3 py-1 text-xs font-medium text-neon-cyan transition hover:bg-neon-cyan/10"
-      >
-        #{c}
-      </Link>
-    ))}
-  </div>
-)
+// El enlace va por el id del concepto y el texto, en el idioma de la cuenta (reporte #98: en
+// inglés el enlace llevaba el nombre en inglés y la búsqueda salía vacía).
+const Concepts = ({ clip }: { clip: Pick<ClipDetail, "concepts" | "conceptsEn" | "conceptIds"> }) => {
+  const { lang } = useI18n()
+  const tax = useTaxonomy()
+  const chips = clip.concepts
+    .map((es, i) => ({
+      id: clip.conceptIds?.[i] ?? tax.conceptIdByName.get(es),
+      label: lang === "en" ? clip.conceptsEn?.[i] || es : es,
+    }))
+    .filter((c): c is { id: number; label: string } => c.id != null)
+  return (
+    <div className="flex flex-wrap gap-2">
+      {chips.map((c) => (
+        <Link
+          key={c.id}
+          to={conceptSearchHref(c.id)}
+          className="rounded-full border border-neon-cyan/40 px-3 py-1 text-xs font-medium text-neon-cyan transition hover:bg-neon-cyan/10"
+        >
+          #{c.label}
+        </Link>
+      ))}
+    </div>
+  )
+}
 
 const AppearsIn = ({ clip }: { clip: ClipDetail }) => {
   const { t, lang } = useI18n()
@@ -494,7 +507,7 @@ const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => {
         </span>
         <h1 className="font-display text-3xl font-bold text-white">{pickText(clip.title, clip.titleEn, lang)}</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-white/60">{pickText(clip.description, clip.descriptionEn, lang)}</p>
-        <Concepts concepts={pickList(clip.concepts, clip.conceptsEn, lang)} />
+        <Concepts clip={clip} />
         <EditContentLink type="clip" id={clip.id} />
       </div>
 
@@ -537,7 +550,7 @@ const ClipVertical = ({ clip }: { clip: ClipDetail }) => {
             </span>
             <h1 className="font-display text-3xl font-bold text-white">{pickText(clip.title, clip.titleEn, lang)}</h1>
             <p className="text-sm leading-relaxed text-white/60">{pickText(clip.description, clip.descriptionEn, lang)}</p>
-            <Concepts concepts={pickList(clip.concepts, clip.conceptsEn, lang)} />
+            <Concepts clip={clip} />
             <EditContentLink type="clip" id={clip.id} />
           </div>
           <AppearsIn clip={clip} />

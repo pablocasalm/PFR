@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useSearchParams, Link } from "react-router-dom"
 import Fuse from "fuse.js"
 import { SlidersHorizontal, X, Compass } from "lucide-react"
@@ -16,7 +16,7 @@ import ErrorScreen from "../components/ErrorScreen"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
 import { FollowConceptButton } from "../components/StarterTest"
-import { useTaxonomy } from "../../../lib/taxonomy"
+import { useTaxonomy, resolveTaxonomyParam } from "../../../lib/taxonomy"
 
 /**
  * Search — Pantalla de Resultados (§11). Destino común de búsqueda, "Ver todo",
@@ -66,11 +66,15 @@ const sorts = (t: TFunc) => [
 // `watched`: "" (todos) | "unseen" (sin ver) | "seen" (vistos) — §reporte de beta.
 type Filters = { q: string; block: string; concept: string; type: string; sort: string; feed: string; hasEnglish: string; watched: string }
 
+// `concept` y `block` llegan como número (?concept=12); los nombres, ya en el idioma de la
+// cuenta, los pone la página con la taxonomía (`labels`). Nunca se enseña el valor de la URL.
+type Labels = { concept?: string; block?: string }
+
 // Cabecera adaptada al origen desde el que llega el usuario (§11.1).
-const headerTitle = (f: Filters, t: TFunc, blockLabel?: string): string => {
+const headerTitle = (f: Filters, t: TFunc, labels: Labels): string => {
   if (f.q) return t("search.title.query", "Resultados para “{q}”", { q: f.q })
-  if (f.concept) return `#${f.concept}`
-  if (f.block) return blockLabel ?? f.block
+  if (f.concept) return `#${labels.concept ?? ""}`
+  if (f.block) return labels.block ?? ""
   if (f.feed === "new") return t("inicio.section.new", "Nuevo esta semana")
   if (f.feed === "popular") return t("inicio.section.most-viewed", "Más vistos esta semana")
   if (f.feed === "history") return t("mi-lista.recently-watched", "Vistos recientemente")
@@ -80,10 +84,10 @@ const headerTitle = (f: Filters, t: TFunc, blockLabel?: string): string => {
 }
 
 // Chips de filtros aplicados (§11.3), cada uno removible.
-const appliedChips = (f: Filters, t: TFunc): { key: keyof Filters; label: string }[] => {
+const appliedChips = (f: Filters, t: TFunc, labels: Labels): { key: keyof Filters; label: string }[] => {
   const chips: { key: keyof Filters; label: string }[] = []
-  if (f.block) chips.push({ key: "block", label: f.block })
-  if (f.concept) chips.push({ key: "concept", label: `#${f.concept}` })
+  if (f.block) chips.push({ key: "block", label: labels.block ?? "" })
+  if (f.concept) chips.push({ key: "concept", label: `#${labels.concept ?? ""}` })
   if (f.type) chips.push({ key: "type", label: f.type === "analysis" ? t("explorar.type.analyses", "Análisis") : t("explorar.type.clips", "Clips") })
   if (f.hasEnglish) chips.push({ key: "hasEnglish", label: t("explorar.filter.has-english", "Con inglés") })
   if (f.watched) chips.push({ key: "watched", label: f.watched === "seen" ? t("search.filter.seen", "Vistos") : t("search.filter.unseen", "Sin ver") })
@@ -220,35 +224,79 @@ const Search = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fuse, filters.q])
 
+  // Conceptos y bloques por número (26/10/2026): la URL lleva el id; los enlaces viejos con el
+  // nombre en español (?concept=Defensa) se convierten al id y se corrige la dirección.
+  const tax = useTaxonomy()
+  const conceptId = resolveTaxonomyParam(filters.concept, tax.conceptIdByName)
+  const blockId = resolveTaxonomyParam(filters.block, tax.blockIdByName)
+  useEffect(() => {
+    const next = new URLSearchParams(params)
+    let changed = false
+    if (filters.concept && conceptId != null && filters.concept !== String(conceptId)) {
+      next.set("concept", String(conceptId))
+      changed = true
+    }
+    if (filters.block && blockId != null && filters.block !== String(blockId)) {
+      next.set("block", String(blockId))
+      changed = true
+    }
+    if (changed) setParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conceptId, blockId, filters.concept, filters.block])
+
+  // Ids de cada contenido. Si el backend aún no los manda, salen del nombre con la taxonomía.
+  const conceptIdsOf = (i: ContentItem): number[] =>
+    i.conceptIds ?? (i.concepts ?? []).map((n) => tax.conceptIdByName.get(n)).filter((id): id is number => id != null)
+  const blockIdsOf = (i: ContentItem): number[] =>
+    [i.blockId ?? (i.block ? tax.blockIdByName.get(i.block) : undefined), ...(i.blocks ?? []).map((b) => b.blockId ?? tax.blockIdByName.get(b.block))]
+      .filter((id): id is number => id != null)
+
+  // Nombre de un concepto en el idioma de la cuenta: de la taxonomía o, si no está, del propio contenido.
+  const conceptNames = useMemo(() => {
+    const map = new Map<number, { es: string; en: string }>()
+    searched.forEach((r) => (r.concepts ?? []).forEach((c, i) => {
+      const id = r.conceptIds?.[i] ?? tax.conceptIdByName.get(c)
+      if (id != null && !map.has(id)) map.set(id, { es: c, en: r.conceptsEn?.[i] ?? c })
+    }))
+    return map
+  }, [searched, tax])
+  const conceptLabel = (id: number) => {
+    const c = tax.conceptById.get(id)
+    const fromItems = conceptNames.get(id)
+    return c ? pickText(c.nameEs, c.nameEn, lang) : fromItems ? pickText(fromItems.es, fromItems.en, lang) : ""
+  }
+  const blockLabel = (id: number) => {
+    const b = tax.blockById.get(id)
+    return b ? pickText(b.nameEs, b.nameEn, lang) : ""
+  }
+  const labels: Labels = {
+    concept: conceptId != null ? conceptLabel(conceptId) : undefined,
+    block: blockId != null ? blockLabel(blockId) : undefined,
+  }
+
   // Todos los conceptos disponibles para el filtro, del conjunto SIN filtrar por concepto/bloque
   // (igual que en Explorar): si se derivaran de "base" ya recortado, la lista de opciones se
   // corrompería en cuanto hubiera otro filtro activo. Sí reflejan la búsqueda de texto (q).
   const allConcepts = useMemo(() => {
-    const s = new Set<string>()
-    searched.forEach((r) => (r.concepts ?? []).forEach((c) => s.add(c)))
-    return Array.from(s).sort((a, b) => a.localeCompare(b))
-  }, [searched])
-
-  // Nombre en inglés de cada concepto (ES → EN), para traducir las opciones del filtro sin
-  // perder el valor canónico (ES) que usan la URL y el propio filtrado.
-  const conceptLabelEn = useMemo(() => {
-    const map = new Map<string, string>()
-    searched.forEach((r) => (r.concepts ?? []).forEach((c, i) => map.set(c, r.conceptsEn?.[i] ?? c)))
-    return map
-  }, [searched])
+    const s = new Set<number>()
+    searched.forEach((r) => conceptIdsOf(r).forEach((id) => s.add(id)))
+    return Array.from(s)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searched, tax])
 
   // Conjunto base: filtra por concepto/bloque (todo menos tipo), para poder contar las tabs.
+  // Un concepto o bloque que no se reconoce (enlace roto) no muestra nada, en vez de todo.
   const base = useMemo(() => {
     let items = searched
-    if (filters.concept) items = items.filter((i) => (i.concepts ?? []).includes(filters.concept))
-    if (filters.block) items = items.filter((i) => i.block === filters.block || (i.blocks ?? []).some((b) => b.block === filters.block))
+    if (filters.concept) items = conceptId == null ? [] : items.filter((i) => conceptIdsOf(i).includes(conceptId))
+    if (filters.block) items = blockId == null ? [] : items.filter((i) => blockIdsOf(i).includes(blockId))
     if (filters.hasEnglish) items = items.filter((i) => i.hasEnglishVersion)
     // "Visto" = mismo criterio que la insignia de las tarjetas (`completed`, lo marca el backend).
     if (filters.watched === "seen") items = items.filter((i) => i.completed)
     if (filters.watched === "unseen") items = items.filter((i) => !i.completed)
     return items
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searched, filters.concept, filters.block, filters.hasEnglish, filters.watched])
+  }, [searched, conceptId, blockId, filters.concept, filters.block, filters.hasEnglish, filters.watched, tax])
 
   const counts = {
     all: base.length,
@@ -264,9 +312,7 @@ const Search = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base, filters.type, filters.sort])
 
-  const tax = useTaxonomy()
-  const conceptId = filters.concept ? tax.byConcept.get(filters.concept)?.id : undefined
-  const chips = appliedChips(filters, t)
+  const chips = appliedChips(filters, t, labels)
   const activeCount = chips.length
   const empty = !loading && !error && results.length === 0
 
@@ -284,15 +330,17 @@ const Search = () => {
     },
     {
       title: t("explorar.filter.block", "Bloque"),
-      options: (blocks ?? []).map((b) => ({ value: b.nameEs, label: pickText(b.nameEs, b.nameEn, lang) })),
-      isActive: (v) => filters.block === v,
-      onToggle: (v) => setFilter({ block: filters.block === v ? "" : v }),
+      options: (blocks ?? []).filter((b) => b.id != null).map((b) => ({ value: String(b.id), label: pickText(b.nameEs, b.nameEn, lang) })),
+      isActive: (v) => blockId != null && String(blockId) === v,
+      onToggle: (v) => setFilter({ block: blockId != null && String(blockId) === v ? "" : v }),
     },
     {
       title: t("explorar.filter.concepts", "Conceptos"),
-      options: allConcepts.map((c) => ({ value: c, label: `#${pickText(c, conceptLabelEn.get(c), lang)}` })),
-      isActive: (v) => filters.concept === v,
-      onToggle: (v) => setFilter({ concept: filters.concept === v ? "" : v }),
+      options: allConcepts
+        .map((id) => ({ value: String(id), label: `#${conceptLabel(id)}` }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+      isActive: (v) => conceptId != null && String(conceptId) === v,
+      onToggle: (v) => setFilter({ concept: conceptId != null && String(conceptId) === v ? "" : v }),
     },
     {
       title: t("search.filter.watched", "Vistos"),
@@ -324,7 +372,7 @@ const Search = () => {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">
-              {headerTitle(filters, t, blocks?.find((b) => b.nameEs === filters.block)?.nameEn)}
+              {headerTitle(filters, t, labels)}
             </h1>
             {/* Filtrado por un concepto: se puede seguir (va a «Conceptos para trabajar»). */}
             {conceptId != null && <FollowConceptButton conceptId={conceptId} />}

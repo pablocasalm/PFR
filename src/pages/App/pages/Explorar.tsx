@@ -16,6 +16,7 @@ import EnglishBadge from "../components/EnglishBadge"
 import ErrorScreen from "../components/ErrorScreen"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
+import { useTaxonomy, blockSearchHref } from "../../../lib/taxonomy"
 
 /**
  * Explorar — Biblioteca táctica. Consume GET /api/explore (bloques + análisis).
@@ -274,6 +275,8 @@ const ConceptSection = ({
   onToggleConcept: (concept: string) => void
 }) => {
   const { lang } = useI18n()
+  const tax = useTaxonomy()
+  const blockId = section.blockId ?? tax.blockIdByName.get(section.block)
   const Icon = ICONS[index % ICONS.length]
   const accent = ACCENTS[index % ACCENTS.length]
   return (
@@ -284,7 +287,7 @@ const ConceptSection = ({
             <Icon className="h-4 w-4" />
           </span>
           <h2 className="min-w-0 flex-1 truncate text-sm font-bold uppercase tracking-[0.12em] text-white">{pickText(section.block, section.blockEn, lang)}</h2>
-          <VerTodo to={`/app/search?block=${encodeURIComponent(section.block)}`} />
+          <VerTodo to={blockId != null ? blockSearchHref(blockId) : "/app/explorar"} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {section.concepts.map((c, i) => (
