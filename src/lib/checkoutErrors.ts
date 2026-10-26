@@ -23,6 +23,8 @@ export function checkoutErrorText(err: unknown, t: TFunc): string {
 /** Al crear la cuenta o iniciar sesión. */
 export function authErrorText(err: unknown, mode: "login" | "register", t: TFunc): string {
   const status = err instanceof ApiError ? err.status : undefined
+  if (err instanceof ApiError && err.code === "name_required")
+    return t("login.error.name-required", "Escribe tu nombre o un nombre de usuario.")
   if (mode === "login" && status === 401) return t("login.error.invalid-credentials", "El email o la contraseña no son correctos.")
   if (mode === "register" && status === 409)
     return t("login.error.account-exists", "Ya existe una cuenta con este email. Inicia sesión o recupera tu contraseña.")

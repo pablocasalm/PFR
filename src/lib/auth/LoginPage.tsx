@@ -311,11 +311,15 @@ const LoginPage = () => {
             )}
             {mode === "register" && (
               <>
+                {/* Obligatorio desde el 26/10/2026: es el titular de la tarjeta de Mi Juego y el
+                    saludo de los emails. Vale el nombre real o un nombre de usuario. */}
                 <input
                   type="text"
+                  required
+                  maxLength={80}
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder={t("login.field.name", "Nombre (opcional)")}
+                  placeholder={t("login.field.name-required", "Tu nombre o nombre de usuario")}
                   className={inputCls}
                   autoComplete="name"
                 />

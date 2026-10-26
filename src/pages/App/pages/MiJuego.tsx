@@ -1,6 +1,6 @@
-import { Clock, Clapperboard, LineChart, Medal, Info, Download, Share2, Compass, Calendar } from "lucide-react"
+import { Clock, Clapperboard, LineChart, Medal, Info, Download, Share2, Compass } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getStats } from "../../../lib/api/history"
@@ -85,78 +85,57 @@ const RankPanel = ({ title, items }: { title: string; items: Rank[] }) => {
   )
 }
 
-const StoryCard = ({
-  minutes,
-  concepts,
-  block,
-  name,
-}: {
-  minutes: number
-  concepts: string[]
-  block: string
-  name?: string
-}) => {
+type StoryProps = { minutes: number; concepts: string[]; block: string; name?: string }
+
+/** Datos de la imagen de la story con los textos ya traducidos: los usan la vista previa y el
+ * botón de compartir, así que las dos salen siempre iguales. */
+const useStoryData = ({ minutes, concepts, block, name }: StoryProps) => {
   const { t, lang } = useI18n()
-  const month = new Date().toLocaleDateString(lang === "en" ? "en-US" : "es-ES", { month: "long", year: "numeric" })
-  const monthLabel = month.charAt(0).toUpperCase() + month.slice(1)
-  const displayName = name?.trim() || t("mi-juego.story.default-name", "Tu resumen")
-  const topConcepts = concepts.slice(0, 3)
+  return {
+    minutes,
+    concepts,
+    block,
+    name,
+    minutesLabel: t("mi-juego.story.minutes-label", "Min aprendiendo").toUpperCase(),
+    conceptsLabel: t("mi-juego.top-concepts", "Conceptos más trabajados").toUpperCase(),
+    blockLabel: t("mi-juego.top-block", "Bloque principal").toUpperCase(),
+    defaultName: t("mi-juego.story.default-name", "Tu resumen"),
+    locale: lang === "en" ? "en-US" : "es-ES",
+  }
+}
+
+/**
+ * Vista previa de la story: es la propia imagen que se descarga (1080×1920), generada aquí y
+ * escalada al ancho disponible (26/10/2026). Antes era una copia en HTML que se descuadraba en
+ * móviles pequeños o con nombres largos (reporte #103); así lo que se ve es exactamente lo que
+ * se comparte, y en cualquier pantalla todo se reduce en proporción.
+ */
+const StoryCard = (props: StoryProps) => {
+  const { t } = useI18n()
+  const data = useStoryData(props)
+  const [src, setSrc] = useState<string | null>(null)
+  const key = JSON.stringify(data)
+
+  useEffect(() => {
+    let cancelled = false
+    let url: string | null = null
+    renderMiJuegoStory(data)
+      .then((blob) => {
+        if (cancelled) return
+        url = URL.createObjectURL(blob)
+        setSrc(url)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+      if (url) URL.revokeObjectURL(url)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
 
   return (
-    <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border-2 border-neon-cyan bg-[#020304] p-5 shadow-[0_0_22px_rgba(40,240,224,0.55)]">
-      {/* Rayas diagonales: se apagan hacia el centro (si cubrieran la tarjeta entera, el
-          centro perdería contraste con los brillos del número y el marco). */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          // En % (no px): la tarjeta del preview es mucho más pequeña que el canvas de
-          // 1080×1920, así que un valor en px fijo no guardaba la misma proporción visual.
-          // Al ser % relativos al propio eje del degradado, escalan igual sea cual sea el
-          // tamaño real de la tarjeta. (El primer intento con % usaba 100% como periodo, lo
-          // que pintaba una sola rampa en vez de repetir — el periodo real tiene que ser un
-          // % pequeño: aquí, el equivalente a los 26px/2px del canvas sobre su línea de
-          // degradado de ~1855px de largo a 118deg.)
-          background:
-            "repeating-linear-gradient(118deg, rgba(40,240,224,0.25) 0%, rgba(40,240,224,0.25) 0.1078%, transparent 0.1078%, transparent 1.4016%)",
-          maskImage: "radial-gradient(ellipse 62% 62% at center, transparent 0%, transparent 62%, black 100%)",
-          WebkitMaskImage: "radial-gradient(ellipse 62% 62% at center, transparent 0%, transparent 62%, black 100%)",
-        }}
-      />
-
-      <div className="relative z-10 flex h-full flex-col items-center px-2 pt-1 text-center">
-        <img src="/Logos/logo-pfr-story.png" alt="Padel Film Room" className="h-10 w-auto" />
-
-        {/* El nombre es ahora el titular principal (antes iba pequeño arriba a la derecha) */}
-        <p className="mt-3 line-clamp-2 font-display text-4xl font-extrabold uppercase leading-tight text-white">{displayName}</p>
-        <span className="mt-2 h-[3px] w-20 shrink-0 rounded-full bg-neon-cyan" />
-
-        <p className="mt-2.5 flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-neon-cyan">
-          <Calendar className="h-3.5 w-3.5" />
-          {monthLabel}
-        </p>
-        <p className="font-display text-7xl font-bold leading-none text-white">{minutes}</p>
-        <p className="mt-1 text-sm font-bold uppercase tracking-wide text-white">{t("mi-juego.story.minutes-label", "Min aprendiendo")}</p>
-
-        {topConcepts.length > 0 && (
-          <div className="mt-3 w-full rounded-xl border border-neon-cyan/40 px-3 py-2.5">
-            <p className="text-xs font-bold uppercase tracking-wide text-neon-cyan">{t("mi-juego.top-concepts", "Conceptos más trabajados")}</p>
-            <div className="mt-1.5 divide-y divide-neon-cyan/20">
-              {topConcepts.map((c) => (
-                <p key={c} className="py-1.5 font-display text-base font-bold uppercase text-white">
-                  {c}
-                </p>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {block && (
-          <div className="mt-2.5 w-full rounded-xl border border-neon-cyan/40 px-3 py-2.5">
-            <p className="text-xs font-bold uppercase tracking-wide text-neon-cyan">{t("mi-juego.top-block", "Bloque principal")}</p>
-            <p className="mt-1 line-clamp-2 font-display text-base font-bold uppercase leading-snug text-white">{block}</p>
-          </div>
-        )}
-      </div>
+    <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl bg-[#020304]">
+      {src && <img src={src} alt={t("mi-juego.story-heading", "Tu resumen de aprendizaje")} className="h-full w-full object-contain" />}
     </div>
   )
 }
@@ -174,6 +153,7 @@ const ShareSummaryButton = ({
   name?: string
 }) => {
   const { t } = useI18n()
+  const storyData = useStoryData({ minutes, concepts, block, name })
   const [busy, setBusy] = useState(false)
   const canShareImage = useMemo(() => {
     try {
@@ -186,15 +166,7 @@ const ShareSummaryButton = ({
   const onClick = async () => {
     setBusy(true)
     try {
-      const blob = await renderMiJuegoStory({
-        minutes,
-        concepts,
-        block,
-        name,
-        minutesLabel: t("mi-juego.story.minutes-label", "Min aprendiendo").toUpperCase(),
-        conceptsLabel: t("mi-juego.top-concepts", "Conceptos más trabajados").toUpperCase(),
-        blockLabel: t("mi-juego.top-block", "Bloque principal").toUpperCase(),
-      })
+      const blob = await renderMiJuegoStory(storyData)
       const file = new File([blob], "mi-juego-pfr.png", { type: "image/png" })
       if (canShareImage && navigator.canShare?.({ files: [file] })) {
         try {

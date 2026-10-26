@@ -13,6 +13,10 @@ export type StoryData = {
   minutesLabel?: string
   conceptsLabel?: string
   blockLabel?: string
+  /** Titular si no hay nombre ("Your summary" en inglés) y formato del mes ("en-US"/"es-ES"):
+   * antes iban fijos en español y una cuenta en inglés veía castellano en su imagen (26/10/2026). */
+  defaultName?: string
+  locale?: string
 }
 
 const CYAN = "#28f0e0"
@@ -84,6 +88,8 @@ export async function renderMiJuegoStory({
   minutesLabel = "MIN APRENDIENDO",
   conceptsLabel = "CONCEPTOS MÁS TRABAJADOS",
   blockLabel = "BLOQUE PRINCIPAL",
+  defaultName = "Tu resumen",
+  locale = "es-ES",
 }: StoryData): Promise<Blob> {
   const W = 1080
   const H = 1920
@@ -184,7 +190,7 @@ export async function renderMiJuegoStory({
 
   // --- Nombre (titular) ---
   ctx.textAlign = "center"
-  const fullName = (name?.trim() || "TU RESUMEN").toUpperCase()
+  const fullName = (name?.trim() || defaultName).toUpperCase()
   let displayName = fullName
   const nameSize = fitFont(ctx, displayName, 800, 172, contentW, 40)
   ctx.font = `800 ${nameSize}px 'Space Grotesk', sans-serif`
@@ -206,7 +212,7 @@ export async function renderMiJuegoStory({
   y += 6 + 36
 
   // --- Mes (con icono de calendario) ---
-  const month = new Date().toLocaleDateString("es-ES", { month: "long", year: "numeric" })
+  const month = new Date().toLocaleDateString(locale, { month: "long", year: "numeric" })
   const monthText = (month.charAt(0).toUpperCase() + month.slice(1)).toUpperCase()
   const monthSize = 52
   ctx.font = `700 ${monthSize}px 'Space Grotesk', sans-serif`
