@@ -270,7 +270,7 @@ const LoginPage = () => {
       tier: planFromUrl,
       trial: planFromUrl !== "Coach",
       price: price ? money(price.displayAmount, price.currency) : null,
-      zero: money(0, price?.currency ?? "EUR"),
+      zero: new Intl.NumberFormat(locale, { style: "currency", currency: price?.currency ?? "EUR", maximumFractionDigits: 0 }).format(0), // «0 €», no «0,00 €»
       date: firstCharge.toLocaleDateString(locale, { day: "numeric", month: "long" }),
     }
   })()
