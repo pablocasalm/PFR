@@ -329,6 +329,9 @@ const Search = () => {
   }, [base, filters.type, filters.sort])
 
   const chips = appliedChips(filters, t, labels)
+  const analysesLast = !filters.type && !!(filters.concept || filters.block)
+  const resultClips = analysesLast ? results.filter((r) => r.type !== "analysis") : results
+  const resultAnalyses = analysesLast ? results.filter((r) => r.type === "analysis") : []
   const activeCount = chips.length
   const empty = !loading && !error && results.length === 0
 
@@ -500,12 +503,39 @@ const Search = () => {
             </div>
           )}
 
-          {results.length > 0 && (
+          {results.length > 0 && !analysesLast && (
             <div className="mt-6 grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((r) => (
                 <ResultCard key={r.id} result={r} />
               ))}
             </div>
+          )}
+
+          {/* Filtrando por concepto o bloque, en «Todos»: primero los clips y los análisis
+              completos al final, en su apartado (reporte #90: un análisis de 20 min puede no
+              tocar el concepto hasta el minuto 20, y sus fragmentos ya salen como clips). */}
+          {results.length > 0 && analysesLast && (
+            <>
+              {resultClips.length > 0 && (
+                <div className="mt-6 grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
+                  {resultClips.map((r) => (
+                    <ResultCard key={r.id} result={r} />
+                  ))}
+                </div>
+              )}
+              {resultAnalyses.length > 0 && (
+                <section className={resultClips.length > 0 ? "mt-12" : "mt-6"}>
+                  <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/60">
+                    {t("search.analyses-where-it-appears", "Análisis completos donde aparece")}
+                  </h2>
+                  <div className="grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
+                    {resultAnalyses.map((r) => (
+                      <ResultCard key={r.id} result={r} />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
           )}
         </div>
 
