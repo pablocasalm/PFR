@@ -1,6 +1,5 @@
 import { useMemo } from "react"
-import { Play, ChevronRight, LayoutGrid, Tag, Target, Users, BarChart3, Flame } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
+import { Play, ChevronRight } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getHome } from "../../../lib/api/home"
@@ -25,7 +24,6 @@ import { useTaxonomy, conceptSearchHref } from "../../../lib/taxonomy"
  * Mezcla clips y análisis vía el modelo unificado ContentItem.
  */
 
-const CONCEPT_ICONS: LucideIcon[] = [LayoutGrid, Tag, Target, Users, BarChart3, Flame]
 
 // ---------------------------------------------------------------------------
 // Subcomponentes
@@ -107,7 +105,8 @@ const ContinueCard = ({ item }: { item: ContentItem }) => {
   )
 }
 
-const ConceptoCard = ({ concept, icon: Icon }: { concept: PopularConcept; icon: LucideIcon }) => {
+// Sin icono (reporte #91): eran 6 iconos genéricos turnándose que no tenían que ver con el concepto.
+const ConceptoCard = ({ concept }: { concept: PopularConcept }) => {
   const { lang } = useI18n()
   const tax = useTaxonomy()
   const id = concept.id ?? tax.conceptIdByName.get(concept.name)
@@ -116,11 +115,8 @@ const ConceptoCard = ({ concept, icon: Icon }: { concept: PopularConcept; icon: 
       to={id != null ? conceptSearchHref(id) : "/app/explorar"}
       className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-left transition hover:border-neon-cyan/40 hover:bg-white/[0.04]"
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan">
-        <Icon className="h-4 w-4" />
-      </span>
-      <span className="leading-tight">
-        <span className="block text-sm font-semibold text-neon-cyan">#{pickText(concept.name, concept.nameEn, lang)}</span>
+      <span className="min-w-0 leading-tight">
+        <span className="block truncate text-sm font-semibold text-neon-cyan">#{pickText(concept.name, concept.nameEn, lang)}</span>
         <span className="block text-xs text-white/50">
           {concept.clipCount} {concept.clipCount === 1 ? "clip" : "clips"}
         </span>
@@ -265,8 +261,8 @@ const Inicio = () => {
         <section>
           <SectionHeading title={t("inicio.section.popular-concepts", "Conceptos populares")} to="/app/explorar" />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {popularConcepts.map((c, i) => (
-              <ConceptoCard key={c.name} concept={c} icon={CONCEPT_ICONS[i % CONCEPT_ICONS.length]} />
+            {popularConcepts.map((c) => (
+              <ConceptoCard key={c.name} concept={c} />
             ))}
           </div>
         </section>

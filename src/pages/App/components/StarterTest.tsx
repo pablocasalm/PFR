@@ -22,9 +22,6 @@ export const ConceptChip = ({ concept, onRemove, track }: { concept: ConceptCard
         onClick={() => track && trackTestEvent("test_ver_clips", concept.nameEs)}
         className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 transition hover:border-neon-cyan/40"
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neon-cyan/30 bg-neon-cyan/10 font-mono text-[11px] font-bold text-neon-cyan">
-          {concept.code ?? "#"}
-        </span>
         <span className="min-w-0 leading-tight">
           <span className="block truncate text-sm font-semibold text-neon-cyan">#{pickText(concept.nameEs, concept.nameEn, lang)}</span>
           <span className="block truncate text-xs text-white/50">
@@ -238,7 +235,7 @@ export const ConceptProgress = () => {
                 <Link to={conceptSearchHref(c.id)} className="block">
                   <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm">
                     <span className="font-semibold text-neon-cyan">
-                      {c.code && <span className="mr-1 font-mono text-xs opacity-70">{c.code}</span>}#{pickText(c.nameEs, c.nameEn, lang)}
+                      #{pickText(c.nameEs, c.nameEn, lang)}
                     </span>
                     <span className="shrink-0 text-xs text-white/50">
                       {t("starter-test.progress.count", "{seen} de {total} clips vistos", { seen, total: c.clipCount })}

@@ -353,14 +353,14 @@ const MiLista = () => {
       if (view.sort === "block") {
         const b = mainBlock(item, tax)
         key = b ? `b${b.number}` : "other"
-        title = b ? `${b.number} · ${lang === "en" ? b.nameEn : b.nameEs}` : t("mi-lista.group.other", "Otros")
+        // Sin la numeración interna de la taxonomía (reporte #89): solo sirve para ordenar.
+        title = b ? (lang === "en" ? b.nameEn : b.nameEs) : t("mi-lista.group.other", "Otros")
       } else {
         const c = mainConcept(item, tax)
-        const code = c ? tax.byConcept.get(c) : undefined
         const idx = c ? item.concepts.indexOf(c) : -1
         const name = c ? (lang === "en" ? item.conceptsEn?.[idx] || c : c) : ""
         key = c ? `c${c}` : "other"
-        title = code ? `#${code.code} ${name}` : c ? `#${name}` : t("mi-lista.group.other", "Otros")
+        title = c ? `#${name}` : t("mi-lista.group.other", "Otros")
       }
       const g = out.find((x) => x.key === key)
       if (g) g.items.push(item)
