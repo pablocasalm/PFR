@@ -93,11 +93,8 @@ const Header = () => {
             {t("header.nav.publicar", "Publicar")}
           </NavLink>
         )}
-        {/* Club/Coach (§rediseño Club/Coach): el enlace siempre está, pero quien no tiene el
-            plan que toca se manda a /app/precios en cuanto entra (Club.tsx/Coach.tsx) — el
-            candado aquí es solo el aviso antes de hacer clic. Sin sitio en el MobileNav de 5
-            iconos fijos, así que en móvil se llega vía la tarjeta destacada de Inicio o el menú
-            del avatar, no desde aquí. */}
+        {/* Club (§rediseño Club/Coach): el enlace siempre está; sin el plan, la pantalla manda a
+            /app/precios al entrar (Club.tsx) y el candado avisa antes. Coach, solo con su plan. */}
         <NavLink
           to="/app/club"
           id="tour-club-desktop"
@@ -111,6 +108,8 @@ const Header = () => {
           {t("header.nav.club", "Club")}
           {!hasFeature(user, "monthlyPicks") && <Lock className="h-3 w-3" />}
         </NavLink>
+        {/* Coach solo con el plan Coach (reporte #94): al resto no se le enseña bloqueado. */}
+        {hasFeature(user, "personalAnalysis") && (
         <NavLink
           to="/app/coach"
           className={({ isActive }) =>
@@ -125,6 +124,7 @@ const Header = () => {
           {/* Mensajes de Coach sin leer (para un admin el aviso va en su menú, no aquí). */}
           {!isAdmin(user) && (user?.coachUnread ?? 0) > 0 && <span className="h-2 w-2 rounded-full bg-neon-cyan" aria-hidden />}
         </NavLink>
+        )}
       </nav>
 
       {/* Buscador (escritorio) */}
@@ -240,7 +240,9 @@ const SessionControl = () => {
               {t("mi-cuenta.title", "Mi cuenta")}
               {testPending && <span className="ml-auto h-2 w-2 rounded-full bg-red-500" aria-label={t("starter-test.pending", "Tienes el test inicial pendiente")} />}
             </Link>
-            {/* Mi Juego, también solo por debajo de xl: no cabe en la barra inferior (ver MobileNav). */}
+            {/* Mi Juego en el menú, por debajo de xl, solo para quien tiene Coach: al resto ya le sale
+                en la barra inferior, en el hueco de Coach (ver MobileNav). */}
+            {hasFeature(user, "personalAnalysis") && (
             <Link
               to="/app/mi-juego"
               onClick={() => setMenuOpen(false)}
@@ -249,6 +251,7 @@ const SessionControl = () => {
               <BarChart2 className="h-4 w-4" />
               {t("header.nav.mi-juego", "Mi Juego")}
             </Link>
+            )}
             {/* Solo por debajo de xl: en escritorio "Cómo funciona" ya está en el nav. */}
             <Link
               to="/app/como-funciona"

@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom"
-import { Home, Compass, Bookmark, Crown, Sparkles, Lock } from "lucide-react"
+import { Home, Compass, Bookmark, Crown, Sparkles, Lock, BarChart2 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useAuth, hasFeature, isAdmin, type PlanFeature } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
@@ -10,12 +10,12 @@ import { useI18n } from "../../../lib/i18n/store"
  * para todos los roles: las pestañas de Admin ya no viven en el nav de escritorio (solo
  * en el desplegable del avatar), así que no hace falta un caso especial aquí tampoco.
  *
- * Cinco accesos: Mi Lista, Explorar, Inicio, Club y Coach (orden decidido el 23/10/2026: Inicio en
- * el centro, y Mi Lista entra en la barra porque aporta más que Mi Juego, que son solo analíticas;
- * Mi Juego pasa al menú del avatar en Header.tsx, junto a "Cómo funciona", que es también donde
- * apunta el último paso del tour de bienvenida en este layout). Coach y Club salen SIEMPRE, también
- * para quien no tiene ese plan (con un candado pequeño): al entrar, la propia pantalla le lleva a
- * /app/precios, así que la pestaña hace de escaparate.
+ * Cinco accesos: Mi Lista, Explorar, Inicio (en el centro), Club y una quinta según el plan
+ * (26/10/2026, reporte #94): Coach para quien tiene el plan Coach; Mi Juego para Essential y
+ * Club, que no ven Coach bloqueado (se promociona en campañas puntuales). Con Coach, Mi Juego
+ * va en el menú del avatar (Header.tsx), junto a "Cómo funciona", que es también donde apunta
+ * el último paso del tour de bienvenida en este layout. Club sale siempre, también sin el plan
+ * (con un candado pequeño): al entrar, la propia pantalla lleva a /app/precios.
  *
  * Sin "Buscar": la lupa vive en el Header (junto al avatar, como en escritorio) y abre el
  * overlay de búsqueda en vez de ser una pestaña propia.
@@ -28,15 +28,21 @@ const ITEMS: { to: string; key: string; label: string; icon: LucideIcon; feature
   { to: "/app/explorar", key: "header.nav.explorar", label: "Explorar", icon: Compass },
   { to: "/app/inicio", key: "header.nav.inicio", label: "Inicio", icon: Home },
   { to: "/app/club", key: "header.nav.club", label: "Club", icon: Crown, feature: "monthlyPicks" },
-  { to: "/app/coach", key: "header.nav.coach", label: "Coach", icon: Sparkles, feature: "personalAnalysis" },
 ]
+
+// Coach solo para quien tiene el plan Coach (reporte #94, 26/10/2026): al resto no se le
+// enseña una pestaña bloqueada; Coach se promociona en campañas puntuales. En su lugar, para
+// Essential y Club, FIFTH_TAB (o nada, y la barra queda en 4).
+const COACH_TAB = { to: "/app/coach", key: "header.nav.coach", label: "Coach", icon: Sparkles }
+const MI_JUEGO_TAB = { to: "/app/mi-juego", key: "header.nav.mi-juego", label: "Mi Juego", icon: BarChart2 }
+const FIFTH_TAB: typeof MI_JUEGO_TAB | null = MI_JUEGO_TAB
 
 const MobileNav = () => {
   const { t } = useI18n()
   const { user } = useAuth()
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-white/10 bg-black/80 px-1 py-2 backdrop-blur-md xl:hidden">
-      {ITEMS.map(({ to, key, label, icon: Icon, feature }) => (
+      {[...ITEMS, ...(hasFeature(user, "personalAnalysis") ? [COACH_TAB] : FIFTH_TAB ? [FIFTH_TAB] : [])].map(({ to, key, label, icon: Icon, feature }: (typeof ITEMS)[number]) => (
         <NavLink
           key={to}
           to={to}
