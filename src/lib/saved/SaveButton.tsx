@@ -21,7 +21,8 @@ const SaveButton = ({ item, variant = "icon" }: { item: ContentItem; variant?: V
     e.preventDefault()
     e.stopPropagation()
     // Un toque guarda en Mi Lista (como siempre) y abre «Guardar en…» para elegir carpetas;
-    // si ya estaba guardado, solo abre «Guardar en…» (ahí se puede quitar).
+    // si ya estaba guardado, solo abre «Guardar en…» (carpetas). Quitarlo de Mi Lista se hace
+    // desde la pantalla de Mi Lista (Gestionar), no desde aquí (reporte #92).
     if (!saved) toggleSavedItem(item)
     openSaveTo(item)
   }
