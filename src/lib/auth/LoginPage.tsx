@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Navigate, useNavigate, useSearchParams, useLocation } from "react-router-dom"
 import { useAuth, PLAN_NAME, type PlanTier } from "./store"
 import { createCheckoutSession } from "../api/billing"
+import { checkoutErrorText, authErrorText } from "../checkoutErrors"
 import { Eye, EyeOff } from "lucide-react"
 import { requestInvite, getInviteInfo } from "../api/invites"
 import { ApiError } from "../api/client"
@@ -142,11 +143,11 @@ const LoginPage = () => {
       .then(({ url }) => window.location.assign(url))
       .catch((err) => {
         // Ya tiene suscripción: a la app, que es donde tiene que estar.
-        if (err instanceof ApiError && err.status === 409 && /suscripci|subscription/i.test(err.message)) {
+        if (err instanceof ApiError && err.code === "has_subscription") {
           navigate("/app/inicio", { replace: true })
           return
         }
-        setCheckoutError(err instanceof Error && err.message ? err.message : t("precios.checkout-error", "No se pudo abrir el pago."))
+        setCheckoutError(checkoutErrorText(err, t))
       })
   }
   useEffect(() => {
@@ -162,7 +163,7 @@ const LoginPage = () => {
         {checkoutError ? (
           <div className="w-full max-w-md space-y-4 rounded-2xl border border-white/10 bg-black/40 p-8 text-center">
             <p className="font-semibold text-white">{t("login.checkout.failed-title", "No hemos podido abrir el pago")}</p>
-            <p className="text-sm text-red-300">{checkoutError}</p>
+            <p className="text-sm text-white/70">{checkoutError}</p>
             <button
               type="button"
               onClick={openCheckout}
@@ -170,9 +171,6 @@ const LoginPage = () => {
             >
               {t("login.checkout.retry", "Volver a intentarlo")}
             </button>
-            <p className="text-xs text-white/50">
-              {t("login.checkout.help", "Si sigue fallando, escríbenos a hello@padelfilmroom.com.")}
-            </p>
           </div>
         ) : (
           <p className="text-sm text-white/70">{t("login.checkout.opening", "Abriendo el pago seguro de Stripe…")}</p>
@@ -209,7 +207,8 @@ const LoginPage = () => {
       // Con plan, el salto a Stripe lo hace el efecto de arriba al haber sesión.
       if (!planFromUrl) navigate("/app/inicio", { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("login.error.generic", "No se pudo completar la operación."))
+      // La pantalla de "invitación caducada" ya avisa aparte; el resto, por código o estado.
+      setError(authErrorText(err, mode === "login" ? "login" : "register", t))
     } finally {
       setLoading(false)
     }

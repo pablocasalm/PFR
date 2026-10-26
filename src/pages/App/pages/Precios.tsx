@@ -4,6 +4,7 @@ import { Check, Minus, CreditCard, Clock } from "lucide-react"
 import { useAuth, hasActiveSubscription, PLAN_NAME, type PlanTier } from "../../../lib/auth/store"
 import PendingPlanNote from "../components/PendingPlanNote"
 import { canStartCheckout } from "../../../lib/payments"
+import { checkoutErrorText } from "../../../lib/checkoutErrors"
 import { trackActivity } from "../../../lib/api/activity"
 import { LegalLink } from "../../../lib/ui/LegalLinks"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
@@ -80,7 +81,7 @@ const PlanCard = ({
       const { url } = hasSubscription ? await changePlan(plan.tier) : await createCheckoutSession("Monthly", plan.tier)
       window.location.href = url
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("precios.checkout-error", "No se pudo abrir el pago."))
+      setError(checkoutErrorText(err, t))
       setBusy(false)
     }
   }

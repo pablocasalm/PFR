@@ -10,9 +10,13 @@ import { API_BASE } from "../config"
  * adivinar la causa. */
 export class ApiError extends Error {
   status: number
-  constructor(message: string, status: number) {
+  /** `code` del cuerpo de la respuesta, si lo trae (p. ej. "coach_full"): la UI elige el texto
+   * por código en vez de enseñar el `message` del servidor (que es para nosotros). */
+  code?: string
+  constructor(message: string, status: number, code?: string) {
     super(message)
     this.status = status
+    this.code = code
   }
 }
 
@@ -131,12 +135,15 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}, isRetry 
   if (!res.ok) {
     if (res.status === 401) handleUnauthorized(!!token)
     let message = `Error ${res.status}`
+    let code: string | undefined
     try {
-      message = text ? (JSON.parse(text).message ?? text) : message
+      const body = text ? JSON.parse(text) : null
+      message = body?.message ?? (text || message)
+      code = typeof body?.code === "string" ? body.code : undefined
     } catch {
       message = text || message
     }
-    throw new ApiError(message, res.status)
+    throw new ApiError(message, res.status, code)
   }
 
   return text ? (JSON.parse(text) as T) : ({} as T)
@@ -182,12 +189,15 @@ async function apiFetchRaw(endpoint: string, options: RequestInit = {}, isRetry 
     if (res.status === 401) handleUnauthorized(!!token)
     const text = await res.text()
     let message = `Error ${res.status}`
+    let code: string | undefined
     try {
-      message = text ? (JSON.parse(text).message ?? text) : message
+      const body = text ? JSON.parse(text) : null
+      message = body?.message ?? (text || message)
+      code = typeof body?.code === "string" ? body.code : undefined
     } catch {
       message = text || message
     }
-    throw new ApiError(message, res.status)
+    throw new ApiError(message, res.status, code)
   }
   return res
 }
