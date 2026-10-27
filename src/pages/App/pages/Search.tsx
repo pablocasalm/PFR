@@ -17,6 +17,8 @@ import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
 import { FollowConceptButton } from "../components/StarterTest"
 import { useTaxonomy, resolveTaxonomyParam } from "../../../lib/taxonomy"
+import { useHideWatched } from "../../../lib/watched"
+import HideWatchedToggle from "../../../lib/ui/HideWatchedToggle"
 
 /**
  * Search — Pantalla de Resultados (§11). Destino común de búsqueda, "Ver todo",
@@ -63,8 +65,9 @@ const sorts = (t: TFunc) => [
   { v: "duration", l: t("search.sort.duration", "Duración") },
 ]
 
-// `watched`: "" (todos) | "unseen" (sin ver) | "seen" (vistos) — §reporte de beta.
-type Filters = { q: string; block: string; concept: string; type: string; sort: string; feed: string; hasEnglish: string; watched: string }
+// Lo ya visto no es un filtro de la URL: es el interruptor «Ocultar vistos» (reporte #106),
+// compartido con Explorar (ver lib/watched.ts).
+type Filters = { q: string; block: string; concept: string; type: string; sort: string; feed: string; hasEnglish: string }
 
 // `concept` y `block` llegan como número (?concept=12); los nombres, ya en el idioma de la
 // cuenta, los pone la página con la taxonomía (`labels`). Nunca se enseña el valor de la URL.
@@ -100,7 +103,6 @@ const appliedChips = (f: Filters, t: TFunc, labels: Labels): Chip[] => {
     })
   if (f.type) chips.push({ key: "type", label: f.type === "analysis" ? t("explorar.type.analyses", "Análisis") : t("explorar.type.clips", "Clips"), patch: { type: "" } })
   if (f.hasEnglish) chips.push({ key: "hasEnglish", label: t("explorar.filter.has-english", "Con inglés"), patch: { hasEnglish: "" } })
-  if (f.watched) chips.push({ key: "watched", label: f.watched === "seen" ? t("search.filter.seen", "Vistos") : t("search.filter.unseen", "Sin ver"), patch: { watched: "" } })
   return chips
 }
 
@@ -188,6 +190,7 @@ const Search = () => {
   const SORTS = useMemo(() => sorts(t), [t])
   const [params, setParams] = useSearchParams()
   const [showFilters, setShowFilters] = useState(false)
+  const [hideWatched, setHideWatched] = useHideWatched()
 
   const filters: Filters = {
     q: params.get("q") ?? "",
@@ -197,7 +200,6 @@ const Search = () => {
     sort: params.get("sort") ?? "",
     feed: params.get("feed") ?? "",
     hasEnglish: params.get("hasEnglish") ?? "",
-    watched: params.get("watched") ?? "",
   }
 
   const setFilter = (patch: Partial<Filters>) => {
@@ -308,11 +310,11 @@ const Search = () => {
     if (filters.block) items = blockId == null ? [] : items.filter((i) => blockIdsOf(i).includes(blockId))
     if (filters.hasEnglish) items = items.filter((i) => i.hasEnglishVersion)
     // "Visto" = mismo criterio que la insignia de las tarjetas (`completed`, lo marca el backend).
-    if (filters.watched === "seen") items = items.filter((i) => i.completed)
-    if (filters.watched === "unseen") items = items.filter((i) => !i.completed)
+    // En «Vistos recientemente» no se aplica: ahí todo es visto por definición.
+    if (hideWatched && filters.feed !== "history") items = items.filter((i) => !i.completed)
     return items
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searched, conceptKey, blockId, filters.concept, filters.block, filters.hasEnglish, filters.watched, tax])
+  }, [searched, conceptKey, blockId, filters.concept, filters.block, filters.hasEnglish, hideWatched, filters.feed, tax])
 
   const counts = {
     all: base.length,
@@ -366,23 +368,15 @@ const Search = () => {
         setFilter({ concept: next.join(",") })
       },
     },
-    {
-      title: t("search.filter.watched", "Vistos"),
-      options: [
-        { value: "", label: t("explorar.type.all", "Todos") },
-        { value: "unseen", label: t("search.filter.unseen", "Sin ver") },
-        { value: "seen", label: t("search.filter.seen", "Vistos") },
-      ],
-      isActive: (v) => (filters.watched || "") === v,
-      onToggle: (v) => setFilter({ watched: v }),
-    },
-    {
+  ]
+  // «Con inglés» solo si hay algo sin versión en inglés (reporte #106: hoy lo tiene todo).
+  if (filters.hasEnglish || searched.some((i) => !i.hasEnglishVersion))
+    filterSections.push({
       title: t("explorar.filter.language", "Idioma"),
       options: [{ value: "1", label: t("explorar.filter.has-english", "Con inglés") }],
       isActive: (v) => filters.hasEnglish === v,
       onToggle: (v) => setFilter({ hasEnglish: filters.hasEnglish === v ? "" : v }),
-    },
-  ]
+    })
 
   const typeTabs: { key: string; label: string; count: number }[] = [
     { key: "", label: t("explorar.type.all", "Todos"), count: counts.all },
@@ -455,6 +449,10 @@ const Search = () => {
               )}
             </button>
           </div>
+
+          {/* Fuera del panel de Filtros (reporte #106), igual que en Explorar. En «Vistos
+              recientemente» no pinta nada: ahí todo está visto. */}
+          {filters.feed !== "history" && <HideWatchedToggle checked={hideWatched} onChange={setHideWatched} className="mt-4" />}
 
           {/* Chips de filtros aplicados (§11.3) */}
           {chips.length > 0 && (

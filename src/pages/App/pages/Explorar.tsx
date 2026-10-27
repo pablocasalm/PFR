@@ -17,6 +17,8 @@ import ErrorScreen from "../components/ErrorScreen"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
 import { useTaxonomy, blockSearchHref } from "../../../lib/taxonomy"
+import { useHideWatched, watchedLast } from "../../../lib/watched"
+import HideWatchedToggle from "../../../lib/ui/HideWatchedToggle"
 
 /**
  * Explorar — Biblioteca táctica. Consume GET /api/explore (bloques + análisis).
@@ -363,6 +365,7 @@ const Explorar = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [selectedPlayer, setSelectedPlayer] = useState("")
   const [hasEnglishOnly, setHasEnglishOnly] = useState(false)
+  const [hideWatched, setHideWatched] = useHideWatched()
 
   const toggleConcept = (concept: string) =>
     setSelected((prev) => {
@@ -409,6 +412,11 @@ const Explorar = () => {
   const matchesPlayer = (players?: string) =>
     !selectedPlayer || (players ?? "").split(",").map((p) => p.trim()).includes(selectedPlayer)
   const matchesEnglish = (item: ContentItem) => !hasEnglishOnly || item.hasEnglishVersion
+  const matchesWatched = (item: ContentItem) => !hideWatched || !item.completed
+  // «Con inglés» solo tiene sentido si hay algo sin versión en inglés (reporte #106: hoy lo
+  // tiene todo). Si algún día se sube algo solo en español, el filtro vuelve a salir solo.
+  const someWithoutEnglish =
+    !!data && (data.sections.some((sec) => sec.clips.some((c) => !c.hasEnglishVersion)) || data.analyses.some((a) => !a.hasEnglishVersion))
 
   // Un clip puede tener el mismo concepto en distintos bloques (raro, pero posible) o aparecer
   // en varias secciones porque tiene otros bloques propios: el filtro de un concepto debe mirar
@@ -428,17 +436,18 @@ const Explorar = () => {
       .filter((sec) => !selectedBlock || sec.block === selectedBlock)
       .map((sec) => ({
         ...sec,
-        clips: sec.clips.filter((cl) => matchesInBlock(cl, sec.block) && matchesPlayer(cl.players) && matchesEnglish(cl)),
+        // Lo ya visto, al final de cada bloque: lo primero es siempre contenido nuevo (reporte #104).
+        clips: watchedLast(sec.clips.filter((cl) => matchesInBlock(cl, sec.block) && matchesPlayer(cl.players) && matchesEnglish(cl) && matchesWatched(cl))),
       }))
       .filter((sec) => sec.clips.length > 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, type, selectedBlock, selected, selectedPlayer, hasEnglishOnly])
+  }, [data, type, selectedBlock, selected, selectedPlayer, hasEnglishOnly, hideWatched])
 
   const visibleAnalyses = useMemo(() => {
     if (type === "clips" || !data) return []
-    return data.analyses.filter((a) => matches(a.concepts) && matchesPlayer(a.players) && matchesEnglish(a))
+    return watchedLast(data.analyses.filter((a) => matches(a.concepts) && matchesPlayer(a.players) && matchesEnglish(a) && matchesWatched(a)))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, type, selected, selectedPlayer, hasEnglishOnly])
+  }, [data, type, selected, selectedPlayer, hasEnglishOnly, hideWatched])
 
   // Secciones del panel de filtros compartido (mismo componente que Search/Resultados).
   const filterSections: FilterSection[] = [
@@ -460,13 +469,21 @@ const Explorar = () => {
       isActive: (v) => selected.has(v),
       onToggle: toggleConcept,
     },
-    {
+  ]
+  if (someWithoutEnglish || hasEnglishOnly)
+    filterSections.push({
       title: t("explorar.filter.language", "Idioma"),
       options: [{ value: "1", label: t("explorar.filter.has-english", "Con inglés") }],
       isActive: () => hasEnglishOnly,
       onToggle: () => setHasEnglishOnly((v) => !v),
-    },
-  ]
+    })
+
+  // Un chip de concepto dentro de un bloque filtra esta misma pantalla: la lista se encoge y,
+  // sin esto, te quedabas a media página (reporte #105). Se sube arriba para ver el resultado.
+  const toggleConceptFromSection = (concept: string) => {
+    toggleConcept(concept)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
 
   const activeCount =
     selected.size + (type !== "all" ? 1 : 0) + (selectedBlock ? 1 : 0) + (selectedPlayer ? 1 : 0) + (hasEnglishOnly ? 1 : 0)
@@ -517,6 +534,9 @@ const Explorar = () => {
         </button>
       )}
 
+      {/* Fuera del panel de Filtros (reporte #106); no cuenta como filtro ni se quita con «Quitar filtros». */}
+      <HideWatchedToggle checked={hideWatched} onChange={setHideWatched} />
+
       {/* Filtros: en escritorio en línea; en móvil, hoja inferior (mismo patrón que Comentarios en Video). */}
       {showFilters && (
         <div className="hidden space-y-4 lg:block">
@@ -549,7 +569,7 @@ const Explorar = () => {
       )}
 
       {visibleSections.map((section, i) => (
-        <ConceptSection key={section.block} section={section} index={i} selected={selected} onToggleConcept={toggleConcept} />
+        <ConceptSection key={section.block} section={section} index={i} selected={selected} onToggleConcept={toggleConceptFromSection} />
       ))}
 
       {visibleAnalyses.length > 0 && (

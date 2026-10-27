@@ -18,6 +18,7 @@ import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
 import { StarterTestBanner } from "../components/StarterTest"
 import { useTaxonomy, conceptSearchHref } from "../../../lib/taxonomy"
+import { watchedLast } from "../../../lib/watched"
 
 /**
  * Inicio — Dashboard principal. Consume GET /api/home (endpoint con forma de pantalla).
@@ -190,7 +191,8 @@ const Inicio = () => {
     )
 
   const home = data
-  const newThisWeek = home?.newThisWeek ?? []
+  // Lo ya visto, al final (reporte #104). En «Más vistos» no: es un ranking numerado.
+  const newThisWeek = watchedLast(home?.newThisWeek ?? [])
   const continueWatching = home?.continueWatching ?? []
   const popularConcepts = home?.popularConcepts ?? []
   const mostViewed = home?.mostViewedThisWeek ?? []
