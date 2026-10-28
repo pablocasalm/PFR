@@ -28,6 +28,11 @@ import { changePlan, createCheckoutSession, getBillingPlans, type BillingPlans }
  *
  * §24/10/2026: quien no tiene acceso (cuenta creada sin código desde la landing, prueba ya
  * acabada) sí ve los botones, que abren Stripe Checkout — ver canStartCheckout en lib/payments.ts.
+ *
+ * §28/10/2026: mismo contenido que /precios de la landing (PFR_Landing/src/pages/Precios.tsx):
+ * frase de cada plan, precio normal tachado junto al de fundador, contador propio de Coach (5
+ * plazas), las mismas funciones, «Recomendado» y «Pago seguro con Stripe». Los botones sí son
+ * propios de la app (elegir o cambiar de plan). Si se cambia una, cambiar la otra.
  */
 
 type FeatureRow = { label: (t: TFunc) => string; tiers: PlanTier[] } // qué tiers incluyen esta fila
@@ -35,21 +40,21 @@ type FeatureRow = { label: (t: TFunc) => string; tiers: PlanTier[] } // qué tie
 const FEATURE_ROWS: FeatureRow[] = [
   { label: (t) => t("precios.feature.catalog-v2", "Todos los clips y análisis, incluidos los nuevos"), tiers: ["Starter", "Club", "Coach"] },
   { label: (t) => t("precios.feature.mi-juego", "Favoritos, Mi Juego, estadísticas y story"), tiers: ["Starter", "Club", "Coach"] },
-  { label: (t) => t("precios.feature.session", "Sesión táctica mensual grabada con Guille, en ES/EN"), tiers: ["Club", "Coach"] },
-  { label: (t) => t("precios.feature.questions", "Enviar preguntas para esa sesión"), tiers: ["Club", "Coach"] },
-  { label: (t) => t("precios.feature.monthly-pick", "Propuesta mensual de conceptos y clips para trabajar tras la sesión"), tiers: ["Club", "Coach"] },
-  { label: (t) => t("precios.feature.archive", "Acceso al archivo de sesiones grabadas del Club"), tiers: ["Club", "Coach"] },
-  { label: (t) => t("precios.feature.personal-analysis", "Análisis táctico personalizado mensual de 20 min de un partido tuyo"), tiers: ["Coach"] },
+  { label: (t) => t("precios.feature.session", "Masterclass mensual grabada con Guille y Andrea, en ES/EN"), tiers: ["Club", "Coach"] },
+  { label: (t) => t("precios.feature.questions", "Envía tus preguntas para la masterclass"), tiers: ["Club", "Coach"] },
+  { label: (t) => t("precios.feature.monthly-pick", "El plan del mes: qué conceptos y clips trabajar"), tiers: ["Club", "Coach"] },
+  { label: (t) => t("precios.feature.archive", "Archivo con todas las masterclasses anteriores"), tiers: ["Club", "Coach"] },
+  { label: (t) => t("precios.feature.personal-analysis", "Cada mes, Guille analiza un partido tuyo (vídeo de hasta 20 min)"), tiers: ["Coach"] },
 ]
 
-const PLANS: { tier: PlanTier; price: number; availability: (t: TFunc) => string; accent: boolean }[] = [
-  { tier: "Starter", price: 14.9, availability: (t) => t("precios.availability.open", "Abierta"), accent: false },
-  { tier: "Club", price: 24.9, availability: (t) => t("precios.availability.open", "Abierta"), accent: true },
-  { tier: "Coach", price: 74.9, availability: (t) => t("precios.availability.limited", "Plazas limitadas"), accent: false },
+const PLANS: { tier: PlanTier; tagline: (t: TFunc) => string; accent: boolean }[] = [
+  { tier: "Starter", tagline: (t) => t("precios.tagline.starter", "Aprende a leer el juego a tu ritmo."), accent: false },
+  { tier: "Club", tagline: (t) => t("precios.tagline.club", "Cada mes sabes qué trabajar y por qué."), accent: true },
+  { tier: "Coach", tagline: (t) => t("precios.tagline.coach", "Tu partido, analizado por un exjugador profesional."), accent: false },
 ]
 
-const currencyFormat = (amount: number, lang: string) =>
-  new Intl.NumberFormat(lang === "en" ? "en-US" : "es-ES", { style: "currency", currency: "EUR" }).format(amount)
+const currencyFormat = (amount: number, currency: string, lang: string) =>
+  new Intl.NumberFormat(lang === "en" ? "en-GB" : "es-ES", { style: "currency", currency }).format(amount)
 
 const PlanCard = ({
   plan,
@@ -68,8 +73,23 @@ const PlanCard = ({
 }) => {
   const { t, lang } = useI18n()
   // El precio que le toca a quien mira, leído de Stripe por el servidor (fundador o normal,
-  // España o resto del mundo). Si no llega, el de PLANS.
+  // España o resto del mundo). Si no llega, «—»: nunca un precio inventado.
   const backendPrice = backend?.plans?.find((p) => p.tier === plan.tier)?.prices?.find((p) => p.interval === "Monthly") ?? null
+  const regular = backendPrice?.regularAmount && backendPrice.regularAmount > backendPrice.displayAmount ? backendPrice.regularAmount : null
+  // Línea bajo el precio: las plazas de fundador; en Coach, sus propias plazas (5).
+  const slotsText = (() => {
+    if (!backend) return null
+    if (plan.tier === "Coach" && backend.coachSlotsLeft != null && backend.coachMaxMembers) {
+      const vars = { count: backend.coachSlotsLeft, total: backend.coachMaxMembers }
+      return backend.isFounder
+        ? t("precios.coach-left-founder", "Precio fundador · quedan {count} de {total} plazas", vars)
+        : t("precios.coach-left", "Quedan {count} de {total} plazas", vars)
+    }
+    if (!backend.isFounder) return null
+    return backend.founderSlotsLeft
+      ? t("precios.founder-left", "Precio fundador · quedan {count} plazas", { count: backend.founderSlotsLeft })
+      : t("precios.founder", "Precio fundador")
+  })()
   const coachFull = plan.tier === "Coach" && !!backend?.coachFull && !isCurrent
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -101,27 +121,30 @@ const PlanCard = ({
             isCurrent ? "bg-neon-lime text-midnight" : "bg-neon-cyan text-midnight"
           }`}
         >
-          {isCurrent ? t("precios.current-plan", "Tu plan actual") : t("precios.most-popular", "Más popular")}
+          {isCurrent ? t("precios.current-plan", "Tu plan actual") : t("precios.most-popular", "Recomendado")}
         </span>
       )}
 
       <h2 className="font-display text-xl font-bold text-white">
         {t(`precios.tier.${plan.tier.toLowerCase()}`, PLAN_NAME[plan.tier])}
       </h2>
-      <p className="mt-2 text-3xl font-bold text-white">
-        {currencyFormat(backendPrice?.displayAmount ?? plan.price, lang)}
-        <span className="text-sm font-normal text-white/50"> / {t("precios.interval.monthly", "mensual")}</span>
+      <p className="mt-1 text-sm text-white/60">{plan.tagline(t)}</p>
+      <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-3xl font-bold text-white">
+        {regular != null && backendPrice && (
+          <del
+            className="text-xl font-semibold text-white/40 decoration-2"
+            aria-label={t("precios.regular-price", "Precio normal: {price}", { price: currencyFormat(regular, backendPrice.currency, lang) })}
+          >
+            {currencyFormat(regular, backendPrice.currency, lang)}
+          </del>
+        )}
+        <span>
+          {backendPrice ? currencyFormat(backendPrice.displayAmount, backendPrice.currency, lang) : backend ? "—" : "…"}
+          <span className="text-sm font-normal text-white/50"> / {t("precios.interval.monthly", "mensual")}</span>
+        </span>
       </p>
-      {backend?.isFounder && (
-        <p className="mt-1 text-xs font-semibold text-neon-lime">
-          {backend.founderSlotsLeft
-            ? t("precios.founder-left", "Precio fundador · quedan {count} plazas", { count: backend.founderSlotsLeft })
-            : t("precios.founder", "Precio fundador")}
-        </p>
-      )}
-      <p className="mt-1 text-xs text-white/40">
-        {t("precios.availability-label", "Disponibilidad:")} {coachFull ? t("precios.availability.full", "Completo") : plan.availability(t)}
-      </p>
+      {slotsText && <p className="mt-1 text-xs font-semibold text-neon-lime">{slotsText}</p>}
+      {coachFull && <p className="mt-1 text-xs text-white/40">{t("precios.availability.full", "Completo")}</p>}
 
       <ul className="mt-5 flex-1 space-y-2.5 text-sm">
         {FEATURE_ROWS.map((row) => {
@@ -183,7 +206,8 @@ const Precios = ({ standalone = false }: { standalone?: boolean }) => {
     trackActivity("pricing_view") // métricas internas: quién llega a ver los precios
     // Precios reales (de Stripe, vía servidor) también con los pagos cerrados: así lo que se
     // enseña coincide con lo que se cobrará.
-    getBillingPlans().then(setBackend).catch(() => {})
+    // Si falla, sin planes: las tarjetas enseñan «—» en vez de quedarse cargando.
+    getBillingPlans().then(setBackend).catch(() => setBackend({ prices: [], plans: [] }))
   }, [])
 
   // Sin suscripción no se entra en la app, ni siquiera a Precios: a /suscripcion, fuera de la app
@@ -220,6 +244,8 @@ const Precios = ({ standalone = false }: { standalone?: boolean }) => {
           />
         ))}
       </div>
+
+      <p className="mt-6 text-center text-xs text-white/50">{t("precios.secure-payment", "Pago seguro con Stripe.")}</p>
 
       {/* Condiciones de la suscripción (renovación, cancelación, desistimiento): en los términos. */}
       <p className="mt-6 text-xs leading-relaxed text-white/50">

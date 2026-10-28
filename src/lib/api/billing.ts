@@ -8,6 +8,8 @@ export type PriceOption = {
   interval: BillingInterval
   displayAmount: number
   currency: string
+  /** Si displayAmount es el de fundador: el precio normal, para enseñarlo tachado. */
+  regularAmount?: number | null
 }
 
 export type TierPlan = {
@@ -28,6 +30,9 @@ export type BillingPlans = {
   founderSlotsLeft?: number
   /** Coach ya tiene sus 5 personas: no se puede contratar. */
   coachFull?: boolean
+  /** Plazas de Coach libres y en total (5). */
+  coachSlotsLeft?: number
+  coachMaxMembers?: number
 }
 
 /** GET /api/billing/plans → precios (mensual/anual) por tier y país. Pública, no necesita sesión. */
