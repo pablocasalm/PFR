@@ -3,7 +3,6 @@ import { Link, useSearchParams } from "react-router-dom"
 import { UserCircle, Settings2, CreditCard, Lock, type LucideIcon } from "lucide-react"
 import { useAuth, setLocalDisplayName, PLAN_NAME } from "../../../lib/auth/store"
 import PendingPlanNote from "../components/PendingPlanNote"
-import { PAYMENTS_ENABLED } from "../../../lib/payments"
 import LegalLinks from "../../../lib/ui/LegalLinks"
 import { getMyProfile, updateProfile, changePassword, updateMyPreferences, type ProfileResponse } from "../../../lib/api/profile"
 import { createPortalSession } from "../../../lib/api/billing"
@@ -378,7 +377,7 @@ const MiCuenta = () => {
             {portalError && <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{portalError}</p>}
 
             {/* Portal de Stripe (cancelar, cambiar la tarjeta, facturas) para quien tiene suscripción:
-                desde el 24/10/2026 ya se puede contratar (ver canStartCheckout en lib/payments.ts),
+                desde el 24/10/2026 ya se puede contratar (abierto a todos el 29/10, ver lib/payments.ts),
                 así que quien paga tiene que poder cancelar. Todo se hace en Stripe. */}
             {subStatus && subStatus !== "None" ? (
               <button
@@ -392,7 +391,7 @@ const MiCuenta = () => {
             ) : null}
             {/* Cambiar de plan va por Precios: ahí el servidor elige el precio que toca (fundador o
                 normal). El portal de Stripe no ofrece cambio de plan libre. */}
-            {PAYMENTS_ENABLED && subStatus && subStatus !== "None" && subStatus !== "Canceled" ? (
+            {subStatus && subStatus !== "None" && subStatus !== "Canceled" ? (
               <Link
                 to="/app/precios"
                 className="ml-3 inline-block rounded-lg border border-white/15 px-5 py-2.5 text-sm font-bold text-white/80 transition hover:text-white"

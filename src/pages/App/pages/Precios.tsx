@@ -11,23 +11,9 @@ import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { changePlan, createCheckoutSession, getBillingPlans, type BillingPlans } from "../../../lib/api/billing"
 
 /**
- * Pantalla de precios / paywall (§Stripe 3 planes, Fase 4). Comparativa de los 3 planes.
- *
- * §Temporal (a propósito, pedido explícitamente): los precios y features son estáticos
- * (hardcoded) y NINGÚN plan es clicable todavía — "Próximamente" en los tres, Starter y Coach
- * incluidos. Solo existe en Stripe el precio de siempre (9,99€, el que hoy representa a Club en
- * BD, ver Fase 0) y no coincide con el 24,90€ de aquí — cuando se cree de verdad en Stripe
- * (Starter y Coach todavía no existen) y se decida abrir el checkout, hay que:
- *   1) crear/actualizar los PricingPlan (Tier×Interval×País) con los StripePriceId reales,
- *   2) volver a llamar a getBillingPlans()/createCheckoutSession(interval, tier) desde aquí
- *      (ambos ya soportan tiers desde la Fase 0 — ver lib/api/billing.ts) en vez del contenido
- *      estático de abajo.
- *
- * §Prueba local de Stripe (oct 2026): mientras tanto existe un modo de prueba que SÍ conecta los
- * botones con el checkout — ver PAYMENTS_ENABLED en lib/payments.ts. Nunca se activa en la app publicada.
- *
- * §24/10/2026: quien no tiene acceso (cuenta creada sin código desde la landing, prueba ya
- * acabada) sí ve los botones, que abren Stripe Checkout — ver canStartCheckout en lib/payments.ts.
+ * Pantalla de precios (§Stripe 3 planes): comparativa de los 3 planes con los precios reales de
+ * Stripe (vía servidor). Desde el 29/10/2026 cualquier cuenta con sesión puede contratar desde
+ * aquí (ver canStartCheckout en lib/payments.ts); quien ya paga, cambia de plan.
  *
  * §28/10/2026: mismo contenido que /precios de la landing (PFR_Landing/src/pages/Precios.tsx):
  * frase de cada plan, precio normal tachado junto al de fundador, contador propio de Coach (5
@@ -242,9 +228,8 @@ const Precios = ({ standalone = false }: { standalone?: boolean }) => {
         <div>
           <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{t("precios.title", "Suscripción")}</h1>
           <p className="text-sm text-white/60">
-            {canStartCheckout(user)
-              ? t("precios.subtitle-open", "Elige tu plan. El pago se hace de forma segura en Stripe.")
-              : t("precios.subtitle-v2", "Tres niveles de acompañamiento. Muy pronto podrás suscribirte.")}
+            {/* Sin mencionar Stripe: ya lo dice «Pago seguro con Stripe» bajo los planes. */}
+            {t("precios.subtitle-v3", "Elige el plan que mejor te encaje.")}
           </p>
         </div>
       </div>
