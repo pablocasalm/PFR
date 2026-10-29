@@ -140,7 +140,7 @@ const PlanCard = ({
         )}
         <span>
           {backendPrice ? currencyFormat(backendPrice.displayAmount, backendPrice.currency, lang) : backend ? "—" : "…"}
-          <span className="text-sm font-normal text-white/50"> / {t("precios.interval.monthly", "mensual")}</span>
+          <span className="text-sm font-normal text-white/50"> / {t("precios.interval.monthly", "mes")}</span>
         </span>
       </p>
       {slotsText && <p className="mt-1 text-xs font-semibold text-neon-lime">{slotsText}</p>}
