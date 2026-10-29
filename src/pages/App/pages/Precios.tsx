@@ -181,7 +181,10 @@ const PlanCard = ({
               ? t("precios.opening-stripe", "Abriendo Stripe…")
               : hasSubscription
                 ? t("precios.change-to-plan", "Cambiar a este plan")
-                : t("precios.choose-plan", "Elegir este plan")}
+                : isCurrent && backend?.trialEndsAtUtc
+                  ? // Beta tester en sus 14 días, en la tarjeta del plan que ya prueba: se queda con él.
+                    t("precios.keep-plan", "Seguir con este plan")
+                  : t("precios.choose-plan", "Elegir este plan")}
           </button>
           {trialNote && <p className="text-center text-xs text-white/50">{trialNote}</p>}
           {error && <p className="text-xs text-red-300">{error}</p>}
