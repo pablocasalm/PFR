@@ -135,6 +135,8 @@ const LoginPage = () => {
     }
   }, [inviteFromUrl, emailFromUrl])
   const [error, setError] = useState<string | null>(null)
+  // Al crear la cuenta, el email ya estaba registrado (completa o a medias): se ofrece entrar.
+  const [accountExists, setAccountExists] = useState(false)
   const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -199,6 +201,7 @@ const LoginPage = () => {
   const switchMode = (next: Mode) => {
     setMode(next)
     setError(null)
+    setAccountExists(false)
     setInfo(null)
     setPassword("")
     setPasswordRepeat("")
@@ -207,6 +210,7 @@ const LoginPage = () => {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setAccountExists(false)
     setInfo(null)
     if (mode === "register" && password !== passwordRepeat) {
       setError(t("login.error.password-mismatch", "Las contraseñas no coinciden."))
@@ -227,6 +231,7 @@ const LoginPage = () => {
     } catch (err) {
       // La pantalla de "invitación caducada" ya avisa aparte; el resto, por código o estado.
       setError(authErrorText(err, mode === "login" ? "login" : "register", t))
+      setAccountExists(mode === "register" && err instanceof ApiError && err.status === 409)
     } finally {
       setLoading(false)
     }
@@ -425,7 +430,23 @@ const LoginPage = () => {
               />
             )}
 
-            {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+            {error && (
+              <div className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                <p>{error}</p>
+                {/* Email ya registrado: un toque para entrar con él (el email se queda escrito). Si
+                    la cuenta está a medias y venía con plan, al entrar se abre el pago de ese plan;
+                    si no, la app le lleva a elegir plan (/suscripcion). */}
+                {accountExists && (
+                  <button
+                    type="button"
+                    onClick={() => switchMode("login")}
+                    className="mt-2 min-h-11 font-semibold text-neon-cyan hover:underline"
+                  >
+                    {t("login.cta.login", "Iniciar sesión")}
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Casilla de la newsletter (resumen mensual): opcional y desmarcada; no bloquea el botón.
                 Por ahora solo se guarda el consentimiento, todavía no se envía nada. */}

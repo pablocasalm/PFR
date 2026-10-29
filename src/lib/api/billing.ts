@@ -33,6 +33,10 @@ export type BillingPlans = {
   /** Plazas de Coach libres y en total (5). */
   coachSlotsLeft?: number
   coachMaxMembers?: number
+  /** Prueba que tendría la cuenta conectada al contratar Essential o Club: días (cuenta nueva) o
+   * fecha de fin (beta tester en sus 14 días). Los dos vacíos = sin prueba. */
+  trialDays?: number | null
+  trialEndsAtUtc?: string | null
 }
 
 /** GET /api/billing/plans → precios (mensual/anual) por tier y país. Pública, no necesita sesión. */

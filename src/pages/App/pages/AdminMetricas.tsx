@@ -105,6 +105,19 @@ const AdminMetricas = () => {
               : t("admin-metrics.card.conversion-none", "Ninguna prueba ha terminado"),
           delta: null,
         },
+        // Pago a medias: de quien crea la cuenta sin código (desde la landing), cuántos se van sin pagar.
+        ...(s.checkoutAbandoned != null
+          ? [
+              {
+                label: t("admin-metrics.card.checkout-abandoned", "Se van en el pago"),
+                value: String(s.checkoutAbandoned),
+                hint: t("admin-metrics.card.checkout-abandoned-of", "de {total} cuentas creadas sin código", {
+                  total: s.checkoutAbandoned + (s.checkoutCompleted ?? 0),
+                }),
+                delta: null,
+              },
+            ]
+          : []),
       ]
     : []
 
@@ -188,7 +201,7 @@ const AdminMetricas = () => {
         {error && <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
         {/* Resumen */}
-        <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
           {cards.map((c) => (
             <div key={c.label} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
               <p className="text-xs text-white/50">{c.label}</p>

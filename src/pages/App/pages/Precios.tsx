@@ -91,6 +91,24 @@ const PlanCard = ({
       : t("precios.founder", "Precio fundador")
   })()
   const coachFull = plan.tier === "Coach" && !!backend?.coachFull && !isCurrent
+  // Nota bajo el botón, como en la landing, solo para quien va a contratar (no al cambiar de plan):
+  // en Essential y Club, la prueba que le toca a esta cuenta según el servidor (7 días si es nueva,
+  // hasta el fin de su beta si está en sus 14 días); sin prueba, nada. En Coach, que se cobra ya.
+  const trialNote = (() => {
+    if (hasSubscription || !backend) return null
+    if (plan.tier === "Coach") return t("precios.coach-note", "Se cobra al contratar.")
+    const zero = new Intl.NumberFormat(lang === "en" ? "en-GB" : "es-ES", {
+      style: "currency",
+      currency: backendPrice?.currency ?? "EUR",
+      maximumFractionDigits: 0,
+    }).format(0) // «0 €», no «0,00 €»
+    if (backend.trialEndsAtUtc) {
+      const date = new Date(backend.trialEndsAtUtc).toLocaleDateString(lang === "en" ? "en-GB" : "es-ES", { day: "numeric", month: "long" })
+      return t("precios.trial-note.beta", "Hoy {zero}. El primer cobro, el {date}, cuando acaba tu beta.", { zero, date })
+    }
+    if (backend.trialDays) return t("precios.trial-note.days", "Hoy {zero}. El primer cobro, a los {days} días.", { zero, days: backend.trialDays })
+    return null
+  })()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const subscribe = async () => {
@@ -179,6 +197,7 @@ const PlanCard = ({
                 ? t("precios.change-to-plan", "Cambiar a este plan")
                 : t("precios.choose-plan", "Elegir este plan")}
           </button>
+          {trialNote && <p className="text-center text-xs text-white/50">{trialNote}</p>}
           {error && <p className="text-xs text-red-300">{error}</p>}
         </div>
       ) : (

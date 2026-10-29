@@ -47,6 +47,10 @@ export type AdminMetrics = {
     minutesPrevious: number | null
     conversionConverted: number
     conversionBase: number
+    /** Cuentas creadas sin código en el periodo: se fueron sin pagar / llegaron a suscribirse.
+     * Sin dato con un backend anterior al 29/10/2026. */
+    checkoutAbandoned?: number
+    checkoutCompleted?: number
   }
   /** Embudo de los invitados de la beta de la oleada elegida (no depende del plan ni del periodo). */
   funnel: {

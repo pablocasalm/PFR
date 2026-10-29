@@ -26,6 +26,9 @@ export function authErrorText(err: unknown, mode: "login" | "register", t: TFunc
   if (err instanceof ApiError && err.code === "name_required")
     return t("login.error.name-required", "Escribe tu nombre o un nombre de usuario.")
   if (mode === "login" && status === 401) return t("login.error.invalid-credentials", "El email o la contraseña no son correctos.")
+  // Cuenta a medias (creada sin código y sin llegar a pagar): no es un error, le falta elegir plan.
+  if (mode === "register" && err instanceof ApiError && err.code === "account_incomplete")
+    return t("login.error.account-incomplete", "Ya empezaste a crear tu cuenta con este email. Inicia sesión para elegir tu plan.")
   if (mode === "register" && status === 409)
     return t("login.error.account-exists", "Ya existe una cuenta con este email. Inicia sesión o recupera tu contraseña.")
   if (mode === "register" && (status === 400 || status === 403 || status === 410))
