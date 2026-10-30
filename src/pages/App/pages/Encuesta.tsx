@@ -4,6 +4,7 @@ import { Check, ClipboardList } from "lucide-react"
 import { useI18n } from "../../../lib/i18n/store"
 import { ApiError } from "../../../lib/api/client"
 import { getSurveyStatus, submitSurvey, type SurveyAnswers, type SurveyConsents } from "../../../lib/api/surveys"
+import { getBillingPlans, type BillingPlans } from "../../../lib/api/billing"
 import { COACH_EXTRA, SURVEYS, isAnswered, isRequired, isVisible, type SurveyDefinition, type SurveyQuestion } from "../surveys/definitions"
 
 /**
@@ -28,6 +29,28 @@ const Marker = ({ on, square }: { on: boolean; square: boolean }) => (
   </span>
 )
 
+/**
+ * Precios de la pregunta de los planes (día 12): los de quien responde, leídos del servidor como en
+ * Precios (fundador o normal, España o resto del mundo), una sola vez por visita. undefined
+ * mientras carga; null si falla: entonces no se enseña precio, nunca uno que no sea el suyo.
+ */
+let plansRequest: Promise<BillingPlans | null> | null = null
+const usePlans = (enabled: boolean) => {
+  const [plans, setPlans] = useState<BillingPlans | null | undefined>(undefined)
+  useEffect(() => {
+    if (!enabled) return
+    plansRequest ??= getBillingPlans().catch(() => null)
+    let cancelled = false
+    plansRequest.then((p) => !cancelled && setPlans(p))
+    return () => {
+      cancelled = true
+    }
+  }, [enabled])
+  return plans
+}
+
+const PLAN_TIER: Record<string, "Starter" | "Club" | "Coach"> = { essential: "Starter", club: "Club", coach: "Coach" }
+
 const Question = ({
   q,
   index,
@@ -39,7 +62,21 @@ const Question = ({
   answers: SurveyAnswers
   onChange: (id: string, value: SurveyAnswers[string] | undefined) => void
 }) => {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
+  const plans = usePlans(!!q.options?.some((o) => o.price))
+  const priceText = (optionValue: string) => {
+    const tier = PLAN_TIER[optionValue]
+    const price = plans?.plans?.find((p) => p.tier === tier)?.prices?.find((p) => p.interval === "Monthly")
+    if (!price) return null
+    const money = (amount: number) =>
+      new Intl.NumberFormat(lang === "en" ? "en-GB" : "es-ES", { style: "currency", currency: price.currency }).format(amount)
+    return price.regularAmount && price.regularAmount > price.displayAmount
+      ? t("survey.d12.q4.price-founder", "{price}/mes precio fundador. Después, {regular}/mes.", {
+          price: money(price.displayAmount),
+          regular: money(price.regularAmount),
+        })
+      : t("survey.d12.q4.price-regular", "{price}/mes", { price: money(price.displayAmount) })
+  }
   const value = answers[q.id]
   const required = isRequired(q, answers)
   const title = (
@@ -93,7 +130,9 @@ const Question = ({
                   <span className="min-w-0">
                     <span className="block font-semibold text-white">{t(...o.label)}</span>
                     <span className="mt-1 block text-xs leading-relaxed text-white/60">{t(...o.description)}</span>
-                    {o.price && <span className="mt-1 block text-xs font-semibold text-neon-cyan">{t(...o.price)}</span>}
+                    {o.price && priceText(o.value) && (
+                      <span className="mt-1 block text-xs font-semibold text-neon-cyan">{priceText(o.value)}</span>
+                    )}
                   </span>
                 ) : (
                   t(...o.label)

@@ -163,14 +163,14 @@ export const D12: SurveyDefinition = {
       type: "single",
       required: true,
       label: ["survey.d12.q4", "Si tuvieras que elegir hoy, ¿qué plan elegirías?"],
-      // Precios en euros de la especificación (sección 7), también en inglés: cuando estén los
-      // precios por país, cada uno debería ver el suyo (apuntado en Trello).
+      // `price` solo marca que la opción lleva precio: Encuesta.tsx enseña el de quien responde,
+      // leído del servidor (30/10/2026). Los textos de aquí (precios de España) ya no se pintan.
       options: [
         {
           value: "essential",
           label: ["survey.d12.q4.essential", "Essential"],
           description: ["survey.d12.q4.essential.desc", "Aprende a leer el juego a tu ritmo. Todos los análisis y clips, explorar por bloques y conceptos, Mi lista y Mi juego."],
-          price: ["survey.d12.q4.essential.price", "14,90 €/mes precio fundador. Después, 19,90 €/mes."],
+          price: ["survey.d12.q4.essential.price", "7,99 €/mes precio fundador. Después, 9,99 €/mes."],
         },
         {
           value: "club",
@@ -179,7 +179,7 @@ export const D12: SurveyDefinition = {
             "survey.d12.q4.club.desc",
             "Cada mes sabes qué trabajar y por qué. Todo lo de Essential, y además: masterclass mensual con Guille y Andrea a partir de las dudas de los miembros, El plan del mes, envío de dudas y archivo de masterclasses.",
           ],
-          price: ["survey.d12.q4.club.price", "24,90 €/mes precio fundador. Después, 29,90 €/mes."],
+          price: ["survey.d12.q4.club.price", "12,99 €/mes precio fundador. Después, 19,99 €/mes."],
         },
         {
           value: "coach",
@@ -188,7 +188,7 @@ export const D12: SurveyDefinition = {
             "survey.d12.q4.coach.desc",
             "Tu partido, analizado por un exjugador profesional. Todo lo de Club, y además: envías hasta 20 minutos de un partido tuyo y Guille te devuelve un análisis en vídeo con un plan de acción personalizado. 5 plazas.",
           ],
-          price: ["survey.d12.q4.coach.price", "74,90 €/mes precio fundador. Después, 89,90 €/mes."],
+          price: ["survey.d12.q4.coach.price", "63,99 €/mes precio fundador. Después, 79,99 €/mes."],
         },
         { value: "none", label: ["survey.d12.q4.none", "Ninguno por ahora"] },
       ],
