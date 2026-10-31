@@ -9,7 +9,7 @@ import {
   type AdminPersonalAnalysisItem,
   type DeliverPriorityInput,
 } from "../../../lib/api/personalAnalysis"
-import { createDirectUpload, uploadToCloudflare, readVideoDuration, createPublishToken, waitForVideoReady, getConcepts, type ConceptOption } from "../../../lib/api/admin"
+import { createDirectUpload, uploadToCloudflare, readVideoDuration, createPublishToken, waitForVideoReady, deleteVideo, getConcepts, type ConceptOption } from "../../../lib/api/admin"
 import { getBlocks, type BlockOption } from "../../../lib/api/blocks"
 import type { AnalysisPriority, PriorityResult } from "../../../lib/api/types"
 import { AnalysisSheet, ResultBadge } from "../components/CoachAnalysis"
@@ -339,10 +339,17 @@ const RequestCard = ({
     const publishToken = await createPublishToken()
     const dur = await readVideoDuration(video)
     const up = await createDirectUpload(video.name, video.size, publishToken, dur)
-    await uploadToCloudflare(up.uploadURL, video, (p) => setProgress({ label: t("admin-coach.progress.video", "Subiendo el análisis…"), percent: p }))
-    setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
-    await waitForVideoReady(up.uid)
-    return up.uid
+    try {
+      await uploadToCloudflare(up.uploadURL, video, (p) => setProgress({ label: t("admin-coach.progress.video", "Subiendo el análisis…"), percent: p }))
+      setProgress({ label: t("publicar.progress.processing", "Procesando vídeo en Cloudflare…"), percent: 100 })
+      await waitForVideoReady(up.uid)
+      return up.uid
+    } catch (err) {
+      // Si la subida falla, se borra lo que quedó a medias en Cloudflare: si no, su reserva de
+      // minutos sigue ocupando la cuota y cada reintento suma otra (como en Publicar).
+      await deleteVideo(up.uid).catch(() => {})
+      throw err
+    }
   }
 
   const save = async () => {

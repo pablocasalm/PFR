@@ -7,7 +7,8 @@ import { apiGet, apiPost, apiPatch, apiPostForm, apiDelete } from "./client"
  * clip/análisis con el uid + metadatos.
  */
 
-export type DirectUpload = { uploadURL: string; uid: string }
+/** `reservedSeconds`: lo que Cloudflare ha reservado de la cuota para esta subida (duración +10 %). */
+export type DirectUpload = { uploadURL: string; uid: string; reservedSeconds?: number }
 
 /** Cabecera con el token de publicación (§ larga duración) — nunca Authorization, ver backend. */
 const publishTokenHeader = (publishToken: string): HeadersInit => ({ "X-Publish-Token": publishToken })
@@ -235,20 +236,40 @@ export function uploadToCloudflare(uploadURL: string, file: File, onProgress?: (
   })
 }
 
-/** Lee la duración del vídeo en el navegador antes de subirlo (para guardarla en el contenido). */
+/**
+ * Lee la duración del vídeo en el navegador antes de subirlo. Además de guardarse en el
+ * contenido, es lo que se reserva en Cloudflare (+10 %): si llega 0, el servidor reserva 2 horas
+ * por subida (§reservas de minutos). Por eso:
+ *  - si el navegador da una duración infinita (pasa con algunos ficheros), se fuerza a buscar el
+ *    final para que la calcule;
+ *  - si en 20 s no lo consigue, devuelve 0 en vez de quedarse esperando para siempre.
+ */
 export function readVideoDuration(file: File): Promise<number> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file)
     const video = document.createElement("video")
+    let done = false
+    const finish = (seconds: number) => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      URL.revokeObjectURL(url)
+      video.removeAttribute("src")
+      if (!seconds) console.warn(`No se pudo leer la duración de ${file.name}: Cloudflare reservará 2 horas para esta subida.`)
+      resolve(seconds)
+    }
+    const timer = setTimeout(() => finish(0), 20_000)
+    const read = () => (Number.isFinite(video.duration) && video.duration > 0 ? Math.round(video.duration) : 0)
     video.preload = "metadata"
+    video.muted = true
     video.onloadedmetadata = () => {
-      URL.revokeObjectURL(url)
-      resolve(Number.isFinite(video.duration) ? Math.round(video.duration) : 0)
+      if (read()) return finish(read())
+      // Duración infinita o 0: al pedir una posición enorme, el navegador recorre el fichero y
+      // la calcula (llega en durationchange).
+      video.ondurationchange = () => read() && finish(read())
+      video.currentTime = Number.MAX_SAFE_INTEGER
     }
-    video.onerror = () => {
-      URL.revokeObjectURL(url)
-      resolve(0)
-    }
+    video.onerror = () => finish(0)
     video.src = url
   })
 }
