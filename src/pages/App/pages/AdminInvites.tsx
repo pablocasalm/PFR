@@ -16,6 +16,7 @@ import {
   type InviteRequestItem,
   type BillingPlan,
 } from "../../../lib/api/invites"
+import AdminDeleteAccount from "../components/admin/AdminDeleteAccount"
 import { useI18n } from "../../../lib/i18n/store"
 
 /**
@@ -855,6 +856,8 @@ const AdminInvites = () => {
           </div>
         )}
       </div>
+
+      <AdminDeleteAccount />
     </main>
   )
 }

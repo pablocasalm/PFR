@@ -7,6 +7,8 @@ import LegalLinks from "../../../lib/ui/LegalLinks"
 import { getMyProfile, updateProfile, changePassword, updateMyPreferences, type ProfileResponse } from "../../../lib/api/profile"
 import { createPortalSession } from "../../../lib/api/billing"
 import { useI18n, setLanguage, type TFunc } from "../../../lib/i18n/store"
+import EmailPreferenceRows from "../components/account/EmailPreferenceRows"
+import DeleteAccount from "../components/account/DeleteAccount"
 import { StarterTestCallout } from "../components/StarterTest"
 
 /**
@@ -333,6 +335,8 @@ const MiCuenta = () => {
                   />
                 </button>
               </div>
+
+              <EmailPreferenceRows />
             </div>
           </section>
         )}
@@ -469,6 +473,7 @@ const MiCuenta = () => {
                 {pwSaving ? t("mi-cuenta.saving", "Guardando...") : t("mi-cuenta.change-password-cta", "Cambiar contraseña")}
               </button>
             </form>
+            <DeleteAccount />
           </section>
         )}
 

@@ -15,6 +15,7 @@ const Precios = lazy(() => import("../../pages/App/pages/Precios"))
 const LoginPage = lazy(() => import("../../lib/auth/LoginPage"))
 const SubscribePage = lazy(() => import("../../lib/auth/SubscribePage"))
 const ResetPasswordPage = lazy(() => import("../../lib/auth/ResetPasswordPage"))
+const UnsubscribePage = lazy(() => import("../../lib/auth/UnsubscribePage"))
 const PlayerTestPage = lazy(() => import("../../lib/player/PlayerTestPage"))
 const Publicar = lazy(() => import("../../pages/App/pages/Publicar"))
 const Editar = lazy(() => import("../../pages/App/pages/Editar"))
@@ -47,6 +48,8 @@ const router = createBrowserRouter([
   { path: "/login", element: withSuspense(<LoginPage />) },
   { path: "/register", element: withSuspense(<LoginPage />) },
   { path: "/reset-password", element: withSuspense(<ResetPasswordPage />) },
+  // Baja de los emails opcionales desde el enlace del email: sin sesión.
+  { path: "/baja", element: withSuspense(<UnsubscribePage />) },
   // Elegir plan sin suscripción: con sesión pero fuera de la app (sin menú ni tour).
   { path: "/suscripcion", element: withSuspense(<RequireAuth><SubscribePage /></RequireAuth>) },
   // ⚠️ Solo dev: prueba del reproductor sin backend.

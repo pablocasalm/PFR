@@ -28,3 +28,24 @@ export const changePassword = (currentPassword: string, newPassword: string) =>
  * manda lo que cambia; el resto queda como estaba (ver UpdatePreferencesRequest en backend). */
 export const updateMyPreferences = (prefs: { preferredLanguage?: string; subtitlesDefaultOn?: boolean }) =>
   apiPatch<{ ok: boolean; preferredLanguage: string; subtitlesDefaultOn: boolean }>("/api/users/me/preferences", prefs)
+
+/** Emails opcionales: avisos de noticias y resumen mensual (los del servicio no se pueden quitar). */
+export type EmailPreferences = { news: boolean; newsletter: boolean }
+
+/** GET /api/users/me/email-preferences */
+export const getEmailPreferences = () => apiGet<EmailPreferences>("/api/users/me/email-preferences")
+
+/** PATCH /api/users/me/email-preferences → cambia solo lo que se manda. */
+export const updateEmailPreferences = (changes: Partial<EmailPreferences>) =>
+  apiPatch<EmailPreferences>("/api/users/me/email-preferences", changes)
+
+/** POST /api/users/me/delete → borra la propia cuenta (pide la contraseña). */
+export const deleteMyAccount = (password: string) => apiPost<{ ok: boolean }>("/api/users/me/delete", { password })
+
+/** Baja desde el enlace del email, sin sesión: qué es el enlace y darse de baja. */
+export const getUnsubscribeInfo = (token: string) =>
+  apiGet<{ ok: boolean; kind: "news" | "newsletter"; done: boolean }>(`/api/email/unsubscribe?t=${encodeURIComponent(token)}`)
+export const unsubscribe = (token: string) => apiPost<{ ok: boolean; kind: string }>("/api/email/unsubscribe", { token })
+
+/** POST /api/admin/users/delete (Admin) → borra la cuenta de ese email. */
+export const adminDeleteUser = (email: string) => apiPost<{ ok: boolean }>("/api/admin/users/delete", { email })
