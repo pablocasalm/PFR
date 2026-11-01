@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Bell, ChevronDown, History } from "lucide-react"
-import { getNews, markAllNewsRead, type NewsItem } from "../../../lib/api/news"
+import { getNews, markAllNewsRead, localizedNews, type NewsItem } from "../../../lib/api/news"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { flushNewsEmailClick } from "../../../lib/newsEmailClick"
 import { onHubEvent } from "../../../lib/realtime/accountHub"
@@ -136,8 +136,8 @@ const NewsBell = () => {
                         <div className="mt-1 space-y-1">
                           {fresh.map((n) => (
                             <div key={n.id} className="rounded-lg px-3 py-2.5 transition hover:bg-white/5">
-                              <p className="text-sm font-semibold text-white">{n.title}</p>
-                              <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-white/60">{n.body}</p>
+                              <p className="text-sm font-semibold text-white">{localizedNews(n, lang).title}</p>
+                              <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-white/60">{localizedNews(n, lang).body}</p>
                               <p className="mt-1.5 text-[11px] text-white/35">{fmt(n.createdAtUtc, t, lang)}</p>
                             </div>
                           ))}
@@ -162,8 +162,8 @@ const NewsBell = () => {
                             <div className="space-y-1">
                               {old.map((n) => (
                                 <div key={n.id} className="rounded-lg px-3 py-2.5 opacity-60 transition hover:bg-white/5 hover:opacity-100">
-                                  <p className="text-sm font-semibold text-white">{n.title}</p>
-                                  <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-white/60">{n.body}</p>
+                                  <p className="text-sm font-semibold text-white">{localizedNews(n, lang).title}</p>
+                                  <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-white/60">{localizedNews(n, lang).body}</p>
                                   <p className="mt-1.5 text-[11px] text-white/35">{fmt(n.createdAtUtc, t, lang)}</p>
                                 </div>
                               ))}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Megaphone, Trash2 } from "lucide-react"
-import { listAllNews, createNews, deleteNews, sendNewsTestEmail, type AdminNewsItem, type NewsTargetRole } from "../../../lib/api/news"
+import { listAllNews, createNews, deleteNews, sendNewsTestEmail, type AdminNewsItem, type NewsDraft, type NewsTargetRole } from "../../../lib/api/news"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 
 /**
@@ -26,6 +26,10 @@ const AdminNoticias = () => {
   const TARGET_LABEL = targetLabel(t)
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
+  // Versión en inglés: quien tiene la app en inglés la ve (campana y email). Opcional.
+  const [titleEn, setTitleEn] = useState("")
+  const [bodyEn, setBodyEn] = useState("")
+  const draft = (): NewsDraft => ({ title: title.trim(), body: body.trim(), titleEn: titleEn.trim() || undefined, bodyEn: bodyEn.trim() || undefined })
   const [targetRole, setTargetRole] = useState<NewsTargetRole | "">("")
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -63,7 +67,7 @@ const AdminNoticias = () => {
     setError(null)
     setNotice(null)
     try {
-      await sendNewsTestEmail(title.trim(), body.trim(), testTo.trim(), lang)
+      await sendNewsTestEmail(draft(), testTo.trim(), lang)
       try {
         localStorage.setItem("pfr.newsTestTo", testTo.trim())
       } catch {
@@ -80,15 +84,18 @@ const AdminNoticias = () => {
   const submit = async () => {
     if (!title.trim() || !body.trim() || sending) return
     // Publicar manda el email a todas las cuentas a la vez: no se puede deshacer.
+    if (!(titleEn.trim() && bodyEn.trim()) && !window.confirm(t("admin-noticias.confirm-no-english", "No tiene versión en inglés: quien use la app en inglés la verá en español. ¿Seguir?"))) return
     if (!window.confirm(t("admin-noticias.confirm-publish", "Al publicarla se manda un email a todos los usuarios que pueden verla. ¿Publicar?"))) return
     setSending(true)
     setError(null)
     setNotice(null)
     try {
-      await createNews(title.trim(), body.trim(), targetRole || undefined)
+      await createNews(draft(), targetRole || undefined)
       setNotice(t("admin-noticias.published", "Noticia publicada."))
       setTitle("")
       setBody("")
+      setTitleEn("")
+      setBodyEn("")
       setTargetRole("")
       await refresh()
     } catch (err) {
@@ -142,6 +149,26 @@ const AdminNoticias = () => {
           />
         </div>
         <div>
+          <label className="mb-2 block text-sm font-medium text-white">{t("admin-noticias.field.title-en", "Título en inglés")}</label>
+          <input
+            value={titleEn}
+            onChange={(e) => setTitleEn(e.target.value)}
+            placeholder={t("admin-noticias.title-en-placeholder", "E.g. New player filter")}
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-white">{t("admin-noticias.field.body-en", "Contenido en inglés")}</label>
+          <textarea
+            value={bodyEn}
+            onChange={(e) => setBodyEn(e.target.value)}
+            rows={4}
+            placeholder={t("admin-noticias.body-en-placeholder", "What has changed or been fixed...")}
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
+          />
+          <p className="mt-1.5 text-xs text-white/40">{t("admin-noticias.english-help", "Quien tiene la app en inglés ve esta versión, en la campana y en el email. Sin ella, ve la española.")}</p>
+        </div>
+        <div>
           <label className="mb-2 block text-sm font-medium text-white">{t("admin-noticias.field.target", "Para quién")}</label>
           <select
             value={targetRole}
@@ -177,7 +204,7 @@ const AdminNoticias = () => {
               {testing ? t("admin-noticias.test-sending", "Enviando...") : t("admin-noticias.test-send", "Enviar prueba")}
             </button>
           </div>
-          <p className="mt-2 text-xs text-white/40">{t("admin-noticias.test-help", "Solo a esta dirección y sin publicar la noticia. El email lleva el título y el primer párrafo.")}</p>
+          <p className="mt-2 text-xs text-white/40">{t("admin-noticias.test-help-lang", "Solo a esta dirección y sin publicar la noticia. Llega en el idioma en que tienes ahora la app (título y primer párrafo).")}</p>
         </div>
 
         <button
@@ -207,6 +234,9 @@ const AdminNoticias = () => {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-semibold text-white">{n.title}</p>
+                      {n.titleEn && n.bodyEn && (
+                        <span className="rounded-full border border-white/15 px-2 py-0.5 text-[11px] font-medium text-white/60">EN</span>
+                      )}
                       {n.targetRole && (
                         <span className="rounded-full border border-neon-cyan/30 bg-neon-cyan/10 px-2 py-0.5 text-[11px] font-medium text-neon-cyan">
                           {TARGET_LABEL[n.targetRole]}

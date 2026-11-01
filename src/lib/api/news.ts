@@ -8,6 +8,9 @@ export type NewsItem = {
   id: number
   title: string
   body: string
+  /** Versión en inglés (si la tiene): la campana la enseña con la app en inglés. */
+  titleEn?: string | null
+  bodyEn?: string | null
   createdAtUtc: string
   isRead: boolean
   targetRole: NewsTargetRole | null
@@ -27,6 +30,8 @@ export type AdminNewsItem = {
   id: number
   title: string
   body: string
+  titleEn?: string | null
+  bodyEn?: string | null
   createdAtUtc: string
   targetRole: NewsTargetRole | null
   emailsSent?: number | null
@@ -37,12 +42,19 @@ export type AdminNewsItem = {
 export const listAllNews = () => apiGet<AdminNewsItem[]>("/api/admin/news")
 
 /** POST /api/admin/news (Admin) → publica una noticia nueva. targetRole vacío/omitido = todos. */
-export const createNews = (title: string, body: string, targetRole?: NewsTargetRole) =>
-  apiPost<AdminNewsItem>("/api/admin/news", { title, body, targetRole: targetRole || undefined })
+/** Texto de una noticia en los dos idiomas (el inglés es opcional: sin él, todos ven el español). */
+export type NewsDraft = { title: string; body: string; titleEn?: string; bodyEn?: string }
+
+export const createNews = (draft: NewsDraft, targetRole?: NewsTargetRole) =>
+  apiPost<AdminNewsItem>("/api/admin/news", { ...draft, targetRole: targetRole || undefined })
+
+/** La versión del idioma pedido: la inglesa si se pide y está completa; si no, la española. */
+export const localizedNews = (n: { title: string; body: string; titleEn?: string | null; bodyEn?: string | null }, lang: string) =>
+  lang === "en" && n.titleEn && n.bodyEn ? { title: n.titleEn, body: n.bodyEn } : { title: n.title, body: n.body }
 
 /** POST /api/admin/news/test-email (Admin) → manda el email de la noticia solo a `to`, sin publicarla. */
-export const sendNewsTestEmail = (title: string, body: string, to: string, language: string) =>
-  apiPost<{ ok: boolean }>("/api/admin/news/test-email", { title, body, to, language })
+export const sendNewsTestEmail = (draft: NewsDraft, to: string, language: string) =>
+  apiPost<{ ok: boolean }>("/api/admin/news/test-email", { ...draft, to, language })
 
 /** DELETE /api/admin/news/{id} (Admin) → borra una noticia. */
 export const deleteNews = (id: number) => apiDelete<{ ok: boolean }>(`/api/admin/news/${id}`)
