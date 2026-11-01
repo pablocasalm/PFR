@@ -101,8 +101,9 @@ const LoginPage = () => {
   const [passwordRepeat, setPasswordRepeat] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [displayName, setDisplayName] = useState("")
-  // Casilla de la newsletter (resumen mensual): desmarcada por defecto y opcional.
-  const [newsletter, setNewsletter] = useState(false)
+  // Casilla de la newsletter (resumen mensual): marcada por defecto desde el 01/11/2026 (pedido
+  // por Pablo, a revisar más adelante) y opcional. Lo que quede, marcada o no, se apunta.
+  const [newsletter, setNewsletter] = useState(true)
   // Precio del plan elegido, para el resumen de pago (fundador o normal y de su zona, como en Precios).
   const [plans, setPlans] = useState<BillingPlans | null>(null)
   useEffect(() => {
