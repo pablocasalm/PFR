@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Megaphone, Trash2 } from "lucide-react"
-import { listAllNews, createNews, deleteNews, type AdminNewsItem, type NewsTargetRole } from "../../../lib/api/news"
+import { listAllNews, createNews, deleteNews, sendNewsTestEmail, type AdminNewsItem, type NewsTargetRole } from "../../../lib/api/news"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 
 /**
@@ -32,6 +32,15 @@ const AdminNoticias = () => {
   const [notice, setNotice] = useState<string | null>(null)
   const [items, setItems] = useState<AdminNewsItem[]>([])
   const [loading, setLoading] = useState(true)
+  // Email de prueba: la última dirección usada se recuerda en este navegador.
+  const [testTo, setTestTo] = useState(() => {
+    try {
+      return localStorage.getItem("pfr.newsTestTo") ?? ""
+    } catch {
+      return ""
+    }
+  })
+  const [testing, setTesting] = useState(false)
 
   const refresh = async () => {
     setLoading(true)
@@ -48,8 +57,30 @@ const AdminNoticias = () => {
     refresh()
   }, [])
 
+  const sendTest = async () => {
+    if (!title.trim() || !body.trim() || !testTo.trim() || testing) return
+    setTesting(true)
+    setError(null)
+    setNotice(null)
+    try {
+      await sendNewsTestEmail(title.trim(), body.trim(), testTo.trim(), lang)
+      try {
+        localStorage.setItem("pfr.newsTestTo", testTo.trim())
+      } catch {
+        // Sin localStorage: solo no se recuerda la dirección.
+      }
+      setNotice(t("admin-noticias.test-sent", "Email de prueba enviado a {email}. La noticia no se ha publicado.", { email: testTo.trim() }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("admin-noticias.error.test", "No se pudo enviar el email de prueba."))
+    } finally {
+      setTesting(false)
+    }
+  }
+
   const submit = async () => {
     if (!title.trim() || !body.trim() || sending) return
+    // Publicar manda el email a todas las cuentas a la vez: no se puede deshacer.
+    if (!window.confirm(t("admin-noticias.confirm-publish", "Al publicarla se manda un email a todos los usuarios que pueden verla. ¿Publicar?"))) return
     setSending(true)
     setError(null)
     setNotice(null)
@@ -127,12 +158,34 @@ const AdminNoticias = () => {
         {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
         {notice && <p className="rounded-lg bg-neon-cyan/10 px-3 py-2 text-sm text-neon-cyan">{notice}</p>}
 
+        {/* Prueba: el email tal como llegará (título y primer párrafo), solo a esta dirección. */}
+        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+          <label className="mb-2 block text-sm font-medium text-white">{t("admin-noticias.test-label", "Email de prueba")}</label>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              type="email"
+              value={testTo}
+              onChange={(e) => setTestTo(e.target.value)}
+              placeholder={t("admin-noticias.test-placeholder", "tu@email.com")}
+              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
+            />
+            <button
+              onClick={sendTest}
+              disabled={!title.trim() || !body.trim() || !testTo.trim() || testing}
+              className="rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-bold text-white transition hover:border-neon-cyan/40 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {testing ? t("admin-noticias.test-sending", "Enviando...") : t("admin-noticias.test-send", "Enviar prueba")}
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-white/40">{t("admin-noticias.test-help", "Solo a esta dirección y sin publicar la noticia. El email lleva el título y el primer párrafo.")}</p>
+        </div>
+
         <button
           onClick={submit}
           disabled={!title.trim() || !body.trim() || sending}
           className="rounded-lg bg-neon-cyan px-5 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {sending ? t("admin-noticias.publishing", "Publicando...") : t("admin-noticias.publish", "Publicar")}
+          {sending ? t("admin-noticias.publishing", "Publicando...") : t("admin-noticias.publish", "Publicar y enviar email")}
         </button>
       </div>
 
@@ -161,7 +214,19 @@ const AdminNoticias = () => {
                       )}
                     </div>
                     <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-white/60">{n.body}</p>
-                    <p className="mt-1.5 text-xs text-white/40">{fmt(n.createdAtUtc, lang)}</p>
+                    <p className="mt-1.5 text-xs text-white/40">
+                      {fmt(n.createdAtUtc, lang)}
+                      {/* Cifras del email (desde el 01/11/2026): enviados y quién ha entrado desde él. */}
+                      {n.emailsSent != null && (
+                        <>
+                          {" · "}
+                          {t("admin-noticias.email-stats", "Email: {sent} enviados · {clicks} han entrado desde él", {
+                            sent: n.emailsSent,
+                            clicks: n.emailClicks ?? 0,
+                          })}
+                        </>
+                      )}
+                    </p>
                   </div>
                   <button
                     onClick={() => remove(n)}

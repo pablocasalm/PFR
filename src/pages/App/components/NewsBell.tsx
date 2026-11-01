@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Bell, ChevronDown, History } from "lucide-react"
 import { getNews, markAllNewsRead, type NewsItem } from "../../../lib/api/news"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
+import { flushNewsEmailClick } from "../../../lib/newsEmailClick"
 import { onHubEvent } from "../../../lib/realtime/accountHub"
 
 /** "Hace X" relativo, mismo criterio que el backend usa para comentarios (Ago en ContentMapper). */
@@ -43,6 +44,7 @@ const NewsBell = () => {
   }, [open])
 
   useEffect(() => {
+    flushNewsEmailClick() // ya hay sesión: se envía la entrada desde el email, si la hubo
     getNews()
       .then((res) => {
         setItems(res.items)
@@ -55,6 +57,8 @@ const NewsBell = () => {
         const params = new URLSearchParams(window.location.search)
         if (params.has("news")) {
           params.delete("news")
+          params.delete("from")
+          params.delete("n")
           const query = params.toString()
           window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`)
           setOpen(true)

@@ -8,6 +8,10 @@ import '@fontsource/space-grotesk/600.css'
 import '@fontsource/space-grotesk/700.css'
 import './index.css'
 import App from './App.tsx'
+import { captureNewsEmailClick } from './lib/newsEmailClick'
+
+// Entrada desde el email de una noticia: se apunta antes de que el login limpie la URL.
+captureNewsEmailClick()
 
 // Tras un deploy, los chunks con lazy() cambian de hash: un usuario con la app abierta
 // puede pedir un chunk viejo que ya no existe ("Failed to fetch dynamically imported module").

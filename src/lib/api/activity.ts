@@ -5,9 +5,9 @@ import { apiPost } from "./client"
  * el cliente. El resto (ver vídeos, Coach) lo apunta el backend donde ocurre. El backend guarda
  * una por usuario, tipo y día, así que llamarlo de más no duplica nada.
  */
-export type ActivityType = "app_open" | "pricing_view"
+export type ActivityType = "app_open" | "pricing_view" | "news_email_click"
 
-/** POST /api/activity. Nunca molesta: si falla, no pasa nada. */
-export const trackActivity = (type: ActivityType) => {
-  apiPost<{ ok: boolean }>("/api/activity", { type }).catch(() => {})
+/** POST /api/activity. Nunca molesta: si falla, no pasa nada. `detail`: solo news_email_click (id de la noticia). */
+export const trackActivity = (type: ActivityType, detail?: string) => {
+  apiPost<{ ok: boolean }>("/api/activity", { type, detail }).catch(() => {})
 }

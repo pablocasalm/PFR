@@ -21,7 +21,17 @@ export const getNews = () => apiGet<NewsResponse>("/api/news")
 export const markAllNewsRead = () => apiPost<{ ok: boolean }>("/api/news/mark-all-read")
 
 /** Noticia tal como la gestiona el admin (igual para todos, sin isRead). */
-export type AdminNewsItem = { id: number; title: string; body: string; createdAtUtc: string; targetRole: NewsTargetRole | null }
+/** emailsSent: a cuántos se mandó el email (null en las anteriores al 01/11/2026, no se apuntaba).
+ * emailClicks: personas distintas que han entrado desde el enlace del email. */
+export type AdminNewsItem = {
+  id: number
+  title: string
+  body: string
+  createdAtUtc: string
+  targetRole: NewsTargetRole | null
+  emailsSent?: number | null
+  emailClicks?: number
+}
 
 /** GET /api/admin/news (Admin) → todas las noticias, para gestionarlas. */
 export const listAllNews = () => apiGet<AdminNewsItem[]>("/api/admin/news")
@@ -29,6 +39,10 @@ export const listAllNews = () => apiGet<AdminNewsItem[]>("/api/admin/news")
 /** POST /api/admin/news (Admin) → publica una noticia nueva. targetRole vacío/omitido = todos. */
 export const createNews = (title: string, body: string, targetRole?: NewsTargetRole) =>
   apiPost<AdminNewsItem>("/api/admin/news", { title, body, targetRole: targetRole || undefined })
+
+/** POST /api/admin/news/test-email (Admin) → manda el email de la noticia solo a `to`, sin publicarla. */
+export const sendNewsTestEmail = (title: string, body: string, to: string, language: string) =>
+  apiPost<{ ok: boolean }>("/api/admin/news/test-email", { title, body, to, language })
 
 /** DELETE /api/admin/news/{id} (Admin) → borra una noticia. */
 export const deleteNews = (id: number) => apiDelete<{ ok: boolean }>(`/api/admin/news/${id}`)
