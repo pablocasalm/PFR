@@ -71,16 +71,13 @@ const SectionHeading = ({ title, count, action }: { title: string; count: number
   </div>
 )
 
-/** Conceptos del contenido en el orden de la taxonomía, con su número: "#3.2 Mantener". */
+/** Conceptos del contenido en el orden de la taxonomía, sin la numeración interna (reporte #110):
+ * "#Mantener", como en el resto de la app. */
 const conceptLabels = (item: ContentItem, tax: Taxonomy, lang: string) =>
   item.concepts
     .map((c, i) => ({ es: c, en: item.conceptsEn?.[i] || c }))
     .sort((a, b) => conceptRank(tax, a.es) - conceptRank(tax, b.es))
-    .map(({ es, en }) => {
-      const code = tax.byConcept.get(es)?.code
-      const name = lang === "en" ? en : es
-      return code ? `#${code} ${name}` : `#${name}`
-    })
+    .map(({ es, en }) => `#${lang === "en" ? en : es}`)
 
 const CardMeta = ({ item, tax }: { item: ContentItem; tax: Taxonomy }) => {
   const { lang } = useI18n()
