@@ -46,8 +46,11 @@ import { useI18n } from "../../../lib/i18n/store"
 
 type Panel = "masterclass" | "plan" | "questions"
 
-type ChapterDraft = { time: string; title: string; titleEn: string }
-const emptyChapter = (): ChapterDraft => ({ time: "", title: "", titleEn: "" })
+/** `key`: identificador estable del capítulo en pantalla, para asociarle preguntas antes de
+ * publicar aunque se reordene o se edite (el capítulo aún no tiene id en la base de datos). */
+type ChapterDraft = { key: string; time: string; title: string; titleEn: string }
+let chapterSeq = 0
+const emptyChapter = (): ChapterDraft => ({ key: `ch${++chapterSeq}`, time: "", title: "", titleEn: "" })
 
 /** "mm:ss" o "hh:mm:ss" → segundos. null si el formato no es válido. Igual que Publicar.tsx. */
 const parseTimeToSeconds = (text: string): number | null => {
@@ -153,6 +156,8 @@ const AdminSesiones = () => {
   const [description, setDescription] = useState("")
   const [descriptionEn, setDescriptionEn] = useState("")
   const [chapters, setChapters] = useState<ChapterDraft[]>([])
+  // Preguntas asociadas a capítulos de la masterclass sin publicar: id de la pregunta → key del capítulo.
+  const [draftAssignments, setDraftAssignments] = useState<Record<number, string>>({})
 
   // El plan del mes (solo Admin). Si todas las situaciones están vacías, se publica solo la masterclass.
   const [planNote, setPlanNote] = useState("")
@@ -199,7 +204,19 @@ const AdminSesiones = () => {
   const updateChapter = (i: number, patch: Partial<ChapterDraft>) =>
     setChapters((cs) => cs.map((c, idx) => (idx === i ? { ...c, ...patch } : c)))
   const addChapter = () => setChapters((cs) => [...cs, emptyChapter()])
-  const removeChapter = (i: number) => setChapters((cs) => cs.filter((_, idx) => idx !== i))
+  const removeChapter = (i: number) => {
+    const key = chapters[i]?.key
+    setChapters((cs) => cs.filter((_, idx) => idx !== i))
+    // Sus preguntas vuelven a quedar sin capítulo.
+    if (key) setDraftAssignments((prev) => Object.fromEntries(Object.entries(prev).filter(([, k]) => k !== key)))
+  }
+  const assignDraft = (questionId: number, key: string | null) =>
+    setDraftAssignments((prev) => {
+      const next = { ...prev }
+      if (key) next[questionId] = key
+      else delete next[questionId]
+      return next
+    })
 
   const reset = () => {
     setFile(null)
@@ -210,6 +227,7 @@ const AdminSesiones = () => {
     setDescription("")
     setDescriptionEn("")
     setChapters([])
+    setDraftAssignments({})
   }
 
   const resetPlan = () => {
@@ -287,7 +305,21 @@ const AdminSesiones = () => {
       const startSeconds = parseTimeToSeconds(ch.time)
       if (startSeconds === null)
         return setError(t("admin-sesiones.error.bad-time", "Formato de tiempo inválido en el capítulo \"{title}\" (usa mm:ss).", { title: ch.title.trim() }))
-      chapterInputs.push({ startSeconds, title: ch.title.trim(), titleEn: ch.titleEn.trim() || undefined })
+      const questionIds = Object.entries(draftAssignments)
+        .filter(([, key]) => key === ch.key)
+        .map(([id]) => Number(id))
+      chapterInputs.push({ startSeconds, title: ch.title.trim(), titleEn: ch.titleEn.trim() || undefined, questionIds })
+    }
+    // Aviso, no obligatorio: hay preguntas pendientes y ninguna se ha asociado a un capítulo.
+    const linkedQuestions = chapterInputs.reduce((n, c) => n + (c.questionIds?.length ?? 0), 0)
+    if (admin && (pendingQuestions ?? 0) > 0 && linkedQuestions === 0) {
+      const ok = window.confirm(
+        t(
+          "admin-sesiones.confirm-no-questions",
+          "No has asociado ninguna pregunta de los usuarios a los capítulos de esta masterclass. Puedes hacerlo en Preguntas antes de publicar. ¿Publicar igualmente?",
+        ),
+      )
+      if (!ok) return
     }
     // El plan se valida ANTES de subir nada: si está a medias, mejor avisar ya que después de
     // varios minutos de subida.
@@ -360,6 +392,7 @@ const AdminSesiones = () => {
         setNotice(t("admin-sesiones.published", "Masterclass publicada."))
       }
       await refresh()
+      refreshQuestions() // las asociadas al publicar dejan de estar pendientes
     } catch (err) {
       setError(err instanceof Error ? err.message : t("admin-sesiones.error.publish", "No se pudo publicar la masterclass."))
     } finally {
@@ -624,7 +657,7 @@ const AdminSesiones = () => {
               <label className={labelCls}>{t("publicar.chapters", "Capítulos (opcional)")}</label>
               <div className="space-y-2">
                 {chapters.map((ch, i) => (
-                  <div key={i} className="rounded-xl border border-white/10 bg-white/[0.02] p-2.5">
+                  <div key={ch.key} className="rounded-xl border border-white/10 bg-white/[0.02] p-2.5">
                     <div className="flex items-center gap-2">
                       <input value={ch.time} onChange={(e) => updateChapter(i, { time: e.target.value })} placeholder="mm:ss" className={`${inputCls} w-24 shrink-0 text-center tabular-nums`} />
                       <input value={ch.title} onChange={(e) => updateChapter(i, { title: e.target.value })} placeholder={t("publicar.field.chapter-title", "Título del capítulo")} className={`${inputCls} flex-1`} />
@@ -690,7 +723,21 @@ const AdminSesiones = () => {
           subtitle={t("admin-preguntas.subtitle", "Lo que los usuarios de Club/Coach preguntan para las próximas masterclasses.")}
           onClose={closePanel}
         >
-          <AdminPreguntas embedded />
+          <AdminPreguntas
+            embedded
+            draft={
+              publishedSession
+                ? undefined
+                : {
+                    label: capitalize(label),
+                    chapters: chapters
+                      .filter((c) => c.title.trim())
+                      .map((c) => ({ key: c.key, title: c.title.trim(), startSeconds: parseTimeToSeconds(c.time) })),
+                    assignments: draftAssignments,
+                    onAssign: assignDraft,
+                  }
+            }
+          />
         </SidePanel>
       )}
     </main>

@@ -21,6 +21,15 @@ import { useI18n } from "../../../lib/i18n/store"
  * un email enviado no se puede retirar.
  */
 
+/** Masterclass del mes sin publicar (AdminSesiones): sus capítulos aún no existen en la base de
+ * datos, así que las preguntas se asocian en pantalla y se guardan al publicar. */
+export type DraftMasterclass = {
+  label: string
+  chapters: { key: string; title: string; startSeconds: number | null }[]
+  assignments: Record<number, string> // id de la pregunta → key del capítulo
+  onAssign: (questionId: number, chapterKey: string | null) => void
+}
+
 /** 750 → "12:30". */
 const fmtMinute = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`
 
@@ -50,15 +59,28 @@ const fmt = (iso: string, lang: string): string => {
 const QuestionCard = ({
   item,
   sessions,
+  draft,
   onAssign,
   onRemove,
 }: {
   item: AdminSessionQuestion
   sessions: AdminQuestionSession[]
+  draft?: DraftMasterclass
   onAssign: (item: AdminSessionQuestion, chapterId: number | null) => void
   onRemove: (item: AdminSessionQuestion) => void
 }) => {
   const { t, lang } = useI18n()
+  const draftKey = draft?.assignments[item.id]
+  const value = item.chapterId != null ? String(item.chapterId) : draftKey ? `draft:${draftKey}` : ""
+  const change = (next: string) => {
+    if (next.startsWith("draft:")) {
+      if (item.chapterId != null) onAssign(item, null)
+      draft?.onAssign(item.id, next.slice("draft:".length))
+    } else {
+      if (draftKey) draft?.onAssign(item.id, null)
+      if (next || item.chapterId != null) onAssign(item, next ? Number(next) : null)
+    }
+  }
   return (
     <article className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -70,13 +92,22 @@ const QuestionCard = ({
         <label className="flex min-w-0 basis-full items-center gap-2 text-xs text-white/50 sm:basis-auto sm:flex-1">
           <span className="shrink-0">{t("admin-preguntas.covered-in", "Se trató en")}</span>
           <select
-            value={item.chapterId ?? ""}
-            onChange={(e) => onAssign(item, e.target.value ? Number(e.target.value) : null)}
+            value={value}
+            onChange={(e) => change(e.target.value)}
             className={`min-w-0 flex-1 rounded-md border bg-midnight px-2 py-1.5 text-base text-white focus:border-neon-cyan/40 focus:outline-none sm:text-xs ${
-              item.chapterId ? "border-emerald-400/40" : "border-white/10"
+              value ? "border-emerald-400/40" : "border-white/10"
             }`}
           >
             <option value="">{t("admin-preguntas.not-covered", "Pendiente")}</option>
+            {draft && draft.chapters.length > 0 && (
+              <optgroup label={t("admin-preguntas.draft-group", "{label} (sin publicar)", { label: draft.label })}>
+                {draft.chapters.map((c) => (
+                  <option key={c.key} value={`draft:${c.key}`}>
+                    {c.startSeconds != null ? fmtMinute(c.startSeconds) : "--:--"} · {c.title}
+                  </option>
+                ))}
+              </optgroup>
+            )}
             {sessions.map((s) => (
               <optgroup key={s.id} label={sessionLabel(s, lang)}>
                 {s.chapters.map((c) => (
@@ -96,6 +127,9 @@ const QuestionCard = ({
           {t("common.delete", "Eliminar")}
         </button>
       </div>
+      {draftKey && (
+        <p className="mt-2 text-xs text-neon-cyan/80">{t("admin-preguntas.draft-linked", "Se enlazará al publicar la masterclass.")}</p>
+      )}
       {item.answered && !item.chapterId && (
         <p className="mt-2 text-xs text-white/40">{t("admin-preguntas.legacy-answered", "Marcada como respondida antes de los capítulos. Elige el capítulo para enlazarla.")}</p>
       )}
@@ -110,7 +144,8 @@ const QuestionCard = ({
 }
 
 /** `embedded`: dentro de la pantalla de gestión del Club (AdminSesiones), sin `<main>` ni cabecera propios. */
-const AdminPreguntas = ({ embedded = false }: { embedded?: boolean }) => {
+/** `draft`: capítulos de la masterclass del mes aún sin publicar (ver DraftMasterclass). */
+const AdminPreguntas = ({ embedded = false, draft }: { embedded?: boolean; draft?: DraftMasterclass }) => {
   const { t, lang } = useI18n()
   const [items, setItems] = useState<AdminSessionQuestion[]>([])
   const [sessions, setSessions] = useState<AdminQuestionSession[]>([])
@@ -259,7 +294,7 @@ const AdminPreguntas = ({ embedded = false }: { embedded?: boolean }) => {
       ) : (
         <div className="space-y-4">
           {pending.map((item) => (
-            <QuestionCard key={item.id} item={item} sessions={sessions} onAssign={assign} onRemove={remove} />
+            <QuestionCard key={item.id} item={item} sessions={sessions} draft={draft} onAssign={assign} onRemove={remove} />
           ))}
         </div>
       )}
@@ -278,7 +313,7 @@ const AdminPreguntas = ({ embedded = false }: { embedded?: boolean }) => {
           {historyOpen && (
             <div className="mt-4 space-y-4">
               {answered.map((item) => (
-                <QuestionCard key={item.id} item={item} sessions={sessions} onAssign={assign} onRemove={remove} />
+                <QuestionCard key={item.id} item={item} sessions={sessions} draft={draft} onAssign={assign} onRemove={remove} />
               ))}
             </div>
           )}

@@ -79,7 +79,8 @@ export type CreateSessionInput = {
   description?: string
   descriptionEn?: string
   durationSeconds?: number
-  chapters: PublishChapterInput[]
+  /** `questionIds`: preguntas de los usuarios que trata ese capítulo (tarjeta #74). */
+  chapters: (PublishChapterInput & { questionIds?: number[] })[]
 }
 
 export const createSession = (input: CreateSessionInput, publishToken: string) =>
