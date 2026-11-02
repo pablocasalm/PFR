@@ -51,8 +51,11 @@ const SessionPlayer = ({
   session,
   playerRef,
   onChapterChange,
+  startAt,
 }: {
   session: SessionDetail
+  /** `&t=` del enlace (segundos): abre en ese momento, p. ej. desde el email "tu pregunta se trató". */
+  startAt?: number
   playerRef?: React.Ref<VideoPlayerHandle>
   onChapterChange?: (index: number) => void
 }) => {
@@ -67,7 +70,7 @@ const SessionPlayer = ({
       poster={session.thumbnailUrl}
       chapters={chapters}
       onChapterChange={onChapterChange}
-      initialPosition={session.resumeSeconds}
+      initialPosition={startAt ?? session.resumeSeconds}
       onProgress={(p, d) => {
         saveProgress("session", String(session.id), p, d).catch(() => {})
       }}
@@ -254,6 +257,8 @@ const Session = () => {
   const { user } = useAuth()
   const [params] = useSearchParams()
   const id = params.get("s") ?? ""
+  const startParam = Number(params.get("t"))
+  const startAt = params.has("t") && Number.isFinite(startParam) && startParam >= 0 ? Math.floor(startParam) : undefined
   // Sesiones grabadas son Club/Coach (§Stripe 3 planes) — /app/watch no está detrás de
   // RequireFeature (es compartido con Clip/Video, que sí son de todos los tiers), así que si
   // alguien entra a mano con la URL de una sesión sin el plan que toca, se corta aquí, igual
@@ -280,7 +285,7 @@ const Session = () => {
     <main className="w-full py-6">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
         <div className="space-y-6">
-          <SessionPlayer session={session} playerRef={playerRef} onChapterChange={setActiveChapter} />
+          <SessionPlayer session={session} playerRef={playerRef} onChapterChange={setActiveChapter} startAt={startAt} />
 
           <div className="flex flex-col gap-6 lg:flex-row lg:justify-between">
             <div className="space-y-2">

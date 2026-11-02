@@ -14,6 +14,16 @@ import { useAuth, hasFeature } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
 
+/** "2026-10" → "octubre" / "October". */
+const monthName = (month: string, lang: string) => {
+  const [y, m] = month.split("-").map(Number)
+  if (!y || !m) return month
+  return new Date(y, m - 1, 1).toLocaleDateString(lang === "en" ? "en-US" : "es-ES", { month: "long" })
+}
+
+/** 750 → "12:30". */
+const fmtMinute = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`
+
 /**
  * Club — hub de las funciones del plan Club (§Stripe 3 planes, §rediseño Club/Coach). Quien no
  * llega a Club se manda directo a /app/precios (ver el guard al principio de Club) — antes se
@@ -37,7 +47,7 @@ const SESSIONS_PREVIEW_COUNT = 6
 
 /** Tarjeta pequeña de preguntas — no es pantalla propia, vive junto a Sesiones. */
 const QuestionsCard = () => {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const { data, loading } = useApi(getMyQuestions, [], "my-questions")
   const [items, setItems] = useState<MySessionQuestion[] | null>(null)
   const [text, setText] = useState("")
@@ -94,15 +104,34 @@ const QuestionsCard = () => {
       {!loading && list.length > 0 && (
         <ul className="mt-4 space-y-2 border-t border-white/5 pt-4">
           {list.map((q) => (
-            <li key={q.id} className="flex items-start justify-between gap-3 text-sm">
-              <span className="text-white/80">{q.message}</span>
-              <span
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${
-                  q.answered ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" : "border-amber-400/40 bg-amber-400/10 text-amber-300"
-                }`}
-              >
-                {q.answered ? t("club.questions.answered", "Respondida") : t("club.questions.pending", "Pendiente")}
-              </span>
+            <li key={q.id} className="text-sm">
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-white/80">{q.message}</span>
+                <span
+                  className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+                    q.answered ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" : "border-amber-400/40 bg-amber-400/10 text-amber-300"
+                  }`}
+                >
+                  {q.coveredIn
+                    ? t("club.questions.covered", "Tratada")
+                    : q.answered
+                      ? t("club.questions.answered", "Respondida")
+                      : t("club.questions.pending", "Pendiente")}
+                </span>
+              </div>
+              {/* Dónde se trató (tarjeta #76): enlace a la masterclass en ese minuto. */}
+              {q.coveredIn && (
+                <Link
+                  to={`/app/watch?s=${q.coveredIn.sessionId}&t=${q.coveredIn.startSeconds}`}
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-neon-cyan transition hover:brightness-110"
+                >
+                  <Play className="h-3 w-3" />
+                  {t("club.questions.covered-in", "Se trató en la masterclass de {month}, min {minute}", {
+                    month: monthName(q.coveredIn.month, lang),
+                    minute: fmtMinute(q.coveredIn.startSeconds),
+                  })}
+                </Link>
+              )}
             </li>
           ))}
         </ul>
