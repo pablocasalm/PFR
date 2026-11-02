@@ -83,6 +83,18 @@ const CONTROLS_HIDE_MS = 3000
 const SKIP_SECONDS = 5
 const DOUBLE_TAP_MS = 300
 
+/** Calidades del menú de ajustes: además de Automática, como mucho tres (reporte #107: con seis
+ * el menú no cabía en el móvil). Se prefieren 1080p, 720p y 480p; si el vídeo no las tiene, las
+ * tres más altas. Sin alturas repetidas, de mayor a menor. */
+const PREFERRED_HEIGHTS = [1080, 720, 480]
+const pickQualityLevels = (levels: { height: number; index: number }[]) => {
+  const byHeight = new Map<number, { height: number; index: number }>()
+  for (const l of [...levels].sort((a, b) => b.height - a.height)) if (!byHeight.has(l.height)) byHeight.set(l.height, l)
+  const unique = [...byHeight.values()]
+  const preferred = unique.filter((l) => PREFERRED_HEIGHTS.includes(l.height))
+  return (preferred.length >= 2 ? preferred : unique).slice(0, 3)
+}
+
 // Con varios reproductores en pantalla (Panel → Coach: vídeo subido y análisis), las teclas solo
 // mueven el último que se ha tocado o reproducido.
 let activePlayer: object | null = null
@@ -175,13 +187,17 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
 
   // El menú se coloca por encima del botón que lo abre — en un player pegado a la parte de
   // arriba de la pantalla (móvil, poca altura) puede llegar a sobresalir por encima del propio
-  // viewport. Tras montarse, si se sale, se baja lo justo para que quede entero visible.
+  // viewport. Tras montarse, si se sale, se baja lo justo para que quede entero visible. El tope
+  // es el borde de abajo de la cabecera fija de la app, no el del viewport: si no, en el iPhone
+  // la parte de arriba del menú quedaba tapada por la cabecera (reporte #107).
   useLayoutEffect(() => {
     if (!openMenu || !menuRef.current) return
     const margin = 8
+    const headerBottom = document.querySelector("header")?.getBoundingClientRect().bottom ?? 0
+    const top = Math.max(0, headerBottom) + margin
     const rect = menuRef.current.getBoundingClientRect()
-    if (rect.top < margin) {
-      const overflow = margin - rect.top
+    if (rect.top < top) {
+      const overflow = top - rect.top
       setMenuPos((pos) => (pos ? { ...pos, bottom: Math.max(margin, pos.bottom - overflow) } : pos))
     }
   }, [openMenu])
@@ -263,11 +279,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       hls.loadSource(activeSrc)
       hls.attachMedia(video)
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setLevels(
-          hls.levels
-            .map((l, i) => ({ height: l.height, index: i }))
-            .sort((a, b) => b.height - a.height),
-        )
+        setLevels(pickQualityLevels(hls.levels.map((l, i) => ({ height: l.height, index: i }))))
         restoreAfterSwitch()
       })
       // hls.js puebla `subtitleTracks` de forma asíncrona (parsea las playlists de subtítulos
