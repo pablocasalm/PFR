@@ -10,7 +10,7 @@ import {
   createPublishToken,
   waitForVideoReady,
   createSession,
-  type PublishChapterInput,
+  type SessionChapterInput,
 } from "../../../lib/api/admin"
 import { adminListSessions, deleteSession } from "../../../lib/api/sessions"
 import { adminListMonthlyPicks, createMonthlyPick, deleteMonthlyPick, type AdminMonthlyPick } from "../../../lib/api/club"
@@ -299,7 +299,7 @@ const AdminSesiones = () => {
     if (!file) return setError(t("admin-sesiones.error.no-video", "Sube el vídeo de la masterclass."))
     if (!title.trim()) return setError(t("admin-sesiones.error.no-title", "La masterclass necesita un título."))
 
-    const chapterInputs: PublishChapterInput[] = []
+    const chapterInputs: SessionChapterInput[] = []
     for (const ch of chapters) {
       if (!ch.title.trim()) continue
       const startSeconds = parseTimeToSeconds(ch.time)

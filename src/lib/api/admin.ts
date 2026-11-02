@@ -79,9 +79,11 @@ export type CreateSessionInput = {
   description?: string
   descriptionEn?: string
   durationSeconds?: number
-  /** `questionIds`: preguntas de los usuarios que trata ese capítulo (tarjeta #74). */
-  chapters: (PublishChapterInput & { questionIds?: number[] })[]
+  chapters: SessionChapterInput[]
 }
+
+/** Capítulo de una masterclass: `questionIds`, preguntas de los usuarios que trata (tarjeta #74). */
+export type SessionChapterInput = PublishChapterInput & { questionIds?: number[] }
 
 export const createSession = (input: CreateSessionInput, publishToken: string) =>
   apiPost<{ ok: boolean; sessionId: number }>("/api/admin/sessions", input, publishTokenHeader(publishToken))
