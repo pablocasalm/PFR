@@ -719,6 +719,7 @@ const AdminSesiones = () => {
       {/* Panel: preguntas */}
       {panel === "questions" && admin && (
         <SidePanel
+          wide
           title={t("admin-preguntas.title", "Preguntas")}
           subtitle={t("admin-preguntas.subtitle", "Lo que los usuarios de Club/Coach preguntan para las próximas masterclasses.")}
           onClose={closePanel}
