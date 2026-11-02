@@ -97,6 +97,9 @@ const LoginPage = () => {
 
   const [mode, setMode] = useState<Mode>(inviteFromUrl || isRegisterPath || planFromUrl ? "register" : "login")
   const [email, setEmail] = useState(emailFromUrl)
+  // Al crear la cuenta, el email se escribe dos veces (reporte #108): con uno mal escrito, el pago y
+  // todos los avisos irían a otra dirección. Si llega de la invitación, ya viene rellenado.
+  const [emailRepeat, setEmailRepeat] = useState(emailFromUrl)
   const [password, setPassword] = useState("")
   const [passwordRepeat, setPasswordRepeat] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -126,6 +129,7 @@ const LoginPage = () => {
       .then((info) => {
         if (cancelled || !info?.email) return
         setEmail((current) => current || info.email)
+        setEmailRepeat((current) => current || info.email)
         setEmailOnly((current) => current || info.email)
       })
       .catch((err) => {
@@ -213,6 +217,10 @@ const LoginPage = () => {
     setError(null)
     setAccountExists(false)
     setInfo(null)
+    if (mode === "register" && email.trim().toLowerCase() !== emailRepeat.trim().toLowerCase()) {
+      setError(t("login.error.email-mismatch", "Los emails no coinciden. Revisa que estén bien escritos."))
+      return
+    }
     if (mode === "register" && password !== passwordRepeat) {
       setError(t("login.error.password-mismatch", "Las contraseñas no coinciden."))
       return
@@ -408,6 +416,17 @@ const LoginPage = () => {
               className={inputCls}
               autoComplete="email"
             />
+            {mode === "register" && (
+              <input
+                type="email"
+                required
+                value={emailRepeat}
+                onChange={(e) => setEmailRepeat(e.target.value)}
+                placeholder={t("login.field.email-repeat", "Repite tu email")}
+                className={inputCls}
+                autoComplete="email"
+              />
+            )}
             <PasswordInput
               value={password}
               onChange={setPassword}
