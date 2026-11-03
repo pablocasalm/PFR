@@ -663,7 +663,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   subtitleTracksRef.current = subtitleTracks
   const onTourDoneRef = useRef(onTourDone)
   onTourDoneRef.current = onTourDone
-  const audioName = (l: "es" | "en") => (l === "es" ? "Español" : "English (AI dub)") // en sí mismo, como en el engranaje
+  const audioName = (l: "es" | "en") => (l === "es" ? "Español" : "English") // en sí mismo, como en el engranaje
 
   const openSettingsMenu = () => {
     const rect = settingsBtnRef.current?.getBoundingClientRect()
@@ -700,8 +700,8 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       {
         element: () => settingsBtnRef.current as Element,
         popover: {
-          title: t("video-tour.gear.title", "El engranaje del vídeo"),
-          description: t("video-tour.gear.text", "Aquí, en el engranaje ⚙ de cada vídeo, eliges el idioma en el que lo oyes. Vamos a abrirlo."),
+          title: t("video-tour.gear.title", "Idioma del vídeo"),
+          description: t("video-tour.gear.text", "Aquí cambias el idioma del vídeo."),
           showButtons: ["next", "close"],
           onNextClick: () => {
             openSettingsMenu()
@@ -712,8 +712,8 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       {
         element: () => (menuRef.current ?? settingsBtnRef.current) as Element,
         popover: {
-          title: t("video-tour.language.title", "Idioma del vídeo"),
-          description: t("video-tour.language.text-menu", "Español es la voz original de Guille; English, el doblaje con IA. Pruébalo ahora: el vídeo cambia al momento."),
+          title: t("video-tour.language.choose", "Elige el idioma"),
+          description: t("video-tour.language.text-menu", "Español o inglés. Pruébalo."),
           showButtons: ["previous", "next", "close"],
           onPrevClick: () => {
             setOpenMenu(null)
@@ -729,7 +729,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
         element: () => subtitlesBtnRef.current as Element,
         popover: {
           title: t("video-tour.subtitles.title", "Subtítulos"),
-          description: t("video-tour.subtitles.text-button", "Con este botón activas o quitas los subtítulos. Pruébalo."),
+          description: t("video-tour.subtitles.text-button", "Actívalos o quítalos aquí."),
           showButtons: ["previous", "next", "close"],
           onPrevClick: () => {
             openSettingsMenu()
@@ -739,7 +739,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       },
       {
         popover: {
-          title: t("video-tour.default.title", "¿Lo dejamos así para todos los vídeos?"),
+          title: t("video-tour.default.title-short", "¿Para todos los vídeos?"),
           description: " ",
           showButtons: ["previous", "close"],
           onPrevClick: () => {
@@ -754,16 +754,16 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
             const summary = document.createElement("p")
             summary.textContent = t("video-tour.default.summary", "Audio: {audio} · Subtítulos: {subtitles}", {
               audio: audioName(langRef.current),
-              subtitles: subtitleTrackRef.current !== -1 ? t("video-tour.subtitles.on", "Activados") : t("video-tour.subtitles.off", "Desactivados"),
+              subtitles: subtitleTrackRef.current !== -1 ? t("video-tour.subtitles.on-short", "activados") : t("video-tour.subtitles.off-short", "desactivados"),
             })
             const note = document.createElement("p")
             note.className = "mt-1 text-xs opacity-70"
-            note.textContent = t("video-tour.default.note", "Puedes cambiarlo cuando quieras en Mi Cuenta.")
+            note.textContent = t("video-tour.default.note-short", "Puedes cambiarlo en Mi Cuenta.")
             const actions = document.createElement("div")
             actions.className = "mt-3 flex flex-col gap-2"
             actions.append(
-              button(t("video-tour.default.yes", "Sí, para todos los vídeos"), true, () => finish(true)),
-              button(t("video-tour.default.no", "No, solo para este vídeo"), false, () => finish(false)),
+              button(t("video-tour.default.yes-short", "Sí"), true, () => finish(true)),
+              button(t("video-tour.default.no-short", "Solo este vídeo"), false, () => finish(false)),
             )
             popover.description.replaceChildren(summary, note, actions)
           },
@@ -772,6 +772,9 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     ]
 
     const tour = driver({
+      // Sin animación: la iluminación y el texto aparecen a la vez (con animación, primero se
+      // movía la iluminación y el texto llegaba después).
+      animate: false,
       showProgress: true,
       progressText: t("onboarding.progress-text", "{{current}} de {{total}}"),
       nextBtnText: t("onboarding.next", "Siguiente"),
