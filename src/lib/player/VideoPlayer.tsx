@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react"
 import Hls from "hls.js"
 import { Play, Pause, Volume2, VolumeX, Maximize, Settings, Captions, RotateCcw, RotateCw } from "lucide-react"
-import { driver, type DriveStep } from "driver.js"
+import { driver, type DriveStep, type PopoverDOM } from "driver.js"
 import "driver.js/dist/driver.css"
 import { formatDuration } from "../format"
 import { useI18n } from "../i18n/store"
@@ -661,6 +661,10 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   langRef.current = lang
   const subtitleTracksRef = useRef(subtitleTracks)
   subtitleTracksRef.current = subtitleTracks
+  // Si este vídeo ha tenido subtítulos en algún momento: al cambiar de idioma recarga y tardan en
+  // volver (a veces más de un segundo), pero el doblaje lleva los mismos que el original.
+  const hadSubtitlesRef = useRef(false)
+  if (subtitleTracks.length > 0) hadSubtitlesRef.current = true
   const onTourDoneRef = useRef(onTourDone)
   onTourDoneRef.current = onTourDone
   const audioName = (l: "es" | "en") => (l === "es" ? "Español" : "English") // en sí mismo, como en el engranaje
@@ -672,9 +676,17 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   }
 
   const startVideoTour = () => {
-    // Deja que React pinte (o quite) el menú antes de que driver.js lo busque.
-    const after = (fn: () => void) => window.setTimeout(fn, 150)
-    const hasSubtitles = () => subtitleTracksRef.current.length > 0
+    // Lo justo para que React pinte (o quite) el menú antes de que driver.js lo busque: dos
+    // fotogramas. Antes eran 150 ms y se notaba un parón entre paso y paso.
+    const after = (fn: () => void) => requestAnimationFrame(() => requestAnimationFrame(fn))
+    // Fundido del texto en cada paso (ver .pfr-tour-in en index.css): se quita y se vuelve a
+    // poner la clase para que la animación arranque de nuevo aunque driver.js reutilice el panel.
+    const fadeIn = (popover: PopoverDOM) => {
+      popover.wrapper.classList.remove("pfr-tour-in")
+      void popover.wrapper.offsetWidth
+      popover.wrapper.classList.add("pfr-tour-in")
+    }
+    const hasSubtitles = () => hadSubtitlesRef.current || subtitleTracksRef.current.length > 0
     let done = false
     const finish = (saveAsDefault: boolean) => {
       if (done) return
@@ -682,6 +694,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       tourActiveRef.current = false
       setTourActive(false)
       setOpenMenu(null)
+      document.body.classList.remove("pfr-video-tour")
       tour.destroy()
       onTourDoneRef.current?.({ audio: langRef.current, subtitles: subtitleTrackRef.current !== -1 }, saveAsDefault)
     }
@@ -751,6 +764,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
           },
           // El resumen se escribe al pintar el paso: así recoge lo que haya elegido en los anteriores.
           onPopoverRender: (popover) => {
+            fadeIn(popover)
             const summary = document.createElement("p")
             summary.textContent = t("video-tour.default.summary", "Audio: {audio} · Subtítulos: {subtitles}", {
               audio: audioName(langRef.current),
@@ -775,6 +789,8 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       // Sin animación: la iluminación y el texto aparecen a la vez (con animación, primero se
       // movía la iluminación y el texto llegaba después).
       animate: false,
+      popoverClass: "pfr-video-tour-popover",
+      onPopoverRender: fadeIn,
       showProgress: true,
       progressText: t("onboarding.progress-text", "{{current}} de {{total}}"),
       nextBtnText: t("onboarding.next", "Siguiente"),
@@ -786,6 +802,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     })
     tourActiveRef.current = true
     setTourActive(true)
+    document.body.classList.add("pfr-video-tour")
     tour.drive()
   }
 
