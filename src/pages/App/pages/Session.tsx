@@ -9,6 +9,7 @@ import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import type { SessionDetail, Chapter, Comment } from "../../../lib/api/types"
 import { formatDuration, hueFor } from "../../../lib/format"
 import HlsPlayer, { type VideoPlayerHandle } from "../../../lib/player/VideoPlayer"
+import { audioDefaultOf } from "../../../lib/player/videoTour"
 import { saveProgress } from "../../../lib/api/history"
 import { useAuth, hasFeature } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
@@ -75,6 +76,7 @@ const SessionPlayer = ({
         saveProgress("session", String(session.id), p, d).catch(() => {})
       }}
       subtitlesDefaultOn={user?.subtitlesDefaultOn}
+      audioDefault={audioDefaultOf(user?.videoAudioLanguage)}
     />
   )
 }

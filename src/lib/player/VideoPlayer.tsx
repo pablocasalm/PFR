@@ -61,7 +61,16 @@ type Props = {
   /** Preferencia de cuenta (Mi Cuenta): si hay subtítulos disponibles, se activa la primera
    * pista sola en cuanto se conocen, sin esperar a que el usuario abra el menú. */
   subtitlesDefaultOn?: boolean
+  /** Audio con el que arranca si el vídeo tiene doblaje (preferencia de la cuenta, #130). */
+  audioDefault?: "es" | "en"
+  /** Enseñar el tour del vídeo (idioma y subtítulos, #130). Solo sale si el vídeo tiene doblaje:
+   * sin él no hay idioma que elegir. */
+  introTour?: boolean
+  /** Fin del tour: lo elegido y si lo quiere para todos los vídeos (false también al saltarlo). */
+  onTourDone?: (choice: { audio: "es" | "en"; subtitles: boolean }, saveAsDefault: boolean) => void
 }
+
+type TourStep = 0 | 1 | 2 | 3 // 0 = sin tour; 1 = idioma; 2 = subtítulos; 3 = ¿predeterminado?
 
 /**
  * Margen que se suma al saltar a un capítulo. Los análisis vienen montados con una transición
@@ -99,7 +108,7 @@ const pickQualityLevels = (levels: { height: number; index: number }[]) => {
 // mueven el último que se ha tocado o reproducido.
 let activePlayer: object | null = null
 
-const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, chapters = [], onChapterChange, aspect = "16:9", initialPosition, onProgress, onEnded, endSlot, subtitlesDefaultOn = false }, ref) => {
+const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, chapters = [], onChapterChange, aspect = "16:9", initialPosition, onProgress, onEnded, endSlot, subtitlesDefaultOn = false, audioDefault = "es", introTour = false, onTourDone }, ref) => {
   const { t } = useI18n()
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -165,7 +174,10 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   // El vídeo no se ha podido cargar (ya no existe en Cloudflare, o su enlace firmado ha
   // caducado): se dice, en vez de dejar un reproductor en negro que parece que va a arrancar.
   const [loadFailed, setLoadFailed] = useState(false)
-  const [lang, setLang] = useState<"es" | "en">("es")
+  // Arranca con el audio de la cuenta si el vídeo tiene doblaje; si no, en español (#130).
+  const [lang, setLang] = useState<"es" | "en">(() => (audioDefault === "en" && srcEn ? "en" : "es"))
+  const [tourStep, setTourStep] = useState<TourStep>(0)
+  const tourStartedRef = useRef(false)
   const [subtitleTracks, setSubtitleTracks] = useState<{ index: number; label: string }[]>([])
   const [subtitleTrack, setSubtitleTrack] = useState(-1) // -1 = desactivados
   const subtitleTrackRef = useRef(-1)
@@ -239,7 +251,8 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     controlsTimerRef.current = setTimeout(() => setControlsActive(false), CONTROLS_HIDE_MS)
   }
   useEffect(() => () => clearTimeout(controlsTimerRef.current), [])
-  const controlsVisible = !playing || controlsActive || openMenu !== null
+  // Durante el tour del vídeo los controles no se esconden: el tour señala sus botones.
+  const controlsVisible = !playing || controlsActive || openMenu !== null || tourStep > 0
 
   const activeSrc = lang === "en" && srcEn ? srcEn : src
 
@@ -634,10 +647,116 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     selectSubtitle(subtitleTrack === -1 ? subtitleTracks[0].index : -1)
   }
 
+  // Tour del vídeo (#130): una vez por cuenta, en el primer vídeo que tenga doblaje. Idioma →
+  // subtítulos (si el vídeo los tiene) → "¿para todos los vídeos?". Lo que se elige en cada paso
+  // se aplica al vídeo al momento, para que se oiga y se vea antes de decidir.
+  useEffect(() => {
+    if (!introTour || !srcEn || loadFailed || tourStartedRef.current) return
+    tourStartedRef.current = true
+    setTourStep(1)
+  }, [introTour, srcEn, loadFailed])
+
+  const tourNext = () => setTourStep((s) => (s === 1 ? (subtitleTracks.length > 0 ? 2 : 3) : 3))
+  const tourBack = () => setTourStep((s) => (s === 3 && subtitleTracks.length > 0 ? 2 : 1))
+  const finishTour = (saveAsDefault: boolean) => {
+    setTourStep(0)
+    onTourDone?.({ audio: lang, subtitles: subtitleTrack !== -1 }, saveAsDefault)
+  }
+  const tourRing = (step: TourStep) => (tourStep === step ? "rounded-md ring-2 ring-neon-cyan ring-offset-2 ring-offset-black" : "")
+  const audioName = (l: "es" | "en") => (l === "es" ? "Español" : "English (AI dub)") // en sí mismo, como en el engranaje
+  const choiceCls = (selected: boolean) =>
+    `rounded-lg border px-2 py-2 text-xs font-semibold transition ${selected ? "border-neon-cyan bg-neon-cyan text-midnight" : "border-white/15 text-white/80 hover:border-white/40"}`
+
+  // Panel del tour: `inside` = sobre el vídeo, arriba (escritorio y vertical: cabe, y se ve también
+  // en pantalla completa); si no, debajo del vídeo (móvil con vídeo horizontal: ~220 px de alto).
+  const renderTour = (inside: boolean) => (
+    <div
+      className={
+        inside
+          ? `absolute inset-x-2 top-2 z-40 max-h-[calc(100%-4.5rem)] overflow-y-auto rounded-xl border border-neon-cyan/40 bg-midnight/95 p-3 text-white shadow-2xl backdrop-blur sm:inset-x-auto sm:right-3 sm:top-3 sm:w-80 sm:p-4 ${aspect === "9:16" ? "" : "hidden sm:block"}`
+          : "mt-2 rounded-xl border border-neon-cyan/40 bg-midnight p-3 text-white sm:hidden"
+      }
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-label={t("video-tour.title", "Ajustes del vídeo")}
+    >
+      {tourStep === 1 && (
+        <>
+          <p className="text-sm font-bold">{t("video-tour.language.title", "Idioma del vídeo")}</p>
+          <p className="mt-1 text-xs leading-relaxed text-white/70">
+            {t("video-tour.language.text", "Elige si quieres oír la voz original de Guille o el doblaje en inglés. Siempre puedes cambiarlo en el engranaje ⚙ del vídeo.")}
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {(["es", "en"] as const).map((l) => (
+              <button key={l} type="button" onClick={() => switchLanguage(l)} className={choiceCls(lang === l)}>
+                {audioName(l)}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {tourStep === 2 && (
+        <>
+          <p className="text-sm font-bold">{t("video-tour.subtitles.title", "Subtítulos")}</p>
+          <p className="mt-1 text-xs leading-relaxed text-white/70">
+            {t("video-tour.subtitles.text", "Con el botón de subtítulos del vídeo los activas o los quitas cuando quieras.")}
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {[true, false].map((on) => (
+              <button key={String(on)} type="button" onClick={() => selectSubtitle(on ? subtitleTracks[0].index : -1)} className={choiceCls((subtitleTrack !== -1) === on)}>
+                {on ? t("video-tour.subtitles.on", "Activados") : t("video-tour.subtitles.off", "Desactivados")}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {tourStep === 3 && (
+        <>
+          <p className="text-sm font-bold">{t("video-tour.default.title", "¿Lo dejamos así para todos los vídeos?")}</p>
+          <p className="mt-1 text-xs leading-relaxed text-white/70">
+            {t("video-tour.default.summary", "Audio: {audio} · Subtítulos: {subtitles}", {
+              audio: audioName(lang),
+              subtitles: subtitleTrack !== -1 ? t("video-tour.subtitles.on", "Activados") : t("video-tour.subtitles.off", "Desactivados"),
+            })}
+          </p>
+          <p className="mt-1 text-[11px] text-white/50">{t("video-tour.default.note", "Puedes cambiarlo cuando quieras en Mi Cuenta.")}</p>
+          <div className="mt-3 flex flex-col gap-2">
+            <button type="button" onClick={() => finishTour(true)} className="rounded-lg bg-neon-cyan px-3 py-2 text-xs font-bold text-midnight transition hover:brightness-110">
+              {t("video-tour.default.yes", "Sí, para todos los vídeos")}
+            </button>
+            <button type="button" onClick={() => finishTour(false)} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white/80 transition hover:border-white/40">
+              {t("video-tour.default.no", "No, solo para este vídeo")}
+            </button>
+          </div>
+          <button type="button" onClick={tourBack} className="mt-2 text-[11px] text-white/50 transition hover:text-white">
+            {t("video-tour.back", "Atrás")}
+          </button>
+        </>
+      )}
+      {tourStep !== 3 && (
+        <div className="mt-3 flex items-center gap-3">
+          <button type="button" onClick={() => finishTour(false)} className="text-[11px] text-white/50 transition hover:text-white">
+            {t("video-tour.skip", "Saltar")}
+          </button>
+          {tourStep === 2 && (
+            <button type="button" onClick={tourBack} className="ml-auto text-xs font-semibold text-white/70 transition hover:text-white">
+              {t("video-tour.back", "Atrás")}
+            </button>
+          )}
+          <button type="button" onClick={tourNext} className={`${tourStep === 2 ? "" : "ml-auto"} rounded-lg bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20`}>
+            {t("video-tour.next", "Siguiente")}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+
   const pct = duration > 0 ? (current / duration) * 100 : 0
   const aspectCls = aspect === "9:16" ? "aspect-[9/16]" : "aspect-video"
 
   return (
+    <>
     <div
       ref={containerRef}
       // isolate: las capas de dentro del reproductor (fin de vídeo, controles, burbujas) solo
@@ -942,7 +1061,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
                 ref={subtitlesBtnRef}
                 onClick={toggleSubtitles}
                 disabled={subtitleTracks.length === 0}
-                className={`transition ${
+                className={`transition ${tourRing(2)} ${
                   subtitleTracks.length === 0
                     ? "cursor-not-allowed text-white/25"
                     : `hover:text-neon-cyan ${subtitleTrack !== -1 ? "text-neon-cyan" : ""}`
@@ -991,7 +1110,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
               <button
                 ref={settingsBtnRef}
                 onClick={() => toggleMenu("settings", settingsBtnRef)}
-                className={`transition hover:text-neon-cyan ${openMenu === "settings" ? "text-neon-cyan" : ""}`}
+                className={`transition hover:text-neon-cyan ${tourRing(1)} ${openMenu === "settings" || tourStep === 1 ? "text-neon-cyan" : ""}`}
                 aria-label={t("video-player.settings", "Ajustes")}
               >
                 <Settings className="h-5 w-5" />
@@ -1074,7 +1193,11 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
           </div>
         </div>
       </div>
+
+      {tourStep > 0 && renderTour(true)}
     </div>
+    {tourStep > 0 && aspect !== "9:16" && renderTour(false)}
+    </>
   )
 })
 

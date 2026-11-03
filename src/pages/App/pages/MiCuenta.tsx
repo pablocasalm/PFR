@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { UserCircle, Settings2, CreditCard, Lock, type LucideIcon } from "lucide-react"
-import { useAuth, setLocalDisplayName, PLAN_NAME } from "../../../lib/auth/store"
+import { useAuth, setLocalDisplayName, setLocalVideoPreferences, PLAN_NAME } from "../../../lib/auth/store"
 import PendingPlanNote from "../components/PendingPlanNote"
 import LegalLinks from "../../../lib/ui/LegalLinks"
 import { getMyProfile, updateProfile, changePassword, updateMyPreferences, type ProfileResponse } from "../../../lib/api/profile"
@@ -148,6 +148,23 @@ const MiCuenta = () => {
     try {
       await updateMyPreferences({ subtitlesDefaultOn: next })
       setProfile((p) => (p ? { ...p, subtitlesDefaultOn: next } : p))
+      setLocalVideoPreferences({ subtitlesDefaultOn: next }) // el siguiente vídeo ya lo usa
+    } catch (err) {
+      setPrefError(err instanceof Error ? err.message : t("mi-cuenta.error.preferences", "No se pudo guardar la preferencia."))
+    } finally {
+      setPrefSaving(false)
+    }
+  }
+
+  // Audio de los vídeos con doblaje, aparte del idioma de la app (tarjeta #130).
+  const changeAudio = async (a: "es" | "en") => {
+    if (prefSaving || !profile || (profile.videoAudioLanguage ?? "es") === a) return
+    setPrefSaving(true)
+    setPrefError(null)
+    try {
+      await updateMyPreferences({ videoAudioLanguage: a })
+      setProfile((p) => (p ? { ...p, videoAudioLanguage: a } : p))
+      setLocalVideoPreferences({ videoAudioLanguage: a })
     } catch (err) {
       setPrefError(err instanceof Error ? err.message : t("mi-cuenta.error.preferences", "No se pudo guardar la preferencia."))
     } finally {
@@ -311,6 +328,25 @@ const MiCuenta = () => {
                       }`}
                     >
                       {l === "es" ? "Español" : "English"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 py-3">
+                <span className="text-white">{t("mi-cuenta.video-audio", "Audio de los vídeos")}</span>
+                <div className="inline-flex rounded-lg border border-white/10 bg-white/5 p-1">
+                  {(["es", "en"] as const).map((a) => (
+                    <button
+                      key={a}
+                      onClick={() => changeAudio(a)}
+                      disabled={prefSaving}
+                      className={`rounded-md px-4 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                        (profile?.videoAudioLanguage ?? "es") === a ? "bg-neon-cyan text-midnight" : "text-white/60 hover:text-white"
+                      }`}
+                    >
+                      {/* Nombre del idioma en sí mismo, como en el reproductor. */}
+                      {a === "es" ? "Español" : "English (AI dub)"}
                     </button>
                   ))}
                 </div>

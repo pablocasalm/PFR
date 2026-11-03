@@ -21,6 +21,7 @@ import { useShare } from "../../../lib/share"
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import CardRow from "../../../lib/ui/CardRow"
 import HlsPlayer from "../../../lib/player/VideoPlayer"
+import { audioDefaultOf, handleVideoTourDone } from "../../../lib/player/videoTour"
 import { NextUpCard, pickNextRelated } from "../../../lib/player/NextUp"
 import { saveProgress } from "../../../lib/api/history"
 import EditContentLink from "../components/EditContentLink"
@@ -443,6 +444,9 @@ const VideoPlayer = ({ clip, endSlot }: { clip: ClipDetail; endSlot?: (dismiss: 
       }}
       endSlot={endSlot}
       subtitlesDefaultOn={user?.subtitlesDefaultOn}
+      audioDefault={audioDefaultOf(user?.videoAudioLanguage)}
+      introTour={!!user && !user.hasSeenVideoTour}
+      onTourDone={handleVideoTourDone}
     />
   )
 }
@@ -462,6 +466,9 @@ const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: C
       }}
       endSlot={endSlot}
       subtitlesDefaultOn={user?.subtitlesDefaultOn}
+      audioDefault={audioDefaultOf(user?.videoAudioLanguage)}
+      introTour={!!user && !user.hasSeenVideoTour}
+      onTourDone={handleVideoTourDone}
     />
 
     {/* Rail de acciones sociales superpuesto (estilo móvil vertical) */}

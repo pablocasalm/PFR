@@ -80,6 +80,8 @@ export function refreshAccessToken(): Promise<boolean> {
             pendingChangeAtUtc: data.pendingChangeAtUtc,
             preferredLanguage: data.preferredLanguage,
             subtitlesDefaultOn: data.subtitlesDefaultOn,
+            videoAudioLanguage: data.videoAudioLanguage,
+            hasSeenVideoTour: data.hasSeenVideoTour,
           }),
         )
         // El idioma preferido vive en BD (por cuenta): en caso de conflicto con lo que ya

@@ -15,6 +15,7 @@ import type { AnalysisDetail, Chapter, Comment, ContentItem } from "../../../lib
 import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/format"
 import { useSavedItems, isSaved, toggleSavedItem } from "../../../lib/saved/store"
 import HlsPlayer, { type VideoPlayerHandle } from "../../../lib/player/VideoPlayer"
+import { audioDefaultOf, handleVideoTourDone } from "../../../lib/player/videoTour"
 import { NextUpCard, pickNextRelated } from "../../../lib/player/NextUp"
 import { saveProgress } from "../../../lib/api/history"
 import { toggleLike, addComment } from "../../../lib/api/social"
@@ -88,6 +89,9 @@ const VideoPlayer = ({
       }}
       endSlot={endSlot}
       subtitlesDefaultOn={user?.subtitlesDefaultOn}
+      audioDefault={audioDefaultOf(user?.videoAudioLanguage)}
+      introTour={!!user && !user.hasSeenVideoTour}
+      onTourDone={handleVideoTourDone}
     />
   )
 }

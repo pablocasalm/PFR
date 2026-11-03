@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react"
-import { apiLogin, apiRegister, apiLogout, markOnboardingSeen } from "../api/auth"
+import { apiLogin, apiRegister, apiLogout, markOnboardingSeen, markVideoTourSeen } from "../api/auth"
 import { refreshAccessToken } from "../api/client"
 import { clearSaved } from "../saved/store"
 import { clearFolders } from "../saved/folders"
@@ -43,6 +43,9 @@ export type AuthUser = {
   coachUnread?: number
   preferredLanguage?: string // "es" | "en"
   subtitlesDefaultOn?: boolean
+  /** Audio con el que arrancan los vídeos con doblaje, aparte del idioma de la app (#130). */
+  videoAudioLanguage?: string // "es" | "en"
+  hasSeenVideoTour?: boolean
 }
 type AuthState = { token: string | null; user: AuthUser | null }
 
@@ -135,6 +138,8 @@ function toAuthUser(res: Awaited<ReturnType<typeof apiLogin>>, fallbackEmail: st
     pendingChangeAtUtc: res.pendingChangeAtUtc,
     preferredLanguage: res.preferredLanguage,
     subtitlesDefaultOn: res.subtitlesDefaultOn,
+    videoAudioLanguage: res.videoAudioLanguage,
+    hasSeenVideoTour: res.hasSeenVideoTour,
   }
 }
 
@@ -209,6 +214,27 @@ export async function markOnboardingSeenAndSync() {
       await new Promise((resolve) => setTimeout(resolve, delaysMs[attempt]))
     }
   }
+}
+
+/** Tour del vídeo visto (#130): se marca en local al momento y en el backend con reintentos. */
+export async function markVideoTourSeenAndSync() {
+  if (state.user) setState({ ...state, user: { ...state.user, hasSeenVideoTour: true } }) // optimista
+  const delaysMs = [500, 1500]
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await markVideoTourSeen()
+      return
+    } catch {
+      if (attempt >= delaysMs.length) return // no crítico
+      await new Promise((resolve) => setTimeout(resolve, delaysMs[attempt]))
+    }
+  }
+}
+
+/** Ajustes de vídeo guardados en el backend (Mi Cuenta o el tour del vídeo): se copian a la
+ * sesión para que el siguiente vídeo ya arranque con ellos, sin volver a iniciar sesión. */
+export function setLocalVideoPreferences(prefs: { subtitlesDefaultOn?: boolean; videoAudioLanguage?: string }) {
+  if (state.user) setState({ ...state, user: { ...state.user, ...prefs } })
 }
 
 /** Aplica un cambio de cuenta que llega del servidor en tiempo real (plan, estado de la

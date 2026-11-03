@@ -11,6 +11,7 @@ export type ProfileResponse = {
   subscriptionCurrentPeriodEndUtc?: string | null
   preferredLanguage: string // "es" | "en"
   subtitlesDefaultOn: boolean
+  videoAudioLanguage?: string // "es" | "en"
 }
 
 /** GET /api/users/me → datos del propio perfil (email, nombre, rol, plan). */
@@ -26,8 +27,8 @@ export const changePassword = (currentPassword: string, newPassword: string) =>
 
 /** PATCH /api/users/me/preferences → idioma preferido y/o subtítulos por defecto. Solo se
  * manda lo que cambia; el resto queda como estaba (ver UpdatePreferencesRequest en backend). */
-export const updateMyPreferences = (prefs: { preferredLanguage?: string; subtitlesDefaultOn?: boolean }) =>
-  apiPatch<{ ok: boolean; preferredLanguage: string; subtitlesDefaultOn: boolean }>("/api/users/me/preferences", prefs)
+export const updateMyPreferences = (prefs: { preferredLanguage?: string; subtitlesDefaultOn?: boolean; videoAudioLanguage?: string }) =>
+  apiPatch<{ ok: boolean; preferredLanguage: string; subtitlesDefaultOn: boolean; videoAudioLanguage?: string }>("/api/users/me/preferences", prefs)
 
 /** Emails opcionales: avisos de noticias y resumen mensual (los del servicio no se pueden quitar). */
 export type EmailPreferences = { news: boolean; newsletter: boolean }

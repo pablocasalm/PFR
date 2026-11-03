@@ -20,6 +20,8 @@ export type AuthResponse = {
   pendingChangeAtUtc?: string | null
   preferredLanguage?: string // "es" | "en"
   subtitlesDefaultOn?: boolean
+  videoAudioLanguage?: string // "es" | "en": audio de los vídeos con doblaje (#130)
+  hasSeenVideoTour?: boolean
 }
 
 /**
@@ -65,3 +67,6 @@ export const resetPassword = (token: string, newPassword: string) =>
 
 /** POST /api/auth/onboarding-seen → marca el tour de bienvenida (beta) como visto, para no repetirlo. */
 export const markOnboardingSeen = () => apiPost<{ ok: boolean }>("/api/auth/onboarding-seen")
+
+/** POST /api/auth/video-tour-seen → el tour del vídeo (idioma y subtítulos) ya no vuelve a salir. */
+export const markVideoTourSeen = () => apiPost<{ ok: boolean }>("/api/auth/video-tour-seen")
