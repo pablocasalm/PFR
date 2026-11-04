@@ -122,12 +122,16 @@ const LoginPage = () => {
   // Si la invitación caducó (7 días sin crear la contraseña), responde 410 y se avisa antes de
   // que la persona rellene un formulario que no va a funcionar.
   const [inviteExpired, setInviteExpired] = useState(false)
+  // Email al que se emitió la invitación: el código es personal y el backend lo rechaza con otro
+  // email (403), que la pantalla mostraba como "código no válido". Se avisa antes de enviar.
+  const [inviteEmail, setInviteEmail] = useState<string | null>(null)
   useEffect(() => {
     if (!inviteFromUrl || emailFromUrl) return
     let cancelled = false
     getInviteInfo(inviteFromUrl)
       .then((info) => {
         if (cancelled || !info?.email) return
+        setInviteEmail(info.email)
         setEmail((current) => current || info.email)
         setEmailRepeat((current) => current || info.email)
         setEmailOnly((current) => current || info.email)
@@ -223,6 +227,14 @@ const LoginPage = () => {
     }
     if (mode === "register" && password !== passwordRepeat) {
       setError(t("login.error.password-mismatch", "Las contraseñas no coinciden."))
+      return
+    }
+    if (mode === "register" && inviteEmail && inviteCode.trim() === inviteFromUrl && email.trim().toLowerCase() !== inviteEmail.toLowerCase()) {
+      setError(
+        t("login.error.invite-email", "Esta invitación es para {email}. Crea la cuenta con ese email o, si quieres usar otro, escríbenos a hello@padelfilmroom.com.", {
+          email: inviteEmail,
+        }),
+      )
       return
     }
     setLoading(true)
