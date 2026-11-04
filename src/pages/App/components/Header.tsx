@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { NavLink, Link, useNavigate } from "react-router-dom"
+import { NavLink, Link, useNavigate, useLocation } from "react-router-dom"
 import { Search, ChevronDown, LogOut, BookOpen, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, Lock, MessageSquarePlus, ClipboardList, BarChart2, BarChart3 } from "lucide-react"
 import { useAuth, canPublish, isAdmin, hasFeature, type AuthUser } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
@@ -25,6 +25,9 @@ const NAV_ITEMS = [
 
 const Header = () => {
   const navigate = useNavigate()
+  // En las páginas de vídeo el botón flotante de feedback taparía los controles del reproductor
+  // (ver FeedbackButton): ahí el icono de la cabecera se ve también en escritorio.
+  const onWatch = useLocation().pathname.startsWith("/app/watch")
   const [query, setQuery] = useState("")
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const { user } = useAuth()
@@ -148,12 +151,12 @@ const Header = () => {
         <Search className="h-5 w-5" />
       </button>
 
-      {/* Feedback (móvil/tablet): aquí en vez de flotando sobre el contenido. Abre el modal de
-          FeedbackButton, que sigue montado en toda la app. */}
+      {/* Feedback (móvil/tablet, y en escritorio en las páginas de vídeo): aquí en vez de flotando
+          sobre el contenido. Abre el modal de FeedbackButton, que sigue montado en toda la app. */}
       <button
         id="tour-feedback-button-mobile"
         onClick={() => window.dispatchEvent(new CustomEvent(TOUR_OPEN_FEEDBACK_EVENT, { detail: true }))}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan transition hover:bg-neon-cyan/15 xl:hidden"
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan transition hover:bg-neon-cyan/15 ${onWatch ? "" : "xl:hidden"}`}
         aria-label={t("feedback-button.open", "Reportar un fallo o enviar feedback")}
       >
         <MessageSquarePlus className="h-5 w-5" />

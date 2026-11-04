@@ -92,11 +92,6 @@
 body.pfr-video-tour .driver-overlay path {
   transition: d 180ms ease-out;
 }
-/* En escritorio, el botón flotante de feedback cae encima de los controles de la derecha del
-   reproductor (subtítulos, engranaje): mientras dura el tour, fuera, o taparía lo que se ilumina. */
-body.pfr-video-tour #tour-feedback-button {
-  visibility: hidden;
-}
 @media (prefers-reduced-motion: reduce) {
   .pfr-video-tour-popover.pfr-tour-in {
     animation: none;

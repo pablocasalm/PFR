@@ -13,7 +13,9 @@ export const TOUR_OPEN_FEEDBACK_EVENT = "pfr:tour-open-feedback"
  * Botón flotante de feedback para la beta, visible en toda la app en escritorio. En móvil y
  * tableta no flota: tapaba contenido (títulos de tarjetas, enlaces) por mucho que se apartase
  * al hacer scroll, así que ahí el acceso es un icono fijo en la cabecera (ver Header.tsx), que
- * abre este mismo modal con TOUR_OPEN_FEEDBACK_EVENT. El usuario elige primero
+ * abre este mismo modal con TOUR_OPEN_FEEDBACK_EVENT. Lo mismo en las páginas de vídeo, también en
+ * escritorio: flotando caía encima de los controles del reproductor (subtítulos, engranaje). El
+ * usuario elige primero
  * el tipo (fallo / idea / otro) y escribe el mensaje. Se adjunta automáticamente el contexto:
  * la ruta actual y, si está viendo un clip/análisis, su id (el navegador lo añade el backend).
  */
@@ -29,6 +31,7 @@ const FeedbackButton = () => {
   const { t } = useI18n()
   const TYPES = useMemo(() => buildTypes(t), [t])
   const [params] = useSearchParams()
+  const onWatch = location.pathname.startsWith("/app/watch")
   const [open, setOpen] = useState(false)
   const [type, setType] = useState<FeedbackType>("bug")
   const [message, setMessage] = useState("")
@@ -112,7 +115,7 @@ const FeedbackButton = () => {
         id="tour-feedback-button"
         onClick={() => setOpen(true)}
         aria-label={t("feedback-button.open", "Reportar un fallo o enviar feedback")}
-        className="fixed bottom-6 right-6 z-40 hidden items-center gap-2 rounded-full border border-neon-cyan/40 bg-midnight/90 px-4 py-2.5 text-sm font-semibold text-neon-cyan shadow-lg backdrop-blur transition hover:bg-neon-cyan/10 xl:flex"
+        className={`fixed bottom-6 right-6 z-40 hidden items-center gap-2 rounded-full border border-neon-cyan/40 bg-midnight/90 px-4 py-2.5 text-sm font-semibold text-neon-cyan shadow-lg backdrop-blur transition hover:bg-neon-cyan/10 ${onWatch ? "" : "xl:flex"}`}
       >
         <MessageSquarePlus className="h-4 w-4" />
         {t("feedback-button.cta", "Reportar / Feedback")}
