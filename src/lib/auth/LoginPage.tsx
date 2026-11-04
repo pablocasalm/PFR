@@ -28,9 +28,10 @@ const PLANS: PlanTier[] = ["Starter", "Club", "Coach"]
 // Días de prueba en Stripe para una cuenta nueva (BillingController.TrialForAsync): Essential y
 // Club; Coach paga al momento.
 const TRIAL_DAYS = 7
-// Versión del texto de la casilla de la newsletter: se guarda con el consentimiento. Si el texto
-// cambia, súbela.
-const NEWSLETTER_TEXT_VERSION = "v1"
+// Versión del texto de los emails que se acepta al crear la cuenta: se guarda con el
+// consentimiento. Si el texto cambia, súbela. v1: casilla del resumen mensual; v2 (04/11/2026):
+// sin casilla, la frase de la línea legal (login.legal.emails).
+const NEWSLETTER_TEXT_VERSION = "v2"
 
 /** Campo de contraseña con el ojo para verla. Los dos campos del registro comparten el estado:
  * al pulsar el ojo se ven (o se ocultan) los dos a la vez. */
@@ -104,9 +105,6 @@ const LoginPage = () => {
   const [passwordRepeat, setPasswordRepeat] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [displayName, setDisplayName] = useState("")
-  // Casilla de la newsletter (resumen mensual): marcada por defecto desde el 01/11/2026 (pedido
-  // por Pablo, a revisar más adelante) y opcional. Lo que quede, marcada o no, se apunta.
-  const [newsletter, setNewsletter] = useState(true)
   // Precio del plan elegido, para el resumen de pago (fundador o normal y de su zona, como en Precios).
   const [plans, setPlans] = useState<BillingPlans | null>(null)
   useEffect(() => {
@@ -243,7 +241,9 @@ const LoginPage = () => {
         await login(email.trim(), password)
       } else {
         await register(email.trim(), password, displayName.trim() || undefined, inviteCode.trim(), lang, {
-          optIn: newsletter,
+          // Sin casilla desde el 04/11/2026 (pedido por Pablo, tarjeta #119): crear la cuenta incluye
+          // aceptar los emails de la plataforma, como dice la línea legal. Se quitan en Mi Cuenta.
+          optIn: true,
           textVersion: NEWSLETTER_TEXT_VERSION,
         })
       }
@@ -313,6 +313,9 @@ const LoginPage = () => {
     : mode === "register" ? t("login.subtitle.register", "Introduce tu código de invitación para unirte a la beta.")
     : mode === "request" ? t("login.subtitle.request", "¿Tu código ya se ha usado? Pide uno nuevo con tu email.")
     : t("login.subtitle.forgot", "Te enviaremos un enlace para crear una contraseña nueva.")
+  // Línea legal al crear la cuenta: deja claro que llegarán emails de la plataforma (se quitan
+  // en Mi Cuenta → Preferencias de email). Sustituye a la casilla del resumen mensual.
+  const emailsNotice = t("login.legal.emails", "También aceptas recibir emails sobre la plataforma.")
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-midnight bg-film-room p-4 text-white">
@@ -480,20 +483,6 @@ const LoginPage = () => {
               </div>
             )}
 
-            {/* Casilla de la newsletter (resumen mensual): opcional y desmarcada; no bloquea el botón.
-                Por ahora solo se guarda el consentimiento, todavía no se envía nada. */}
-            {mode === "register" && (
-              <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-white/70">
-                <input
-                  type="checkbox"
-                  checked={newsletter}
-                  onChange={(e) => setNewsletter(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-neon-cyan"
-                />
-                {t("checkout.newsletter", "Quiero recibir el resumen mensual de PFR con las novedades. Puedo darme de baja cuando quiera.")}
-              </label>
-            )}
-
             {/* Al crear la cuenta se aceptan los términos y se informa del tratamiento de datos. Con un
                 plan, la línea legal del documento de Andrea (22/10): deja claro qué se cobra y cuándo. */}
             {mode === "register" && checkout ? (
@@ -508,12 +497,13 @@ const LoginPage = () => {
                         date: checkout.date,
                         price: checkout.price,
                       })
-                    : t("checkout.legal.coach-suffix", "Hoy se cobrarán {price}; se renueva cada mes.", { price: checkout.price }))}
+                    : t("checkout.legal.coach-suffix", "Hoy se cobrarán {price}; se renueva cada mes.", { price: checkout.price }))}{" "}
+                {emailsNotice}
               </p>
             ) : mode === "register" ? (
               <p className="text-xs leading-relaxed text-white/50">
                 {t("login.legal.register-prefix", "Al crear tu cuenta aceptas los")} <LegalLink doc="terms" /> {t("login.legal.and", "y la")}{" "}
-                <LegalLink doc="privacy" />.
+                <LegalLink doc="privacy" />. {emailsNotice}
               </p>
             ) : null}
 
