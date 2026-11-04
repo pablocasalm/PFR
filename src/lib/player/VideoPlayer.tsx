@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react"
 import Hls from "hls.js"
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, Captions, RotateCcw, RotateCw } from "lucide-react"
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings, Captions, RotateCcw, RotateCw, ChevronRight } from "lucide-react"
 import { driver, type DriveStep, type PopoverDOM } from "driver.js"
 import "driver.js/dist/driver.css"
 import { formatDuration } from "../format"
@@ -181,6 +181,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   const [tourActive, setTourActive] = useState(false)
   const tourActiveRef = useRef(false)
   const tourStartedRef = useRef(false)
+  const tourRef = useRef<ReturnType<typeof driver> | null>(null)
   const [subtitleTracks, setSubtitleTracks] = useState<{ index: number; label: string }[]>([])
   const [subtitleTrack, setSubtitleTrack] = useState(-1) // -1 = desactivados
   const subtitleTrackRef = useRef(-1)
@@ -196,6 +197,9 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   // (p. ej. Idioma + varias resoluciones de Calidad juntos).
   const [openMenu, setOpenMenu] = useState<"subtitles" | "settings" | null>(null)
   const [menuPos, setMenuPos] = useState<{ bottom: number; right: number } | null>(null)
+  // Calidad va plegada dentro del engranaje (una fila con la elegida); el idioma, con solo dos
+  // opciones, siempre a la vista. Se vuelve a plegar cada vez que se cierra el menú.
+  const [qualityOpen, setQualityOpen] = useState(false)
   const subtitlesBtnRef = useRef<HTMLButtonElement>(null)
   const settingsBtnRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -215,6 +219,12 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       const overflow = top - rect.top
       setMenuPos((pos) => (pos ? { ...pos, bottom: Math.max(margin, pos.bottom - overflow) } : pos))
     }
+    // Si el tour está iluminando el menú y este crece al desplegar Calidad, que la luz lo siga.
+    tourRef.current?.refresh()
+  }, [openMenu, qualityOpen])
+
+  useEffect(() => {
+    if (!openMenu) setQualityOpen(false)
   }, [openMenu])
 
   const toggleMenu = (menu: "subtitles" | "settings", btnRef: React.RefObject<HTMLButtonElement | null>) => {
@@ -618,6 +628,12 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     }
   }
 
+  const qualityName = (index: number) => {
+    if (index === -1) return t("video-player.quality-auto", "Automática")
+    const height = levels.find((l) => l.index === index)?.height ?? 0
+    return height > 0 ? `${height}p` : t("video-player.quality-level", "Nivel {n}", { n: index + 1 })
+  }
+
   const selectQuality = (index: number) => {
     const hls = hlsRef.current
     if (hls) hls.currentLevel = index // -1 = auto (ABR)
@@ -689,6 +705,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
     const hasSubtitles = () => hadSubtitlesRef.current || subtitleTracksRef.current.length > 0
     let done = false
     const finish = (saveAsDefault: boolean) => {
+      tourRef.current = null
       if (done) return
       done = true
       tourActiveRef.current = false
@@ -800,6 +817,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
       onCloseClick: () => finish(false),
       steps,
     })
+    tourRef.current = tour
     tourActiveRef.current = true
     setTourActive(true)
     document.body.classList.add("pfr-video-tour")
@@ -1225,22 +1243,25 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
                     {levels.length > 0 && (
                       <>
                         <div className="my-1 border-t border-white/10" />
-                        <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">{t("video-player.quality-title", "Calidad")}</p>
                         <button
-                          onClick={() => selectQuality(-1)}
-                          className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${qualityLevel === -1 ? "text-neon-cyan" : "text-white"}`}
+                          onClick={() => setQualityOpen((open) => !open)}
+                          aria-expanded={qualityOpen}
+                          className="flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs text-white transition hover:bg-white/5"
                         >
-                          {t("video-player.quality-auto", "Automática")}
-                          {qualityLevel === -1 && <span>✓</span>}
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">{t("video-player.quality-title", "Calidad")}</span>
+                          <span className="flex items-center gap-1 text-white/70">
+                            {qualityName(qualityLevel)}
+                            <ChevronRight className={`h-3.5 w-3.5 transition-transform ${qualityOpen ? "rotate-90" : ""}`} />
+                          </span>
                         </button>
-                        {levels.map((l) => (
+                        {qualityOpen && [-1, ...levels.map((l) => l.index)].map((index) => (
                           <button
-                            key={l.index}
-                            onClick={() => selectQuality(l.index)}
-                            className={`flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs transition hover:bg-white/5 ${qualityLevel === l.index ? "text-neon-cyan" : "text-white"}`}
+                            key={index}
+                            onClick={() => selectQuality(index)}
+                            className={`flex w-full items-center justify-between gap-4 py-1.5 pl-5 pr-3 text-left text-xs transition hover:bg-white/5 ${qualityLevel === index ? "text-neon-cyan" : "text-white"}`}
                           >
-                            {l.height > 0 ? `${l.height}p` : t("video-player.quality-level", "Nivel {n}", { n: l.index + 1 })}
-                            {qualityLevel === l.index && <span>✓</span>}
+                            {qualityName(index)}
+                            {qualityLevel === index && <span>✓</span>}
                           </button>
                         ))}
                       </>
