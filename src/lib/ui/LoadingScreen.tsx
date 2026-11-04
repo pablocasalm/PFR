@@ -11,8 +11,10 @@ const LoadingScreen = () => (
       {/* Anillo giratorio alrededor del logo */}
       <span className="absolute inset-0 rounded-full border-2 border-white/10 border-t-neon-cyan motion-safe:animate-spin" />
       {/* Logo */}
+      {/* Logo pequeño (96 px, ~5 KB): favicon_sinfondo.png pesa 365 KB y con mala conexión tardaba
+          en salir. Es el mismo que va incrustado en la pantalla de carga de index.html. */}
       <img
-        src="/Logos/favicon_sinfondo.png"
+        src="/Logos/loading-logo.png"
         alt="Padel Film Room"
         className="h-11 w-11 object-contain"
       />
