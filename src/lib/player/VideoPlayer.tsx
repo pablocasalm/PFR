@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react"
 import Hls from "hls.js"
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, Captions, RotateCcw, RotateCw, ChevronRight } from "lucide-react"
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings, Captions, RotateCcw, RotateCw, ChevronRight, ChevronLeft } from "lucide-react"
 import { driver, type DriveStep, type PopoverDOM } from "driver.js"
 import "driver.js/dist/driver.css"
 import { formatDuration } from "../format"
@@ -198,7 +198,9 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
   const [openMenu, setOpenMenu] = useState<"subtitles" | "settings" | null>(null)
   const [menuPos, setMenuPos] = useState<{ bottom: number; right: number } | null>(null)
   // Calidad va plegada dentro del engranaje (una fila con la elegida); el idioma, con solo dos
-  // opciones, siempre a la vista. Se vuelve a plegar cada vez que se cierra el menú.
+  // opciones, siempre a la vista. Al abrir Calidad, sus opciones ocupan el sitio del menú en vez
+  // de alargarlo: en el móvil no cabe más alto entre la cabecera y los controles, y si crecía
+  // tapaba los botones de subtítulos y del engranaje. Se vuelve a plegar al cerrar el menú.
   const [qualityOpen, setQualityOpen] = useState(false)
   const subtitlesBtnRef = useRef<HTMLButtonElement>(null)
   const settingsBtnRef = useRef<HTMLButtonElement>(null)
@@ -1208,6 +1210,29 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
                     style={{ bottom: menuPos.bottom, right: menuPos.right }}
                     className="fixed z-20 min-w-[190px] overflow-hidden rounded-lg border border-white/10 bg-midnight py-1 shadow-2xl"
                   >
+                    {qualityOpen ? (
+                      <>
+                        <button
+                          onClick={() => setQualityOpen(false)}
+                          className="flex w-full items-center gap-1 px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-white/40 transition hover:bg-white/5 hover:text-white/70"
+                        >
+                          <ChevronLeft className="h-3.5 w-3.5" />
+                          {t("video-player.quality-title", "Calidad")}
+                        </button>
+                        <div className="grid grid-cols-2 gap-1 px-2 pb-1">
+                          {[-1, ...levels.map((l) => l.index)].map((index) => (
+                            <button
+                              key={index}
+                              onClick={() => selectQuality(index)}
+                              className={`rounded-md border px-2 py-1.5 text-xs transition ${qualityLevel === index ? "border-neon-cyan/60 bg-neon-cyan/10 text-neon-cyan" : "border-white/10 text-white hover:bg-white/5"}`}
+                            >
+                              {qualityName(index)}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <>
                     {/* Idioma (§9.1/§10.1): vídeo doblado al inglés (HeyGen), si existe. */}
                     <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">{t("video-player.language-title", "Idioma")}</p>
                     {srcEn ? (
@@ -1244,26 +1269,17 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ src, srcEn, poster, 
                       <>
                         <div className="my-1 border-t border-white/10" />
                         <button
-                          onClick={() => setQualityOpen((open) => !open)}
-                          aria-expanded={qualityOpen}
+                          onClick={() => setQualityOpen(true)}
                           className="flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-xs text-white transition hover:bg-white/5"
                         >
                           <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">{t("video-player.quality-title", "Calidad")}</span>
                           <span className="flex items-center gap-1 text-white/70">
                             {qualityName(qualityLevel)}
-                            <ChevronRight className={`h-3.5 w-3.5 transition-transform ${qualityOpen ? "rotate-90" : ""}`} />
+                            <ChevronRight className="h-3.5 w-3.5" />
                           </span>
                         </button>
-                        {qualityOpen && [-1, ...levels.map((l) => l.index)].map((index) => (
-                          <button
-                            key={index}
-                            onClick={() => selectQuality(index)}
-                            className={`flex w-full items-center justify-between gap-4 py-1.5 pl-5 pr-3 text-left text-xs transition hover:bg-white/5 ${qualityLevel === index ? "text-neon-cyan" : "text-white"}`}
-                          >
-                            {qualityName(index)}
-                            {qualityLevel === index && <span>✓</span>}
-                          </button>
-                        ))}
+                      </>
+                    )}
                       </>
                     )}
                   </div>
