@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/Logos/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover: en Safari de iPhone (iOS 26) la barra del navegador flota sobre la
+         página y se encoge al hacer scroll; sin esto, la barra de pestañas de abajo (MobileNav)
+         subía y bajaba con ella. Los márgenes del iPhone se respetan con env(safe-area-inset-*). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
       content="Aprende a leer el punto y a elegir mejor en tus partidos con situaciones reales de pádel profesional, explicadas por un exjugador del World Padel Tour."

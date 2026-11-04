@@ -41,7 +41,9 @@ const MobileNav = () => {
   const { t } = useI18n()
   const { user } = useAuth()
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-white/10 bg-black/80 px-1 py-2 backdrop-blur-md xl:hidden">
+    // Con viewport-fit=cover (index.html) la barra llega hasta el borde de la pantalla: el padding
+    // de abajo deja libre la zona de la barra de inicio del iPhone.
+    <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-white/10 bg-black/80 px-[max(0.25rem,env(safe-area-inset-left))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md xl:hidden">
       {[...ITEMS, ...(hasFeature(user, "personalAnalysis") ? [COACH_TAB] : FIFTH_TAB ? [FIFTH_TAB] : [])].map(({ to, key, label, icon: Icon, feature }: (typeof ITEMS)[number]) => (
         <NavLink
           key={to}

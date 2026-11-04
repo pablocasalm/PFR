@@ -79,7 +79,7 @@ const AppLayout = () => {
       <Header />
       {/* Padding lateral responsive + espacio inferior para la barra móvil/tablet (hasta xl).
           overflow-x-clip: red de seguridad contra scroll horizontal en móvil. */}
-      <div className="overflow-x-clip px-4 pb-24 sm:px-6 lg:px-10 xl:pb-8">
+      <div className="overflow-x-clip px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 xl:pb-8">
         <Outlet />
       </div>
       <MobileNav />
