@@ -30,8 +30,10 @@ const PLANS: PlanTier[] = ["Starter", "Club", "Coach"]
 const TRIAL_DAYS = 7
 // Versión del texto de los emails que se acepta al crear la cuenta: se guarda con el
 // consentimiento. Si el texto cambia, súbela. v1: casilla del resumen mensual; v2 (04/11/2026):
-// sin casilla, la frase de la línea legal (login.legal.emails).
-const NEWSLETTER_TEXT_VERSION = "v2"
+// sin casilla, la frase de la línea legal (login.legal.emails); v3 (05/11/2026): «novedades,
+// contenido y ofertas» (sin limitarlo a la plataforma, para poder enviar colaboraciones) y que las
+// preferencias se gestionan desde Mi Cuenta.
+const NEWSLETTER_TEXT_VERSION = "v3"
 
 /** Campo de contraseña con el ojo para verla. Los dos campos del registro comparten el estado:
  * al pulsar el ojo se ven (o se ocultan) los dos a la vez. */
@@ -315,7 +317,7 @@ const LoginPage = () => {
     : t("login.subtitle.forgot", "Te enviaremos un enlace para crear una contraseña nueva.")
   // Línea legal al crear la cuenta: deja claro que llegarán emails de la plataforma (se quitan
   // en Mi Cuenta → Preferencias de email). Sustituye a la casilla del resumen mensual.
-  const emailsNotice = t("login.legal.emails", "También aceptas recibir emails sobre la plataforma.")
+  const emailsNotice = t("login.legal.emails", "También aceptas recibir novedades, contenido y ofertas. Puedes gestionar tus preferencias desde Mi Cuenta.")
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-midnight bg-film-room p-4 text-white">
