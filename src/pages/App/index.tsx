@@ -25,7 +25,7 @@ const AppLayout = () => {
   useEffect(() => {
     hydrateSaved()
     hydrateFolders()
-    trackActivity("app_open") // métricas internas: días que entra cada usuario
+    trackActivity("app_open") // métricas internas: cada vez que se abre la app, con su dispositivo
   }, [])
 
   // Canal en tiempo real con el backend mientras hay sesión: si cambia el plan o la suscripción

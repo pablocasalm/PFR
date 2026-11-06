@@ -35,6 +35,16 @@ const MetricsInsights = ({ view, days, excludeTeam }: { view: "activity" | "wait
       ? t("admin-insights.range-90", "Últimos 90 días. Toca una columna para ver su día.")
       : t("admin-insights.range", "Toca una columna para ver su día.")
   const pct = (v: number, base: number) => (base > 0 ? Math.round((100 * v) / base) : 0)
+  const keyRows = (rows: KeyCount[], label: (key: string) => string = (k) => k) =>
+    rows.map((r) => ({ label: r.key === "?" ? t("admin-insights.unknown", "Sin dato") : label(r.key), value: r.count }))
+  const device = (k: string) =>
+    k === "mobile"
+      ? t("admin-insights.device.mobile", "Móvil")
+      : k === "tablet"
+        ? t("admin-insights.device.tablet", "Tablet")
+        : k === "desktop"
+          ? t("admin-insights.device.desktop", "Ordenador")
+          : k
 
   if (error) return <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>
   if (!data) return <p className="text-sm text-white/40">{t("common.loading", "Cargando...")}</p>
@@ -94,13 +104,17 @@ const MetricsInsights = ({ view, days, excludeTeam }: { view: "activity" | "wait
             empty={none}
           />
         </ChartCard>
+        <ChartCard
+          title={t("admin-insights.device-opens", "Entradas por dispositivo")}
+          hint={t("admin-insights.device-opens-hint", "Veces que se abre la app desde cada dispositivo. Antes del 05/11 solo contaba la primera entrada del día de cada persona.")}
+        >
+          <Bars rows={keyRows(data.devices ?? [], device)} empty={t("admin-insights.no-opens", "Nadie ha abierto la app en este periodo.")} />
+        </ChartCard>
       </div>
     )
   }
 
   const w = data.waitlist
-  const keyRows = (rows: KeyCount[], label: (key: string) => string = (k) => k) =>
-    rows.map((r) => ({ label: r.key === "?" ? t("admin-insights.unknown", "Sin dato") : label(r.key), value: r.count }))
   const country = (code: string) => {
     try {
       return new Intl.DisplayNames([locale], { type: "region" }).of(code.toUpperCase()) ?? code
@@ -162,18 +176,7 @@ const MetricsInsights = ({ view, days, excludeTeam }: { view: "activity" | "wait
           <Bars rows={keyRows(w.country, country)} empty={empty} />
         </ChartCard>
         <ChartCard title={t("admin-insights.wl.device", "Dispositivo")}>
-          <Bars
-            rows={keyRows(w.device, (k) =>
-              k === "mobile"
-                ? t("admin-insights.device.mobile", "Móvil")
-                : k === "tablet"
-                  ? t("admin-insights.device.tablet", "Tablet")
-                  : k === "desktop"
-                    ? t("admin-insights.device.desktop", "Ordenador")
-                    : k,
-            )}
-            empty={empty}
-          />
+          <Bars rows={keyRows(w.device, device)} empty={empty} />
         </ChartCard>
         <ChartCard title={t("admin-insights.wl.language", "Idioma")}>
           <Bars rows={keyRows(w.language, (k) => (k === "en" ? "English" : k === "es" ? "Español" : k))} empty={empty} />

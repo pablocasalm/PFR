@@ -87,6 +87,9 @@ export type MetricsInsights = {
     sessions: ContentStat[]
     concepts: { id: number; nameEs: string; nameEn: string | null; people: number }[]
   }
+  /** Veces que se abre la app en el periodo desde cada dispositivo: "mobile" | "tablet" |
+   * "desktop" ("?" sin dato). Opcional mientras haya un backend publicado sin él. */
+  devices?: KeyCount[]
   waitlist: {
     total: number
     inPeriod: number
