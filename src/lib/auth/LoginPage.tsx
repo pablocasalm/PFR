@@ -21,9 +21,18 @@ import { useI18n, setLanguage } from "../i18n/store"
  * sesión (al crear la cuenta o al iniciar sesión), se abre Stripe Checkout con ese plan, sin
  * pasar por la app: quien no tiene suscripción no entra (ver RequireSubscription y /suscripcion).
  * Si Stripe no se puede abrir, se queda aquí con el error y un botón para reintentar.
+ *
+ * Desde el 10/11/2026, crear cuenta sin plan y sin invitación (el «Regístrate» de esta pantalla o
+ * un enlace a /register) lleva a Precios de la landing a elegir plan: antes caía en el registro de
+ * la beta, que pedía un código, y quien no lo tenía acababa pidiendo uno (le pasó a una persona
+ * que luego se registró por Precios). Con ?invite= sigue el registro con código, como siempre.
  */
 
 const PLANS: PlanTier[] = ["Starter", "Club", "Coach"]
+
+// Elegir plan para crear la cuenta: la página de Precios de la landing (sus botones vuelven aquí
+// con ?plan=).
+const PRICING_URL = "https://padelfilmroom.com/precios"
 
 // Días de prueba en Stripe para una cuenta nueva (BillingController.TrialForAsync): Essential y
 // Club; Coach paga al momento.
@@ -99,6 +108,11 @@ const LoginPage = () => {
   const planFromUrl = PLANS.find((p) => p.toLowerCase() === planKey) ?? null
 
   const [mode, setMode] = useState<Mode>(inviteFromUrl || isRegisterPath || planFromUrl ? "register" : "login")
+  // Registro sin plan ni invitación: a elegir plan en Precios (ver la cabecera del archivo).
+  const needsPlan = !planFromUrl && !inviteFromUrl
+  useEffect(() => {
+    if (isRegisterPath && needsPlan) window.location.replace(PRICING_URL)
+  }, [isRegisterPath, needsPlan])
   const [email, setEmail] = useState(emailFromUrl)
   // Al crear la cuenta, el email se escribe dos veces (reporte #108): con uno mal escrito, el pago y
   // todos los avisos irían a otra dirección. Si llega de la invitación, ya viene rellenado.
@@ -550,7 +564,10 @@ const LoginPage = () => {
           {mode === "login" ? (
             <>
               {t("login.no-account", "¿No tienes cuenta?")}{" "}
-              <button onClick={() => switchMode("register")} className="font-semibold text-neon-cyan hover:underline">
+              <button
+                onClick={() => (needsPlan ? window.location.assign(PRICING_URL) : switchMode("register"))}
+                className="font-semibold text-neon-cyan hover:underline"
+              >
                 {t("login.cta.go-register", "Regístrate")}
               </button>
             </>
