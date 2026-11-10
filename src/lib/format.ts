@@ -23,4 +23,4 @@ export const thumbStyle = (hue: number) => ({
 
 /** Ruta del visor según el tipo de contenido. */
 export const watchHref = (item: Pick<ContentItem, "id" | "type">) =>
-  item.type === "analysis" ? `/app/watch?v=${item.id}` : `/app/watch?c=${item.id}`
+  item.type === "analysis" ? `/app/watch?v=${item.id}` : item.type === "pill" ? `/app/pildoras?p=${item.id}` : `/app/watch?c=${item.id}`

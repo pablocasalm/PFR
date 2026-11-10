@@ -6,9 +6,10 @@ import type { Comment } from "./types"
  * el backend se adapta. Rutas por tipo, coherentes con clips.ts / analyses.ts.
  */
 
-type SocialType = "clip" | "analysis" | "session"
+type SocialType = "clip" | "analysis" | "session" | "pill"
 
-const base = (type: SocialType) => (type === "analysis" ? "/api/analyses" : type === "session" ? "/api/sessions" : "/api/clips")
+const base = (type: SocialType) =>
+  type === "analysis" ? "/api/analyses" : type === "session" ? "/api/sessions" : type === "pill" ? "/api/pills" : "/api/clips"
 
 /** POST .../{id}/like → alterna me gusta. Devuelve el estado resultante. */
 export const toggleLike = (type: SocialType, id: string) =>

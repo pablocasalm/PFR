@@ -75,7 +75,7 @@ const ActionButton = ({ icon: Icon, label }: { icon: typeof Heart; label: string
  * Optimista: "Me gusta" cambia al instante y revierte si el backend falla;
  * los comentarios se antepone el que devuelve el server.
  */
-type ClipSocial = ReturnType<typeof useClipSocial>
+export type ClipSocial = ReturnType<typeof useClipSocial>
 
 function useClipSocial(clip: ClipDetail) {
   const [liked, setLiked] = useState(clip.likedByMe ?? false)
@@ -286,7 +286,8 @@ const AppearsIn = ({ clip }: { clip: ClipDetail }) => {
   )
 }
 
-const CommentList = ({ social, hideHeading = false }: { social: ClipSocial; hideHeading?: boolean }) => {
+// También la usa el reproductor de las píldoras (Pildoras.tsx).
+export const CommentList = ({ social, hideHeading = false }: { social: ClipSocial; hideHeading?: boolean }) => {
   const { user } = useAuth()
   const { t } = useI18n()
   return (

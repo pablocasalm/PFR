@@ -19,12 +19,70 @@ import { pickText } from "../../../lib/i18n/content"
 import { StarterTestBanner } from "../components/StarterTest"
 import { useTaxonomy, conceptSearchHref } from "../../../lib/taxonomy"
 import { watchedLast } from "../../../lib/watched"
+import { usePills } from "../../../lib/pills"
 
 /**
  * Inicio — Dashboard principal. Consume GET /api/home (endpoint con forma de pantalla).
  * Mezcla clips y análisis vía el modelo unificado ContentItem.
  */
 
+
+// ---------------------------------------------------------------------------
+// PROTOTIPO de las píldoras (rama prueba-pildoras, solo en local, 07/11/2026; tarjetas #134 y
+// #136): una fila de vídeos verticales que abren la vista vertical del clip. De momento, con
+// clips de siempre como sustitutos de las píldoras, que aún no están grabadas.
+
+const PillCard = ({ item }: { item: ContentItem }) => {
+  const { lang } = useI18n()
+  return (
+    <Link to={`/app/pildoras?p=${item.id}`} className="group block w-full">
+      <div className="relative overflow-hidden rounded-xl border border-white/10">
+        <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-[9/16] w-full" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+        <span className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-neon-cyan">
+          {formatDuration(item.durationSeconds)}
+        </span>
+        <span className="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-neon-cyan/90 text-midnight">
+            <Play className="h-5 w-5" fill="currentColor" />
+          </span>
+        </span>
+        <p className="absolute inset-x-2 bottom-2 line-clamp-3 text-xs font-semibold leading-snug text-white sm:text-sm">
+          {pickText(item.title, item.titleEn, lang)}
+        </p>
+      </div>
+    </Link>
+  )
+}
+
+const PillsRow = ({ items }: { items: ContentItem[] }) => {
+  const blocks = ["Juego en la red", "Uso del globo", "Juego en pareja", "Juego desde el fondo"]
+  if (items.length === 0) return null
+  return (
+    <section>
+      <div className="mb-2 flex items-center gap-2">
+        <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">Píldoras</h2>
+        <span className="rounded border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-300">Prototipo</span>
+      </div>
+      <p className="mb-4 text-sm text-white/55">Un consejo concreto de Guille, en vídeo vertical.</p>
+      <div className="mb-4 flex gap-2 overflow-x-auto scrollbar-hide">
+        {blocks.map((b, i) => (
+          <span
+            key={b}
+            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium ${i === 0 ? "border-neon-cyan bg-neon-cyan/10 text-neon-cyan" : "border-white/15 text-white/70"}`}
+          >
+            {b}
+          </span>
+        ))}
+      </div>
+      <CardRow itemWidth="w-[34vw]" cols="sm:grid-cols-4 lg:grid-cols-7">
+        {items.map((item) => (
+          <PillCard key={item.id} item={item} />
+        ))}
+      </CardRow>
+    </section>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Subcomponentes
@@ -149,6 +207,8 @@ const Inicio = () => {
   const { t } = useI18n()
   const { user } = useAuth()
   const { data, loading, error, errorStatus } = useApi(getHome, [], "home")
+  // Prototipo de las píldoras: antes de cualquier return, como todos los hooks.
+  const { items: pillItems } = usePills()
   // Solo Club/Coach (§Stripe 3 planes) — para Starter, ni se llama al endpoint.
   const canSeeMonthlyPick = hasFeature(user, "monthlyPicks")
   const { data: monthlyPick } = useApi(
@@ -196,6 +256,7 @@ const Inicio = () => {
   const continueWatching = home?.continueWatching ?? []
   const popularConcepts = home?.popularConcepts ?? []
   const mostViewed = home?.mostViewedThisWeek ?? []
+  const pillStandIns = pillItems.slice(0, 7)
 
   return (
     <main className="w-full space-y-12 py-8">
@@ -257,6 +318,9 @@ const Inicio = () => {
           </CardRow>
         </section>
       )}
+
+      {/* Prototipo: después de «Nuevo esta semana», para que en el móvil no sea lo primero que se ve. */}
+      <PillsRow items={pillStandIns} />
 
       {/* Conceptos populares */}
       {popularConcepts.length > 0 && (

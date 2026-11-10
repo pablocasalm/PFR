@@ -27,7 +27,7 @@ const Header = () => {
   const navigate = useNavigate()
   // En las páginas de vídeo el botón flotante de feedback taparía los controles del reproductor
   // (ver FeedbackButton): ahí el icono de la cabecera se ve también en escritorio.
-  const onWatch = useLocation().pathname.startsWith("/app/watch")
+  const onWatch = /^\/app\/(watch|pildoras)/.test(useLocation().pathname)
   const [query, setQuery] = useState("")
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const { user } = useAuth()

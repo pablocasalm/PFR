@@ -13,7 +13,7 @@ export const getSavedList = () => apiGet<SavedListResponse>("/api/saved")
 export const getSavedIds = () => apiGet<string[]>("/api/saved/ids")
 
 /** POST /api/saved/toggle → añade o quita contenido de Mi Lista. Devuelve `{ ok, saved }`. */
-export const toggleSaved = (contentType: "clip" | "analysis", contentId: string) =>
+export const toggleSaved = (contentType: "clip" | "analysis" | "pill", contentId: string) =>
   apiPost<{ ok: boolean; saved: boolean }>("/api/saved/toggle", { contentType, contentId })
 
 /** Carpeta de Mi Lista creada por el usuario (privada). `items` son claves "clip:c1" / "analysis:a1",

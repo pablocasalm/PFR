@@ -71,7 +71,7 @@ export function markSaved(item: ContentItem) {
 export async function hydrateSaved() {
   try {
     const data = await getSavedList()
-    commit([...data.clips, ...data.analyses])
+    commit([...data.clips, ...data.analyses, ...(data.pills ?? [])])
   } catch {
     // Sin backend / sin sesión: conservamos lo que haya en localStorage.
   }

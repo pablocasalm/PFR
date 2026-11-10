@@ -7,7 +7,7 @@ import type { ContentItem } from "./types"
  */
 
 export const saveProgress = (
-  contentType: "clip" | "analysis" | "session",
+  contentType: "clip" | "analysis" | "session" | "pill",
   contentId: string,
   positionSeconds: number,
   durationSeconds: number,

@@ -31,7 +31,7 @@ const FeedbackButton = () => {
   const { t } = useI18n()
   const TYPES = useMemo(() => buildTypes(t), [t])
   const [params] = useSearchParams()
-  const onWatch = location.pathname.startsWith("/app/watch")
+  const onWatch = /^\/app\/(watch|pildoras)/.test(location.pathname)
   const [open, setOpen] = useState(false)
   const [type, setType] = useState<FeedbackType>("bug")
   const [message, setMessage] = useState("")

@@ -66,6 +66,14 @@ export type PublishInput = {
 export const publish = (input: PublishInput, publishToken: string) =>
   apiPost<{ ok: boolean; analysisId: string; clipIds: string[] }>("/api/admin/publish", input, publishTokenHeader(publishToken))
 
+/** Una píldora: como un clip, pero con un solo bloque (obligatorio) y conceptos opcionales. */
+export type PublishPillInput = Omit<PublishClipInput, "blocks"> & { block: string; concepts: string[] }
+
+/** POST /api/admin/pills → publica una píldora (clip vertical suelto, sin análisis; tarjetas
+ * #134/#136). */
+export const publishPill = (input: { pill: PublishPillInput; conceptTranslations?: Record<string, string> }, publishToken: string) =>
+  apiPost<{ ok: boolean; pillId: string }>("/api/admin/pills", input, publishTokenHeader(publishToken))
+
 // --- Sesiones tácticas mensuales grabadas (§Club hub, Fase 2) — mismo ciclo de subida que
 // análisis/clips (createDirectUpload/waitForVideoReady/uploadCaptions de arriba/abajo), pero un
 // único vídeo sin bloques/conceptos. Reutiliza PublishChapterInput tal cual. ---

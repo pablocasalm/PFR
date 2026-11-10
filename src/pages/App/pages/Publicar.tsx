@@ -9,6 +9,7 @@ import { useTaxonomy, type Taxonomy } from "../../../lib/taxonomy"
 import FileDrop from "../components/FileDrop"
 import ConceptTranslationPanel from "../components/ConceptTranslationPanel"
 import { useI18n } from "../../../lib/i18n/store"
+import PublicarPildora from "../components/PublicarPildora"
 
 /**
  * Publicar — Wizard de creación de contenido (§ proceso de publicación). Solo ContentCreator/Admin.
@@ -107,6 +108,8 @@ const Publicar = () => {
   const { data: conceptCatalog } = useApi(getConcepts, [], "concepts")
 
   const [step, setStep] = useState<1 | 2>(1)
+  // Qué se publica: un análisis con sus clips, o una píldora suelta (tarjetas #134/#136).
+  const [kind, setKind] = useState<"analysis" | "pill">("analysis")
 
   // Análisis
   const [aFile, setAFile] = useState<File | null>(null)
@@ -435,9 +438,38 @@ const Publicar = () => {
     <main className="mx-auto w-full max-w-2xl space-y-6 py-8">
       <div>
         <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">{t("publicar.title", "Publicar contenido")}</h1>
-        <p className="mt-2 text-sm text-white/60">{t("publicar.subtitle", "Un análisis y sus clips se publican juntos.")}</p>
+        <p className="mt-2 text-sm text-white/60">
+          {kind === "pill"
+            ? t("publicar.pill.subtitle", "Un vídeo corto y vertical con un consejo concreto. No sale de ningún análisis.")
+            : t("publicar.subtitle", "Un análisis y sus clips se publican juntos.")}
+        </p>
       </div>
 
+      <div className="flex rounded-xl border border-white/10 bg-white/[0.02] p-1" role="tablist">
+        {(
+          [
+            ["analysis", t("publicar.kind.analysis", "Análisis y clips")],
+            ["pill", t("publicar.kind.pill", "Píldora")],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={kind === value}
+            disabled={busy}
+            onClick={() => setKind(value)}
+            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${kind === value ? "bg-neon-cyan text-midnight" : "text-white/60 hover:text-white"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {kind === "pill" ? (
+        <PublicarPildora />
+      ) : (
+      <>
       <div className="flex items-center gap-4">
         <StepDot n={1} label={t("explorar.type.analyses", "Análisis")} active={step === 1} />
         <span className="h-px flex-1 bg-white/10" />
@@ -710,6 +742,8 @@ const Publicar = () => {
             </button>
           </div>
         </div>
+      )}
+      </>
       )}
     </main>
   )

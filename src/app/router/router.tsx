@@ -10,6 +10,7 @@ const MiJuego = lazy(() => import("../../pages/App/pages/MiJuego"))
 const MiCuenta = lazy(() => import("../../pages/App/pages/MiCuenta"))
 const ComoFunciona = lazy(() => import("../../pages/App/pages/ComoFunciona"))
 const Watch = lazy(() => import("../../pages/App/pages/Watch"))
+const Pildoras = lazy(() => import("../../pages/App/pages/Pildoras")) // prototipo (rama prueba-pildoras)
 const Search = lazy(() => import("../../pages/App/pages/Search"))
 const Precios = lazy(() => import("../../pages/App/pages/Precios"))
 const LoginPage = lazy(() => import("../../lib/auth/LoginPage"))
@@ -73,6 +74,7 @@ const router = createBrowserRouter([
       { path: "como-funciona", element: withSuspense(<ComoFunciona />) },
       { path: "precios", element: withSuspense(<Precios />) },
       { path: "watch", element: withSuspense(<RequireSubscription><Watch /></RequireSubscription>) },
+      { path: "pildoras", element: withSuspense(<RequireSubscription><Pildoras /></RequireSubscription>) },
       { path: "search", element: withSuspense(<RequireSubscription><Search /></RequireSubscription>) },
       { path: "publicar", element: withSuspense(<RequirePublisher><Publicar /></RequirePublisher>) },
       { path: "editar/:type/:id", element: withSuspense(<RequirePublisher><Editar /></RequirePublisher>) },

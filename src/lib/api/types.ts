@@ -7,7 +7,8 @@
 // Modelo de contenido unificado (clip o análisis completo)
 // ---------------------------------------------------------------------------
 
-export type ContentType = "clip" | "analysis"
+/** "pill": píldora (vídeo corto y vertical, tarjetas #134/#136), con su propio reproductor. */
+export type ContentType = "clip" | "analysis" | "pill"
 
 /** Conceptos de un contenido agrupados por bloque (§8.3): para colorear los del bloque actual.
  * `concepts`/`block` son la clave canónica (ES, se usan para filtrar/buscar); los `*En` son el
@@ -305,5 +306,7 @@ export type SearchResponse = {
 export type SavedListResponse = {
   clips: ContentItem[]
   analyses: ContentItem[]
+  /** Píldoras guardadas (opcional: un backend sin píldoras no lo manda). */
+  pills?: ContentItem[]
   // recentlyViewed se añadirá con el historial de visionado (§14.11)
 }
