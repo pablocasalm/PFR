@@ -26,9 +26,33 @@ import { useI18n, setLanguage } from "../i18n/store"
  * un enlace a /register) lleva a Precios de la landing a elegir plan: antes caía en el registro de
  * la beta, que pedía un código, y quien no lo tenía acababa pidiendo uno (le pasó a una persona
  * que luego se registró por Precios). Con ?invite= sigue el registro con código, como siempre.
+ *
+ * Desde el 10/11/2026 el código de invitación no se ve ni se escribe: solo lo usan las
+ * invitaciones del plan gratis, llega en el enlace (?invite=) y se guarda para esa pestaña
+ * (sessionStorage) por si recarga; al crear la cuenta se manda sin enseñarlo. El hueco de la
+ * casilla queda para el código de descuento.
  */
 
 const PLANS: PlanTier[] = ["Starter", "Club", "Coach"]
+
+// Código del plan gratis (ver la cabecera): solo para esta pestaña. sessionStorage y no
+// localStorage: en un ordenador compartido no debe quedarse para la cuenta de otra persona.
+const INVITE_KEY = "pfr_invite"
+const readStoredInvite = () => {
+  try {
+    return sessionStorage.getItem(INVITE_KEY) ?? ""
+  } catch {
+    return ""
+  }
+}
+const storeInvite = (code: string | null) => {
+  try {
+    if (code) sessionStorage.setItem(INVITE_KEY, code)
+    else sessionStorage.removeItem(INVITE_KEY)
+  } catch {
+    /* modo privado sin almacenamiento: vale con el de la dirección */
+  }
+}
 
 // Elegir plan para crear la cuenta: la página de Precios de la landing (sus botones vuelven aquí
 // con ?plan=).
@@ -99,7 +123,13 @@ const LoginPage = () => {
   const location = useLocation()
   const [params] = useSearchParams()
 
-  const inviteFromUrl = params.get("invite") ?? ""
+  const urlInvite = params.get("invite") ?? ""
+  // El del enlace o, si ha recargado sin él, el guardado en esta pestaña; pero no si viene de
+  // elegir un plan de pago en Precios (ahí no se manda un código guardado sin que lo sepa).
+  const inviteFromUrl = urlInvite || (params.get("plan") ? "" : readStoredInvite())
+  useEffect(() => {
+    if (urlInvite) storeInvite(urlInvite)
+  }, [urlInvite])
   const emailFromUrl = params.get("email") ?? ""
   const isRegisterPath = location.pathname === "/register"
   const planParam = params.get("plan")
@@ -127,7 +157,7 @@ const LoginPage = () => {
     if (!planFromUrl) return
     getBillingPlans().then(setPlans).catch(() => {})
   }, [planFromUrl])
-  const [inviteCode, setInviteCode] = useState(inviteFromUrl)
+  const [inviteCode] = useState(inviteFromUrl)
   const [emailOnly, setEmailOnly] = useState(emailFromUrl) // email para "solicitar código" / "recuperar"
 
   // El enlace de invitación solo lleva el código (el email no viaja en la URL): se le pregunta
@@ -263,6 +293,7 @@ const LoginPage = () => {
           textVersion: NEWSLETTER_TEXT_VERSION,
         })
       }
+      if (mode === "register") storeInvite(null) // ya usado
       // Con plan, el salto a Stripe lo hace el efecto de arriba al haber sesión.
       if (!planFromUrl) navigate("/app/inicio", { replace: true })
     } catch (err) {
@@ -326,7 +357,8 @@ const LoginPage = () => {
     mode === "login" ? t("login.subtitle.login", "Accede a tu biblioteca táctica de Padel Film Room.")
     : mode === "register" && planFromUrl
       ? t("login.subtitle.register-plan", "Crea tu cuenta para empezar con {plan}. Después pasarás al pago seguro de Stripe.", { plan: PLAN_NAME[planFromUrl] })
-    : mode === "register" ? t("login.subtitle.register", "Introduce tu código de invitación para unirte a la beta.")
+    : mode === "register"
+      ? t("login.subtitle.register-invite", lang === "en" ? "Create your account with your invitation." : "Crea tu cuenta con tu invitación.")
     : mode === "request" ? t("login.subtitle.request", "¿Tu código ya se ha usado? Pide uno nuevo con tu email.")
     : t("login.subtitle.forgot", "Te enviaremos un enlace para crear una contraseña nueva.")
   // Línea legal al crear la cuenta: deja claro que llegarán emails de la plataforma (se quitan
@@ -422,19 +454,6 @@ const LoginPage = () => {
                   placeholder={t("login.field.name-required", "Tu nombre o nombre de usuario")}
                   className={inputCls}
                   autoComplete="name"
-                />
-                <input
-                  type="text"
-                  required={!planFromUrl}
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value)}
-                  placeholder={
-                    planFromUrl
-                      ? t("login.field.invite-code-optional", "Código de invitación (opcional)")
-                      : t("login.field.invite-code", "Código de invitación")
-                  }
-                  className={inputCls}
-                  autoCapitalize="characters"
                 />
               </>
             )}
@@ -546,15 +565,6 @@ const LoginPage = () => {
                 className="w-full text-center text-xs text-white/50 transition hover:text-white"
               >
                 {t("login.forgot-link", "¿Olvidaste tu contraseña?")}
-              </button>
-            )}
-            {mode === "register" && !planFromUrl && (
-              <button
-                type="button"
-                onClick={() => switchMode("request")}
-                className="w-full text-center text-xs text-white/50 transition hover:text-white"
-              >
-                {t("login.request-link", "¿Tu código no funciona? Solicita otro")}
               </button>
             )}
           </form>
