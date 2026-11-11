@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import { ExternalLink, Monitor, Search, Smartphone, Star, Tablet, Trash2, UserPlus, Users, X } from "lucide-react"
+import { ExternalLink, Monitor, Percent, Search, Smartphone, Star, Tablet, Trash2, UserPlus, Users, X } from "lucide-react"
 import { getAdminUsers, type AdminUser, type AdminUsersPage, type AdminUserStatus } from "../../../lib/api/adminUsers"
 import { adminDeleteUser } from "../../../lib/api/profile"
 import { useI18n } from "../../../lib/i18n/store"
 import AdminInviteDialog from "../components/admin/AdminInviteDialog"
+import AdminDiscountCodesDialog from "../components/admin/AdminDiscountCodesDialog"
 
 /**
  * Panel → Usuarios (10/11/2026): sustituye a «Invitaciones». Con el registro abierto, la mayoría
@@ -33,6 +34,7 @@ const PAGE_SIZE = 25
 const AdminUsuarios = () => {
   const { t } = useI18n()
   const [inviting, setInviting] = useState(false)
+  const [codesOpen, setCodesOpen] = useState(false)
 
   return (
     <main className="w-full py-8">
@@ -46,18 +48,29 @@ const AdminUsuarios = () => {
             <p className="text-sm text-white/60">{t("admin-users.subtitle-all", "Todas las cuentas de la plataforma.")}</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setInviting(true)}
-          className="flex items-center gap-2 rounded-lg bg-neon-cyan px-4 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
-        >
-          <UserPlus className="h-4 w-4" />
-          {t("admin-users.invite", "Invitar usuario")}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setCodesOpen(true)}
+            className="flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/85 transition hover:border-white/30 hover:text-white"
+          >
+            <Percent className="h-4 w-4" />
+            {t("admin-users.discount-codes", "Códigos de descuento")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setInviting(true)}
+            className="flex items-center gap-2 rounded-lg bg-neon-cyan px-4 py-2.5 text-sm font-bold text-midnight transition hover:brightness-110"
+          >
+            <UserPlus className="h-4 w-4" />
+            {t("admin-users.invite", "Invitar usuario")}
+          </button>
+        </div>
       </div>
 
       <UsersList />
       {inviting && <AdminInviteDialog onClose={() => setInviting(false)} />}
+      {codesOpen && <AdminDiscountCodesDialog onClose={() => setCodesOpen(false)} />}
     </main>
   )
 }
@@ -296,6 +309,7 @@ const UsersList = () => {
                     <td className="px-4 py-3 text-white/70">
                       {arrivedLabel(u)}
                       {u.origin && <span className="block text-xs text-white/40">{u.origin}</span>}
+                      {u.discountCode && <span className="block font-mono text-xs text-neon-lime/80">{u.discountCode}</span>}
                     </td>
                     <td className="px-4 py-3 text-white/70">{country(u.country)}</td>
                     <td className="px-4 py-3"><DeviceIcon device={u.device} /></td>
@@ -374,6 +388,7 @@ const UsersList = () => {
                 [t("admin-users.minutes", "Minutos vistos"), String(selected.minutes)],
                 [t("admin-users.surveys", "Encuestas"), selected.surveys.length ? selected.surveys.join(", ") : "—"],
                 [t("admin-users.col.arrived", "Llegó por"), arrivedLabel(selected)],
+                selected.discountCode && [t("admin-users.discount-code", "Código de descuento"), <span key="dc" className="font-mono">{selected.discountCode}</span>],
                 [t("admin-users.origin", "Origen"), [selected.origin, selected.utmMedium, selected.utmCampaign].filter(Boolean).join(" · ") || t("admin-users.direct", "Directo")],
                 [t("admin-users.col.country", "País"), country(selected.country)],
                 [t("admin-users.col.device", "Disp."), selected.device ?? "—"],

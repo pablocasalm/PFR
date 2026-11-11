@@ -3,12 +3,13 @@ import { Navigate, useNavigate, useSearchParams, useLocation } from "react-route
 import { useAuth, PLAN_NAME, type PlanTier } from "./store"
 import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../api/billing"
 import { checkoutErrorText, authErrorText } from "../checkoutErrors"
-import { Eye, EyeOff } from "lucide-react"
+import { Check, Eye, EyeOff } from "lucide-react"
 import { requestInvite, getInviteInfo } from "../api/invites"
 import { ApiError } from "../api/client"
 import LegalLinks, { LegalLink } from "../ui/LegalLinks"
 import { requestPasswordReset } from "../api/auth"
 import { useI18n, setLanguage } from "../i18n/store"
+import { captureDiscountCodeFromUrl, describeDiscount, readStoredDiscountCode, storeDiscountCode, useDiscountCheck } from "../discountCode"
 
 /**
  * Pantalla de acceso (login / registro / solicitar código / recuperar contraseña). Es la puerta
@@ -158,6 +159,14 @@ const LoginPage = () => {
     getBillingPlans().then(setPlans).catch(() => {})
   }, [planFromUrl])
   const [inviteCode] = useState(inviteFromUrl)
+  // Código de descuento (opcional): del enlace (`?codigo=`) o escrito aquí. Se guarda en la pestaña
+  // según se escribe y se manda al abrir el pago, que es cuando se aplica (ver lib/discountCode).
+  const [discountCode, setDiscountCode] = useState(() => captureDiscountCodeFromUrl(params))
+  const discount = useDiscountCheck(planFromUrl ? discountCode : "", planFromUrl)
+  const changeDiscountCode = (value: string) => {
+    setDiscountCode(value)
+    storeDiscountCode(value)
+  }
   const [emailOnly, setEmailOnly] = useState(emailFromUrl) // email para "solicitar código" / "recuperar"
 
   // El enlace de invitación solo lleva el código (el email no viaja en la URL): se le pregunta
@@ -209,7 +218,7 @@ const LoginPage = () => {
     if (!planFromUrl) return
     checkoutStarted.current = true
     setCheckoutError(null)
-    createCheckoutSession("Monthly", planFromUrl)
+    createCheckoutSession("Monthly", planFromUrl, readStoredDiscountCode())
       .then(({ url }) => window.location.assign(url))
       .catch((err) => {
         // Ya tiene suscripción: a la app, que es donde tiene que estar.
@@ -339,10 +348,13 @@ const LoginPage = () => {
     const locale = lang === "en" ? "en-GB" : "es-ES"
     const money = (amount: number, currency: string) => new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount)
     const firstCharge = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
+    // Con un código válido de porcentaje, el primer cobro ya con el descuento.
+    const percent = discount.state === "valid" ? discount.info.percentOff : null
     return {
       tier: planFromUrl,
       trial: planFromUrl !== "Coach",
       price: price ? money(price.displayAmount, price.currency) : null,
+      discounted: price && percent ? money(Math.round(price.displayAmount * (100 - percent)) / 100, price.currency) : null,
       zero: new Intl.NumberFormat(locale, { style: "currency", currency: price?.currency ?? "EUR", maximumFractionDigits: 0 }).format(0), // «0 €», no «0,00 €»
       date: firstCharge.toLocaleDateString(locale, { day: "numeric", month: "long" }),
     }
@@ -429,12 +441,23 @@ const LoginPage = () => {
                     <p className="mt-1 text-white/80">{t("checkout.summary.today", "Hoy: {amount}", { amount: checkout.zero })}</p>
                     {checkout.price && (
                       <p className="text-white/80">
-                        {t("checkout.summary.first-charge", "Primer cobro el {date}: {price}/mes", { date: checkout.date, price: checkout.price })}
+                        {checkout.discounted
+                          ? t("checkout.summary.first-charge-discount", "Primer cobro el {date}: {discounted} (después, {price}/mes)", {
+                              date: checkout.date,
+                              discounted: checkout.discounted,
+                              price: checkout.price,
+                            })
+                          : t("checkout.summary.first-charge", "Primer cobro el {date}: {price}/mes", { date: checkout.date, price: checkout.price })}
                       </p>
                     )}
                   </>
                 ) : (
-                  checkout.price && <p className="mt-1 text-white/80">{t("checkout.summary.today", "Hoy: {amount}", { amount: checkout.price })}</p>
+                  checkout.price && (
+                    <p className="mt-1 text-white/80">
+                      {t("checkout.summary.today", "Hoy: {amount}", { amount: checkout.discounted ?? checkout.price })}
+                      {checkout.discounted && ` ${t("checkout.summary.then", "(después, {price}/mes)", { price: checkout.price })}`}
+                    </p>
+                  )
                 )}
                 <p className="mt-1 text-xs text-white/55">
                   {t("checkout.summary.renewal", "Se renueva cada mes. Cancela cuando quieras desde tu cuenta, sin penalización.")}
@@ -498,6 +521,33 @@ const LoginPage = () => {
                 onToggle={() => setShowPassword((v) => !v)}
                 toggleLabel={showPassword ? t("login.password.hide", "Ocultar contraseña") : t("login.password.show", "Mostrar contraseña")}
               />
+            )}
+            {/* Código de descuento, solo al crear la cuenta con un plan de pago (va al pago de Stripe). */}
+            {mode === "register" && checkout && (
+              <div>
+                <input
+                  type="text"
+                  value={discountCode}
+                  onChange={(e) => changeDiscountCode(e.target.value)}
+                  placeholder={t("login.field.discount-code", "Código de descuento (opcional)")}
+                  className={`${inputCls} uppercase placeholder:normal-case`}
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  maxLength={32}
+                />
+                {discount.state === "valid" && (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-neon-lime">
+                    <Check className="h-3.5 w-3.5" />
+                    {t("login.discount.valid", "{code}: {discount}", { code: discount.info.code, discount: describeDiscount(discount.info, t) })}
+                  </p>
+                )}
+                {discount.state === "invalid" && (
+                  <p className="mt-1.5 text-xs text-red-300">
+                    {t("login.discount.invalid", "Este código no existe, ya no se puede usar o no vale para {plan}.", { plan: PLAN_NAME[checkout.tier] })}
+                  </p>
+                )}
+              </div>
             )}
 
             {error && (

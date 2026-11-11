@@ -1,4 +1,6 @@
-import { apiGet } from "./client"
+import { apiGet, apiPost } from "./client"
+import type { DiscountCodeInfo } from "./billing"
+import type { PlanTier } from "../auth/store"
 
 /** Estado de una cuenta, en claro (ver AdminUsersController en el backend). */
 export type AdminUserStatus = "trial" | "paying" | "free" | "canceling" | "past_due" | "no_access" | "incomplete"
@@ -28,6 +30,8 @@ export type AdminUser = {
   utmMedium: string | null
   utmCampaign: string | null
   stripeCustomerId: string | null
+  /** Código de descuento con el que se suscribió (el último), o null. */
+  discountCode?: string | null
   minutes: number
   surveys: string[]
   isTeam: boolean
@@ -59,3 +63,37 @@ export const getAdminUsers = ({ skip, take, q, status, plan, hideTeam = true }: 
   if (plan && plan !== "all") params.set("plan", plan)
   return apiGet<AdminUsersPage>(`/api/admin/users?${params}`)
 }
+
+// ── Códigos de descuento (Panel → Usuarios → Códigos, 11/11/2026) ─────────────────────────────
+
+/** Un código con cuántas personas se han suscrito con él (según nuestra base de datos). */
+export type AdminDiscountCode = { code: DiscountCodeInfo; users: number }
+
+export type CreateDiscountCode = {
+  code: string
+  percentOff: number
+  duration: "once" | "repeating" | "forever"
+  durationInMonths?: number | null
+  tiers: PlanTier[]
+  firstTimeOnly: boolean
+  maxRedemptions?: number | null
+  expiresAtUtc?: string | null
+}
+
+/** Quién se ha suscrito con un código. */
+export type DiscountCodeUser = {
+  userId: number
+  email: string
+  displayName: string | null
+  tier: string
+  /** "app" (casilla o enlace) o "checkout" (escrito en el pago de Stripe). */
+  source: "app" | "checkout"
+  createdAtUtc: string
+}
+
+export const getDiscountCodes = () => apiGet<AdminDiscountCode[]>("/api/admin/discount-codes")
+export const createDiscountCode = (body: CreateDiscountCode) => apiPost<AdminDiscountCode>("/api/admin/discount-codes", body)
+export const setDiscountCodeActive = (id: string, active: boolean) =>
+  apiPost<{ code: DiscountCodeInfo }>(`/api/admin/discount-codes/${encodeURIComponent(id)}/active`, { active })
+export const getDiscountCodeUsers = (code: string) =>
+  apiGet<DiscountCodeUser[]>(`/api/admin/discount-codes/${encodeURIComponent(code)}/users`)

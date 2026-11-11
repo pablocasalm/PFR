@@ -9,6 +9,8 @@ import { trackActivity } from "../../../lib/api/activity"
 import { LegalLink } from "../../../lib/ui/LegalLinks"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { changePlan, createCheckoutSession, getBillingPlans, type BillingPlans } from "../../../lib/api/billing"
+// Si llegó con un código de descuento en el enlace (esta pestaña), se aplica también al pagar desde aquí.
+import { readStoredDiscountCode } from "../../../lib/discountCode"
 
 /**
  * Pantalla de precios (§Stripe 3 planes): comparativa de los 3 planes con los precios reales de
@@ -102,7 +104,7 @@ const PlanCard = ({
     setBusy(true)
     setError(null)
     try {
-      const { url } = hasSubscription ? await changePlan(plan.tier) : await createCheckoutSession("Monthly", plan.tier)
+      const { url } = hasSubscription ? await changePlan(plan.tier) : await createCheckoutSession("Monthly", plan.tier, readStoredDiscountCode())
       window.location.href = url
     } catch (err) {
       setError(checkoutErrorText(err, t))
