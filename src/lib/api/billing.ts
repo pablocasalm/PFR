@@ -53,6 +53,9 @@ export type DiscountCodeInfo = {
   id: string
   code: string
   active: boolean
+  /** De qué colaborador es (Id y nombre), o null. */
+  collaboratorId?: number | null
+  collaborator?: string | null
   percentOff: number | null
   amountOff: number | null
   currency: string | null
@@ -62,7 +65,10 @@ export type DiscountCodeInfo = {
   tiers: PlanTier[]
   firstTimeOnly: boolean
   maxRedemptions: number | null
+  /** Usos en Stripe, también los de las versiones anteriores del código (al editarlo). */
   timesRedeemed: number
+  /** Usos de este código en sí: el límite de usos cuenta solo estos. */
+  ownTimesRedeemed?: number
   expiresAtUtc: string | null
   createdAtUtc: string
 }

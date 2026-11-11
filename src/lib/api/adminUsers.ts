@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./client"
+import { apiGet, apiPatch, apiPost } from "./client"
 import type { DiscountCodeInfo } from "./billing"
 import type { PlanTier } from "../auth/store"
 
@@ -32,6 +32,8 @@ export type AdminUser = {
   stripeCustomerId: string | null
   /** Código de descuento con el que se suscribió (el último), o null. */
   discountCode?: string | null
+  /** Meses regalados como compensación (ver giftMonth). */
+  giftedMonths?: number
   minutes: number
   surveys: string[]
   isTeam: boolean
@@ -78,6 +80,7 @@ export type CreateDiscountCode = {
   firstTimeOnly: boolean
   maxRedemptions?: number | null
   expiresAtUtc?: string | null
+  collaboratorId?: number | null
 }
 
 /** Quién se ha suscrito con un código. */
@@ -95,5 +98,48 @@ export const getDiscountCodes = () => apiGet<AdminDiscountCode[]>("/api/admin/di
 export const createDiscountCode = (body: CreateDiscountCode) => apiPost<AdminDiscountCode>("/api/admin/discount-codes", body)
 export const setDiscountCodeActive = (id: string, active: boolean) =>
   apiPost<{ code: DiscountCodeInfo }>(`/api/admin/discount-codes/${encodeURIComponent(id)}/active`, { active })
+/** «Editar»: Stripe no deja cambiar un código, así que se desactiva y se crea otro con el mismo texto. */
+export const replaceDiscountCode = (id: string, body: CreateDiscountCode) =>
+  apiPost<AdminDiscountCode>(`/api/admin/discount-codes/${encodeURIComponent(id)}/replace`, body)
+
+/** Un mes gratis (compensación): su próxima factura sale a 0 € y luego sigue pagando normal. */
+export const giftMonth = (userId: number) => apiPost<{ ok: boolean }>(`/api/admin/users/${userId}/gift-month`, {})
+
 export const getDiscountCodeUsers = (code: string) =>
   apiGet<DiscountCodeUser[]>(`/api/admin/discount-codes/${encodeURIComponent(code)}/users`)
+
+// ── Colaboradores de los códigos (11/11/2026) ─────────────────────────────────────────────────
+
+export type CollaboratorType = "person" | "company" | "media" | "club" | "other"
+
+export type Collaborator = {
+  id: number
+  name: string
+  type: CollaboratorType
+  /** Web, perfil o red social, en texto libre. */
+  link: string | null
+  email: string | null
+  notes: string | null
+  userId: number | null
+  /** Email de su cuenta en PFR, si tiene. */
+  userEmail: string | null
+  createdAtUtc: string
+}
+
+/** Un colaborador con cuántas personas se han suscrito con alguno de sus códigos. */
+export type AdminCollaborator = { collaborator: Collaborator; users: number }
+
+export type CollaboratorBody = {
+  name: string
+  type: CollaboratorType
+  link?: string | null
+  email?: string | null
+  notes?: string | null
+  /** Email de su cuenta en PFR (opcional). */
+  userEmail?: string | null
+}
+
+export const getCollaborators = () => apiGet<AdminCollaborator[]>("/api/admin/collaborators")
+export const createCollaborator = (body: CollaboratorBody) => apiPost<{ id: number; name: string }>("/api/admin/collaborators", body)
+export const updateCollaborator = (id: number, body: CollaboratorBody) =>
+  apiPatch<{ id: number; name: string }>(`/api/admin/collaborators/${id}`, body)

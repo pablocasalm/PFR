@@ -1,22 +1,31 @@
 import { useEffect, useState } from "react"
-import { ChevronDown, Copy, Link2, MoreHorizontal, Plus, Power, Users, X } from "lucide-react"
+import { ChevronDown, Copy, Link2, MoreHorizontal, Pencil, Plus, Power, Users, X } from "lucide-react"
 import {
+  createCollaborator,
   createDiscountCode,
+  getCollaborators,
   getDiscountCodeUsers,
   getDiscountCodes,
+  replaceDiscountCode,
   setDiscountCodeActive,
+  type AdminCollaborator,
   type AdminDiscountCode,
+  type CollaboratorType,
+  type CreateDiscountCode,
   type DiscountCodeUser,
 } from "../../../../lib/api/adminUsers"
 import { describeDiscount, normalizeDiscountCode } from "../../../../lib/discountCode"
 import { PLAN_NAME, type PlanTier } from "../../../../lib/auth/store"
 import { useI18n } from "../../../../lib/i18n/store"
+import AdminCollaboratorsTab, { COLLABORATOR_TYPES } from "./AdminCollaboratorsTab"
 
 /**
  * «Códigos de descuento» (Panel → Usuarios, 11/11/2026, tarjeta #46): crear, ver y desactivar los
  * códigos (viven en Stripe: cupón + código de promoción) y quién se ha suscrito con cada uno. El
  * mismo código vale en la casilla al crear la cuenta, en el enlace con `?codigo=` y en el campo del
- * pago de Stripe.
+ * pago de Stripe. «Editar» sustituye el código por otro con el mismo texto (Stripe no deja cambiarlo):
+ * quien ya lo usó conserva su descuento y el historial sigue entero. Pestaña «Colaboradores»: de quién
+ * es cada código (AdminCollaboratorsTab); al crear un código se elige de la lista o se añade ahí mismo.
  */
 
 // Enlace para compartir: la página de Precios de la landing, que pasa el código a la app.
@@ -27,9 +36,13 @@ type Duration = "first" | "months" | "forever"
 
 const AdminDiscountCodesDialog = ({ onClose }: { onClose: () => void }) => {
   const { t, lang } = useI18n()
+  const [tab, setTab] = useState<"codes" | "collaborators">("codes")
   const [codes, setCodes] = useState<AdminDiscountCode[] | null>(null)
+  const [collaborators, setCollaborators] = useState<AdminCollaborator[] | null>(null)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  // Formulario abierto: para un código nuevo o para editar uno (`editing`, con el texto fijo).
   const [creating, setCreating] = useState(false)
+  const [editing, setEditing] = useState<AdminDiscountCode | null>(null)
   const [menu, setMenu] = useState<{ item: AdminDiscountCode; top: number; right: number } | null>(null)
   const [openUsers, setOpenUsers] = useState<string | null>(null)
   const [users, setUsers] = useState<Record<string, DiscountCodeUser[]>>({})
@@ -43,17 +56,73 @@ const AdminDiscountCodesDialog = ({ onClose }: { onClose: () => void }) => {
   const [firstTimeOnly, setFirstTimeOnly] = useState(true)
   const [maxUses, setMaxUses] = useState("")
   const [expires, setExpires] = useState("")
+  // Colaborador del código: "" ninguno, "new" para añadir uno ahí mismo, o su Id.
+  const [collaboratorId, setCollaboratorId] = useState("")
+  const [newName, setNewName] = useState("")
+  const [newType, setNewType] = useState<CollaboratorType>("person")
+  const [addingCollaborator, setAddingCollaborator] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  const openNew = () => {
+    setEditing(null)
+    setCode("")
+    setPercent("20")
+    setDuration("first")
+    setMonths("3")
+    setTiers(["Starter", "Club"])
+    setFirstTimeOnly(true)
+    setMaxUses("")
+    setExpires("")
+    setCollaboratorId("")
+    setCreating(true)
+  }
+
+  // Editar: el formulario con su configuración. El límite de usos que se propone es el que le queda.
+  const openEdit = (item: AdminDiscountCode) => {
+    const c = item.code
+    setEditing(item)
+    setCode(c.code)
+    setPercent(String(c.percentOff ?? 20))
+    setDuration(c.duration === "forever" ? "forever" : c.durationInMonths && c.durationInMonths > 1 ? "months" : "first")
+    setMonths(String(c.durationInMonths && c.durationInMonths > 1 ? c.durationInMonths : 3))
+    setTiers(c.tiers)
+    setFirstTimeOnly(c.firstTimeOnly)
+    setMaxUses(c.maxRedemptions ? String(Math.max(1, c.maxRedemptions - (c.ownTimesRedeemed ?? c.timesRedeemed))) : "")
+    setExpires(c.expiresAtUtc ? c.expiresAtUtc.slice(0, 10) : "")
+    setCollaboratorId(c.collaboratorId ? String(c.collaboratorId) : "")
+    setMessage(null)
+    setCreating(true)
+  }
 
   const load = () =>
     getDiscountCodes()
       .then(setCodes)
       .catch((err) => setMessage({ ok: false, text: err instanceof Error ? err.message : t("admin-codes.error-load", "No se pudieron cargar los códigos.") }))
 
+  const loadCollaborators = () => getCollaborators().then(setCollaborators).catch(() => setCollaborators([]))
+
   useEffect(() => {
     load()
+    loadCollaborators()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // «+ Nuevo colaborador» desde el formulario del código: se crea y queda elegido.
+  const addCollaborator = async () => {
+    if (addingCollaborator || newName.trim().length < 2) return
+    setAddingCollaborator(true)
+    setMessage(null)
+    try {
+      const res = await createCollaborator({ name: newName.trim(), type: newType })
+      await loadCollaborators()
+      setCollaboratorId(String(res.id))
+      setNewName("")
+    } catch (err) {
+      setMessage({ ok: false, text: err instanceof Error ? err.message : t("admin-codes.error-save", "No se pudo guardar.") })
+    } finally {
+      setAddingCollaborator(false)
+    }
+  }
 
   // Con la ventana abierta, la página de detrás no se mueve (mismo patrón que SaveToSheet).
   useEffect(() => {
@@ -114,7 +183,7 @@ const AdminDiscountCodesDialog = ({ onClose }: { onClose: () => void }) => {
     setSaving(true)
     setMessage(null)
     try {
-      const res = await createDiscountCode({
+      const body: CreateDiscountCode = {
         code: normalizeDiscountCode(code),
         percentOff: Number(percent),
         // «Primer mes» es 1 mes desde que se aplica: con la prueba de 7 días cubre el primer cobro.
@@ -124,11 +193,20 @@ const AdminDiscountCodesDialog = ({ onClose }: { onClose: () => void }) => {
         firstTimeOnly,
         maxRedemptions: maxUses ? Number(maxUses) : null,
         expiresAtUtc: expires ? new Date(`${expires}T23:59:59`).toISOString() : null,
-      })
-      setCodes((prev) => [res, ...(prev ?? [])])
+        collaboratorId: collaboratorId && collaboratorId !== "new" ? Number(collaboratorId) : null,
+      }
+      if (editing) {
+        const res = await replaceDiscountCode(editing.code.id, body)
+        setCodes((prev) => (prev ?? []).map((c) => (c.code.id === editing.code.id ? res : c)))
+        setMessage({ ok: true, text: t("admin-codes.edited", "Código {code} actualizado. Quien ya lo usó conserva su descuento.", { code: res.code.code }) })
+      } else {
+        const res = await createDiscountCode(body)
+        setCodes((prev) => [res, ...(prev ?? [])])
+        setMessage({ ok: true, text: t("admin-codes.created", "Código {code} creado. Ya se puede usar.", { code: res.code.code }) })
+      }
       setCreating(false)
+      setEditing(null)
       setCode("")
-      setMessage({ ok: true, text: t("admin-codes.created", "Código {code} creado. Ya se puede usar.", { code: res.code.code }) })
     } catch (err) {
       setMessage({ ok: false, text: err instanceof Error ? err.message : t("admin-codes.error-save", "No se pudo guardar.") })
     } finally {
@@ -139,8 +217,8 @@ const AdminDiscountCodesDialog = ({ onClose }: { onClose: () => void }) => {
   const locale = lang === "en" ? "en-GB" : "es-ES"
   const day = (iso: string) => new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })
   const tierNames = (list: PlanTier[]) => (list.length === 3 ? t("admin-codes.all-plans", "todos los planes") : list.map((x) => PLAN_NAME[x]).join(", "))
-  const field = "w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
-  const canCreate = normalizeDiscountCode(code).length >= 3 && Number(percent) > 0 && Number(percent) <= 100 && tiers.length > 0 && !saving
+  const field = "block h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-base text-white placeholder:text-white/40 focus:border-neon-cyan/40 focus:outline-none sm:text-sm"
+  const canCreate = collaboratorId !== "new" && normalizeDiscountCode(code).length >= 3 && Number(percent) > 0 && Number(percent) <= 100 && tiers.length > 0 && !saving
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-4 sm:items-center" role="dialog" aria-modal="true" onClick={onClose}>
@@ -157,35 +235,110 @@ const AdminDiscountCodesDialog = ({ onClose }: { onClose: () => void }) => {
           </button>
         </div>
 
+        <div className="mt-4 flex gap-1 border-b border-white/10" role="tablist">
+          {(
+            [
+              ["codes", t("admin-codes.tab.codes", "Códigos")],
+              ["collaborators", t("admin-codes.tab.collaborators", "Colaboradores")],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              onClick={() => setTab(key)}
+              className={`-mb-px border-b-2 px-3 py-2 text-sm font-semibold transition ${tab === key ? "border-neon-cyan text-white" : "border-transparent text-white/50 hover:text-white"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-thin pr-1">
+          {tab === "collaborators" ? (
+            <AdminCollaboratorsTab collaborators={collaborators} codes={codes ?? []} onChanged={loadCollaborators} />
+          ) : (
+          <>
           {/* Código nuevo */}
           {creating ? (
             <div className="rounded-xl border border-neon-cyan/30 bg-neon-cyan/[0.04] p-4">
+              {editing && (
+                <p className="mb-3 text-xs text-white/60">
+                  {t("admin-codes.edit-help", "Se guarda como un código nuevo con el mismo texto. Quien ya lo usó conserva su descuento y su historial no se pierde.")}
+                </p>
+              )}
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block text-xs text-white/60">
                   {t("admin-codes.code", "Código")}
-                  <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="ANDREA20" maxLength={32} autoCapitalize="characters" spellCheck={false} className={`${field} mt-1 uppercase`} />
+                  <input
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    disabled={!!editing}
+                    placeholder="ANDREA20"
+                    maxLength={32}
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    className={`${field} mt-1 uppercase disabled:opacity-60`}
+                  />
                 </label>
+                <label className="block text-xs text-white/60">
+                  {t("admin-codes.collaborator", "Colaborador (opcional)")}
+                  <select value={collaboratorId} onChange={(e) => setCollaboratorId(e.target.value)} className={`${field} mt-1`}>
+                    <option value="" className="bg-midnight">{t("admin-codes.no-collaborator", "Ninguno")}</option>
+                    {(collaborators ?? []).map(({ collaborator: c }) => (
+                      <option key={c.id} value={String(c.id)} className="bg-midnight">{c.name}</option>
+                    ))}
+                    <option value="new" className="bg-midnight">{t("admin-codes.new-collaborator", "+ Nuevo colaborador")}</option>
+                  </select>
+                </label>
+                {collaboratorId === "new" && (
+                  <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 sm:col-span-2">
+                    <p className="text-xs text-white/60">{t("admin-codes.new-collaborator-help", "Nuevo colaborador. Después puedes completar sus datos en la pestaña Colaboradores.")}</p>
+                    <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                      <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("admin-codes.collaborator-name", "Nombre (persona, empresa, medio…)")} maxLength={120} className={`${field} sm:flex-1`} />
+                      <select value={newType} onChange={(e) => setNewType(e.target.value as CollaboratorType)} className={`${field} sm:w-36`}>
+                        {COLLABORATOR_TYPES.map((x) => (
+                          <option key={x.key} value={x.key} className="bg-midnight">{t(`admin-collaborators.type.${x.key}`, x.label)}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={addCollaborator}
+                        disabled={newName.trim().length < 2 || addingCollaborator}
+                        className="h-10 shrink-0 rounded-lg border border-neon-cyan/40 px-4 text-sm font-semibold text-neon-cyan transition hover:bg-neon-cyan/10 disabled:opacity-50"
+                      >
+                        {t("admin-codes.add", "Añadir")}
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <label className="block text-xs text-white/60">
                   {t("admin-codes.percent", "Descuento (%)")}
                   <input type="number" min={1} max={100} value={percent} onChange={(e) => setPercent(e.target.value)} className={`${field} mt-1`} />
                 </label>
-                <label className="block text-xs text-white/60">
-                  {t("admin-codes.duration", "Duración")}
-                  <select value={duration} onChange={(e) => setDuration(e.target.value as Duration)} className={`${field} mt-1`}>
-                    <option value="first" className="bg-midnight">{t("admin-codes.duration.first", "El primer mes")}</option>
-                    <option value="months" className="bg-midnight">{t("admin-codes.duration.months", "Varios meses")}</option>
-                    <option value="forever" className="bg-midnight">{t("admin-codes.duration.forever", "Para siempre")}</option>
-                  </select>
-                </label>
-                {duration === "months" ? (
-                  <label className="block text-xs text-white/60">
-                    {t("admin-codes.months", "Meses")}
-                    <input type="number" min={2} max={36} value={months} onChange={(e) => setMonths(e.target.value)} className={`${field} mt-1`} />
-                  </label>
-                ) : (
-                  <div className="hidden sm:block" />
-                )}
+                {/* Duración y, con «Varios meses», cuántos, en la misma celda: así la rejilla no deja huecos. */}
+                <div className="text-xs text-white/60">
+                  <label htmlFor="code-duration">{t("admin-codes.duration", "Duración")}</label>
+                  <div className="mt-1 flex gap-2">
+                    <select id="code-duration" value={duration} onChange={(e) => setDuration(e.target.value as Duration)} className={`${field} min-w-0 flex-1`}>
+                      <option value="first" className="bg-midnight">{t("admin-codes.duration.first", "El primer mes")}</option>
+                      <option value="months" className="bg-midnight">{t("admin-codes.duration.months", "Varios meses")}</option>
+                      <option value="forever" className="bg-midnight">{t("admin-codes.duration.forever", "Para siempre")}</option>
+                    </select>
+                    {duration === "months" && (
+                      <input
+                        type="number"
+                        min={2}
+                        max={36}
+                        value={months}
+                        onChange={(e) => setMonths(e.target.value)}
+                        aria-label={t("admin-codes.months", "Meses")}
+                        className={`${field.replace("w-full", "w-20")} shrink-0`}
+                      />
+                    )}
+                  </div>
+                </div>
                 <label className="block text-xs text-white/60">
                   {t("admin-codes.max-uses", "Límite de usos (opcional)")}
                   <input type="number" min={1} value={maxUses} onChange={(e) => setMaxUses(e.target.value)} placeholder={t("admin-codes.unlimited", "Sin límite")} className={`${field} mt-1`} />
@@ -207,7 +360,7 @@ const AdminDiscountCodesDialog = ({ onClose }: { onClose: () => void }) => {
                       onClick={() => setTiers((prev) => (on ? prev.filter((x) => x !== tier) : [...prev, tier]))}
                       className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${on ? "border-neon-cyan/60 bg-neon-cyan/15 text-neon-cyan" : "border-white/15 text-white/60 hover:text-white"}`}
                     >
-                      {PLAN_NAME[tier]}
+                      {PLAN_NAME[tier].replace(/^PFR /, "")}
                     </button>
                   )
                 })}
@@ -217,7 +370,14 @@ const AdminDiscountCodesDialog = ({ onClose }: { onClose: () => void }) => {
                 {t("admin-codes.first-time", "Solo para quien nunca ha pagado")}
               </label>
               <div className="mt-4 flex flex-wrap justify-end gap-2">
-                <button type="button" onClick={() => setCreating(false)} className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white/70 transition hover:text-white">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreating(false)
+                    setEditing(null)
+                  }}
+                  className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white/70 transition hover:text-white"
+                >
                   {t("common.cancel", "Cancelar")}
                 </button>
                 <button
@@ -226,14 +386,14 @@ const AdminDiscountCodesDialog = ({ onClose }: { onClose: () => void }) => {
                   disabled={!canCreate}
                   className="rounded-lg bg-neon-cyan px-4 py-2 text-sm font-bold text-midnight transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {saving ? t("common.saving", "Guardando...") : t("admin-codes.create", "Crear código")}
+                  {saving ? t("common.saving", "Guardando...") : editing ? t("admin-codes.save", "Guardar cambios") : t("admin-codes.create", "Crear código")}
                 </button>
               </div>
             </div>
           ) : (
             <button
               type="button"
-              onClick={() => setCreating(true)}
+              onClick={openNew}
               className="flex items-center gap-2 rounded-lg bg-neon-cyan px-4 py-2 text-sm font-bold text-midnight transition hover:brightness-110"
             >
               <Plus className="h-4 w-4" />
@@ -262,6 +422,7 @@ const AdminDiscountCodesDialog = ({ onClose }: { onClose: () => void }) => {
                         <div className="min-w-0 flex-1">
                           <p className="flex flex-wrap items-center gap-2">
                             <span className="font-mono text-sm font-bold text-white">{c.code}</span>
+                            {c.collaborator && <span className="text-xs text-white/50">· {c.collaborator}</span>}
                             {!c.active && (
                               <span className="rounded-full border border-white/15 px-2 py-0.5 text-[11px] text-white/50">{t("admin-codes.inactive", "Desactivado")}</span>
                             )}
@@ -323,6 +484,8 @@ const AdminDiscountCodesDialog = ({ onClose }: { onClose: () => void }) => {
               </ul>
             )}
           </div>
+          </>
+          )}
         </div>
       </div>
 
@@ -338,6 +501,7 @@ const AdminDiscountCodesDialog = ({ onClose }: { onClose: () => void }) => {
             {[
               { key: "link", icon: Link2, label: t("admin-codes.copy-link", "Copiar enlace"), run: () => copy(`${SHARE_URL}${encodeURIComponent(menu.item.code.code)}`, t("admin-codes.link", "Enlace")), cls: "text-white/85" },
               { key: "code", icon: Copy, label: t("admin-codes.copy-code", "Copiar código"), run: () => copy(menu.item.code.code, menu.item.code.code), cls: "text-white/85" },
+              { key: "edit", icon: Pencil, label: t("admin-codes.edit", "Editar"), run: () => openEdit(menu.item), cls: "text-white/85" },
               {
                 key: "active",
                 icon: Power,

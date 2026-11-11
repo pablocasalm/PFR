@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import { ExternalLink, Monitor, Percent, Search, Smartphone, Star, Tablet, Trash2, UserPlus, Users, X } from "lucide-react"
-import { getAdminUsers, type AdminUser, type AdminUsersPage, type AdminUserStatus } from "../../../lib/api/adminUsers"
+import { ExternalLink, Gift, Monitor, Percent, Search, Smartphone, Star, Tablet, Trash2, UserPlus, Users, X } from "lucide-react"
+import { getAdminUsers, giftMonth, type AdminUser, type AdminUsersPage, type AdminUserStatus } from "../../../lib/api/adminUsers"
 import { adminDeleteUser } from "../../../lib/api/profile"
 import { useI18n } from "../../../lib/i18n/store"
 import AdminInviteDialog from "../components/admin/AdminInviteDialog"
@@ -135,10 +135,33 @@ const UsersList = () => {
     }
   }
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  // Mes gratis (compensación): resultado del último, en la ficha.
+  const [gifting, setGifting] = useState(false)
+  const [giftMessage, setGiftMessage] = useState<{ ok: boolean; text: string } | null>(null)
 
   const openUser = (u: AdminUser | null) => {
     setDeleteError(null)
+    setGiftMessage(null)
     setSelected(u)
+  }
+
+  const giveMonth = async (u: AdminUser) => {
+    if (gifting) return
+    const already = u.giftedMonths
+      ? ` ${t("admin-users.gift-already", "Ya tiene {count} regalado(s).", { count: u.giftedMonths })}`
+      : ""
+    if (!window.confirm(t("admin-users.gift-confirm", "¿Regalar un mes a {email}? Su próxima factura saldrá a 0 € y después seguirá pagando normal.", { email: u.email }) + already)) return
+    setGifting(true)
+    setGiftMessage(null)
+    try {
+      await giftMonth(u.id)
+      setGiftMessage({ ok: true, text: t("admin-users.gift-done", "Hecho: su próxima factura saldrá a 0 €.") })
+      setSelected({ ...u, giftedMonths: (u.giftedMonths ?? 0) + 1 })
+    } catch (err) {
+      setGiftMessage({ ok: false, text: err instanceof Error ? err.message : t("admin-users.gift-error", "No se pudo regalar el mes.") })
+    } finally {
+      setGifting(false)
+    }
   }
 
   const removeAccount = async (u: AdminUser) => {
@@ -389,6 +412,7 @@ const UsersList = () => {
                 [t("admin-users.surveys", "Encuestas"), selected.surveys.length ? selected.surveys.join(", ") : "—"],
                 [t("admin-users.col.arrived", "Llegó por"), arrivedLabel(selected)],
                 selected.discountCode && [t("admin-users.discount-code", "Código de descuento"), <span key="dc" className="font-mono">{selected.discountCode}</span>],
+                !!selected.giftedMonths && [t("admin-users.gifted-months", "Meses regalados"), String(selected.giftedMonths)],
                 [t("admin-users.origin", "Origen"), [selected.origin, selected.utmMedium, selected.utmCampaign].filter(Boolean).join(" · ") || t("admin-users.direct", "Directo")],
                 [t("admin-users.col.country", "País"), country(selected.country)],
                 [t("admin-users.col.device", "Disp."), selected.device ?? "—"],
@@ -412,6 +436,24 @@ const UsersList = () => {
               >
                 {t("admin-users.open-stripe", "Ver en Stripe")} <ExternalLink className="h-4 w-4" />
               </a>
+            )}
+            {/* Mes gratis: solo con una suscripción en marcha (hay una próxima factura que regalar). */}
+            {selected.stripeCustomerId && ["trial", "paying", "canceling", "past_due"].includes(selected.status) && (
+              <div className="mt-6 border-t border-white/10 pt-4">
+                <button
+                  type="button"
+                  onClick={() => giveMonth(selected)}
+                  disabled={gifting}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-neon-cyan transition hover:brightness-110 disabled:opacity-50"
+                >
+                  <Gift className="h-4 w-4" />
+                  {gifting ? t("admin-users.gift-busy", "Aplicando…") : t("admin-users.gift-cta", "Regalar un mes")}
+                </button>
+                <p className="mt-1 text-xs text-white/40">
+                  {t("admin-users.gift-help", "Para compensar a alguien: su próxima factura sale a 0 €. No cambia su plan ni su estado.")}
+                </p>
+                {giftMessage && <p className={`mt-2 text-xs ${giftMessage.ok ? "text-neon-cyan" : "text-red-300"}`}>{giftMessage.text}</p>}
+              </div>
             )}
             <div className="mt-6 border-t border-white/10 pt-4">
               <button
