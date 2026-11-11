@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { Crown, Send, ArrowRight, Play } from "lucide-react"
-import { Link, Navigate, useSearchParams } from "react-router-dom"
+import { useCallback, useEffect, useState } from "react"
+import { Crown, Send, ArrowRight, Play, MessageCircleQuestion, X } from "lucide-react"
+import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getMonthlyPick } from "../../../lib/api/club"
 import { getSessionsArchive } from "../../../lib/api/sessions"
@@ -37,6 +37,9 @@ const fmtMinute = (seconds: number) => `${Math.floor(seconds / 60)}:${String(sec
  * contenido que se acumula) no debe depender de cuánto haya crecido lo demás para seguir
  * visible sin desplazarse.
  *
+ * En móvil la columna lateral queda debajo de todo y no se ve sin bajar (11/11/2026): ahí
+ * Preguntas es un botón junto a «El plan del mes» que abre la tarjeta en una ventana centrada.
+ *
  * Fase 1: "Recomendado del mes" (ahora "El plan del mes", con situaciones — ver
  * PlanSituations.tsx). Fase 2: Sesiones grabadas (de cara al usuario, "masterclasses"). Fase 3:
  * Preguntas ("Tus preguntas").
@@ -45,8 +48,9 @@ const fmtMinute = (seconds: number) => `${Math.floor(seconds / 60)}:${String(sec
 /** Cuántas sesiones caben en la fila del hub antes de mandar al archivo completo. */
 const SESSIONS_PREVIEW_COUNT = 6
 
-/** Tarjeta pequeña de preguntas — no es pantalla propia, vive junto a Sesiones. */
-const QuestionsCard = () => {
+/** Tarjeta pequeña de preguntas — no es pantalla propia, vive junto a Sesiones. `inSheet`: dentro
+ * de la ventana del móvil (QuestionsDialog), que ya pone el título y el marco. */
+const QuestionsCard = ({ inSheet = false }: { inSheet?: boolean }) => {
   const { t, lang } = useI18n()
   const { data, loading } = useApi(getMyQuestions, [], "my-questions")
   const [items, setItems] = useState<MySessionQuestion[] | null>(null)
@@ -73,10 +77,10 @@ const QuestionsCard = () => {
   }
 
   return (
-    <section id="tour-club-questions" className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-      <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">{t("club.questions.title", "Tus preguntas")}</h2>
+    <section id={inSheet ? undefined : "tour-club-questions"} className={inSheet ? "" : "rounded-2xl border border-white/10 bg-white/[0.02] p-4"}>
+      {!inSheet && <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">{t("club.questions.title", "Tus preguntas")}</h2>}
       {/* El texto de ayuda deja claro que las preguntas no tienen respuesta individual. */}
-      <p className="mb-3 mt-1.5 text-xs leading-relaxed text-white/50">
+      <p className={`mb-3 text-xs leading-relaxed text-white/50 ${inSheet ? "" : "mt-1.5"}`}>
         {t("club.questions.help", "Escribe cualquier duda táctica. Las agrupamos por temas y las respondemos en las próximas masterclasses.")}
       </p>
       {/* Siempre en columna, nunca lado a lado: esta tarjeta vive en una barra lateral estrecha
@@ -140,6 +144,41 @@ const QuestionsCard = () => {
   )
 }
 
+/** Preguntas en móvil: ventana centrada (solo por debajo de `lg`; en escritorio la tarjeta va en
+ * la columna lateral). Bloquea el scroll de detrás y se cierra pulsando fuera o con Escape. */
+const QuestionsDialog = ({ onClose }: { onClose: () => void }) => {
+  const { t } = useI18n()
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
+    document.addEventListener("keydown", onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.removeEventListener("keydown", onKey)
+      document.body.style.overflow = prev
+    }
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 lg:hidden" role="dialog" aria-modal="true" aria-label={t("club.questions.title", "Tus preguntas")}>
+      {/* Fondo alargado más allá de la pantalla: en Safari de iPhone la página se ve también bajo
+          las barras del navegador (mismo motivo que en BottomSheet). */}
+      <div className="absolute inset-x-0 -inset-y-32 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative flex max-h-[85vh] max-h-[85dvh] w-full max-w-md flex-col rounded-2xl border border-white/10 bg-midnight">
+        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+          <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">{t("club.questions.title", "Tus preguntas")}</h2>
+          <button type="button" onClick={onClose} aria-label={t("common.close", "Cerrar")} className="text-white/60 transition hover:text-white">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+          <QuestionsCard inSheet />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const Club = () => {
   const { t, lang } = useI18n()
   const { user } = useAuth()
@@ -155,6 +194,23 @@ const Club = () => {
     [hasClub],
     "club-sessions",
   )
+
+  // Preguntas en móvil: ventana centrada (en escritorio la tarjeta se ve en la columna lateral).
+  const [questionsOpen, setQuestionsOpen] = useState(false)
+  const closeQuestions = useCallback(() => setQuestionsOpen(false), [])
+
+  // `#tour-club-questions` (botón del email «se acerca la masterclass»): en móvil abre la ventana de
+  // preguntas; en escritorio baja hasta la tarjeta cuando ya ha cargado lo de encima.
+  const { hash } = useLocation()
+  useEffect(() => {
+    if (hash !== "#tour-club-questions" || loading || sessionsLoading) return
+    if (!window.matchMedia("(min-width: 1024px)").matches) {
+      setQuestionsOpen(true)
+      return
+    }
+    const id = setTimeout(() => document.getElementById("tour-club-questions")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100)
+    return () => clearTimeout(id)
+  }, [hash, loading, sessionsLoading])
 
   if (!hasClub) return <Navigate to="/app/precios" replace />
 
@@ -182,9 +238,20 @@ const Club = () => {
               (formato nuevo) se pinta el acordeón; un plan publicado antes de ese formato
               sigue saliendo como lista plana de tarjetas. */}
           <section>
-            <h2 className="mb-4 text-sm font-bold uppercase tracking-[0.12em] text-white">
-              {t("club.monthly-pick.title", "El plan del mes")}
-            </h2>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">
+                {t("club.monthly-pick.title", "El plan del mes")}
+              </h2>
+              <button
+                id="tour-club-questions-mobile"
+                type="button"
+                onClick={() => setQuestionsOpen(true)}
+                className="flex shrink-0 items-center gap-2 rounded-lg bg-neon-cyan px-3.5 py-2 text-sm font-bold text-midnight transition active:brightness-110 lg:hidden"
+              >
+                <MessageCircleQuestion className="h-4 w-4" />
+                {t("club.questions.open", "Enviar una pregunta")}
+              </button>
+            </div>
 
             {loading ? (
               <CardGridSkeleton count={4} />
@@ -261,10 +328,12 @@ const Club = () => {
 
         {/* Columna lateral: Preguntas es una acción puntual, no contenido que se acumula —
             vive fija aquí para no depender de cuánto crezca la columna principal. */}
-        <aside className="min-w-0">
+        <aside className="hidden min-w-0 lg:block">
           <QuestionsCard />
         </aside>
       </div>
+
+      {questionsOpen && <QuestionsDialog onClose={closeQuestions} />}
     </main>
   )
 }

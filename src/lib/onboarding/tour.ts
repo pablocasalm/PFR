@@ -241,7 +241,7 @@ function runTour(navigate: NavigateFunction, includeClub: boolean) {
       },
       {
         clubOnly: true,
-        element: optional("tour-club-questions"),
+        element: byLayout("tour-club-questions", "tour-club-questions-mobile"),
         popover: {
           title: t("onboarding.v2.questions.title", "Envía tus preguntas"),
           description: t(
