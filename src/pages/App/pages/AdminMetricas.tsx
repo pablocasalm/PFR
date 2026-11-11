@@ -11,10 +11,11 @@ import MetricsInsights from "../components/admin/MetricsInsights"
  * deja ver a quién escribir antes de que termine su prueba («en riesgo» = lleva 3 días o más sin
  * entrar). Las cuentas del equipo (noreply@, prueba@) se excluyen por defecto en el servidor.
  *
- * v2 (21/10/2026): pestañas «Actividad» (y contenido) y «Lista de espera» (MetricsInsights).
+ * v2 (21/10/2026): pestaña «Actividad» (y contenido), MetricsInsights. La de «Lista de espera» se
+ * quitó el 11/11/2026: ya no hay lista de espera.
  */
 
-type Tab = "people" | "activity" | "waitlist"
+type Tab = "people" | "activity"
 
 type SortKey = "risk" | "lastActive" | "minutes" | "activeDays" | "trialDay"
 
@@ -32,8 +33,9 @@ const AdminMetricas = () => {
   const [filters, setFilters] = useState<MetricsFilters>({ days: 7, wave: "all", tier: "all", excludeTeam: true })
   const [data, setData] = useState<AdminMetrics | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [sort, setSort] = useState<SortKey>("risk")
+  const [sort, setSort] = useState<SortKey>("lastActive")
   const [tab, setTab] = useState<Tab>("people")
+  const [onlyAtRisk, setOnlyAtRisk] = useState(false)
 
   // Solo al entrar y al cambiar un filtro (`t` no va en las dependencias: ver AdminEncuestas).
   useEffect(() => {
@@ -50,10 +52,9 @@ const AdminMetricas = () => {
     }
   }, [filters])
 
-  // Solo quien está en riesgo (10/11/2026): la lista de todas las cuentas vive ahora en Panel →
-  // Usuarios; aquí queda como alerta.
+  // Todas las personas con su uso del periodo; «Solo en riesgo» deja la alerta sola.
   const people = useMemo(() => {
-    const list = (data?.people ?? []).filter((p) => p.atRisk)
+    const list = (data?.people ?? []).filter((p) => !onlyAtRisk || p.atRisk)
     const last = (p: MetricsPerson) => (p.lastActiveAtUtc ? toDate(p.lastActiveAtUtc).getTime() : 0)
     const by: Record<SortKey, (a: MetricsPerson, b: MetricsPerson) => number> = {
       risk: (a, b) => Number(b.atRisk) - Number(a.atRisk) || last(a) - last(b),
@@ -63,7 +64,7 @@ const AdminMetricas = () => {
       trialDay: (a, b) => (b.trialDay ?? -1) - (a.trialDay ?? -1),
     }
     return list.sort(by[sort])
-  }, [data, sort])
+  }, [data, sort, onlyAtRisk])
 
   const set = <K extends keyof MetricsFilters>(key: K, value: MetricsFilters[K]) => setFilters((f) => ({ ...f, [key]: value }))
 
@@ -71,7 +72,26 @@ const AdminMetricas = () => {
   const surveyLabel = (id: string) =>
     id === "d4" ? t("admin-metrics.survey.d4", "Día 4") : id === "d12" ? t("admin-metrics.survey.d12", "Día 12") : null
 
+  // Mismos estados que Panel → Usuarios (accountStatus); el día de prueba, en la beta o en Stripe.
   const statusLabel = (p: MetricsPerson) => {
+    const trial = p.trialDay != null ? t("admin-metrics.status.trial-of", "Prueba · día {day}/{length}", { day: p.trialDay, length: p.trialLength ?? 14 }) : null
+    switch (p.accountStatus) {
+      case "canceling":
+        return trial
+          ? t("admin-metrics.status.trial-canceling", "{trial} · no seguirá", { trial })
+          : t("admin-metrics.status.canceling", "Cancela el {date}", { date: fmtDay(p.currentPeriodEndUtc ?? null, lang) })
+      case "past_due":
+        return t("admin-metrics.status.past-due", "Pago pendiente")
+      case "paying":
+        return t("admin-metrics.status.paying", "De pago")
+      case "trial":
+        return trial ?? t("admin-metrics.status.trial-plain", "En prueba")
+      case "free":
+        return t("admin-metrics.status.free", "Gratis")
+      case "no_access":
+      case "incomplete":
+        return t("admin-metrics.status.no-access", "Sin acceso")
+    }
     if (p.status === "Active" || p.status === "PastDue") return t("admin-metrics.status.paying", "De pago")
     if (p.trialDay != null) return t("admin-metrics.status.trial", "Prueba · día {day}/14", { day: p.trialDay })
     if (p.planType === "Free") return t("admin-metrics.status.free", "Gratis")
@@ -182,7 +202,6 @@ const AdminMetricas = () => {
           [
             ["people", t("admin-metrics.tab.summary", "Resumen")],
             ["activity", t("admin-metrics.tab.activity", "Actividad")],
-            ["waitlist", t("admin-metrics.tab.waitlist", "Lista de espera")],
           ] as [Tab, string][]
         ).map(([id, label]) => (
           <button
@@ -268,11 +287,15 @@ const AdminMetricas = () => {
         <section>
           <div className="mb-3 flex flex-wrap items-center gap-3">
             <h2 className="mr-auto text-sm font-bold uppercase tracking-wide text-white/60">
-              {t("admin-metrics.at-risk-people", "En riesgo")}{" "}
+              {t("admin-metrics.people", "Personas")}{" "}
               <Link to="/app/admin/usuarios" className="ml-2 text-xs font-semibold normal-case tracking-normal text-neon-cyan hover:underline">
                 {t("admin-metrics.see-all-users", "Ver todas las cuentas en Usuarios")}
               </Link>
             </h2>
+            <label className="flex items-center gap-2 text-sm text-white/70">
+              <input type="checkbox" checked={onlyAtRisk} onChange={(e) => setOnlyAtRisk(e.target.checked)} className="h-4 w-4 accent-neon-cyan" />
+              {t("admin-metrics.only-at-risk", "Solo en riesgo")}
+            </label>
             <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className={select} aria-label={t("admin-metrics.sort", "Ordenar")}>
               <option value="risk">{t("admin-metrics.sort.risk", "En riesgo primero")}</option>
               <option value="lastActive">{t("admin-metrics.sort.last-active", "Último acceso")}</option>
@@ -282,7 +305,11 @@ const AdminMetricas = () => {
             </select>
           </div>
 
-          {data && people.length === 0 && <p className="text-sm text-white/40">{t("admin-metrics.no-risk", "Nadie en riesgo con estos filtros.")}</p>}
+          {data && people.length === 0 && (
+            <p className="text-sm text-white/40">
+              {onlyAtRisk ? t("admin-metrics.no-risk", "Nadie en riesgo con estos filtros.") : t("admin-metrics.no-people", "Nadie con estos filtros.")}
+            </p>
+          )}
 
           {/* Móvil: una tarjeta por persona. */}
           <ul className="space-y-2 md:hidden">
