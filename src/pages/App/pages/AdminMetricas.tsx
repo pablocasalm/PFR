@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { Link } from "react-router-dom"
 import { AlertTriangle, BarChart3 } from "lucide-react"
 import { useI18n } from "../../../lib/i18n/store"
 import { getAdminMetrics, type AdminMetrics, type MetricsDays, type MetricsFilters, type MetricsPerson } from "../../../lib/api/metrics"
@@ -49,8 +50,10 @@ const AdminMetricas = () => {
     }
   }, [filters])
 
+  // Solo quien está en riesgo (10/11/2026): la lista de todas las cuentas vive ahora en Panel →
+  // Usuarios; aquí queda como alerta.
   const people = useMemo(() => {
-    const list = [...(data?.people ?? [])]
+    const list = (data?.people ?? []).filter((p) => p.atRisk)
     const last = (p: MetricsPerson) => (p.lastActiveAtUtc ? toDate(p.lastActiveAtUtc).getTime() : 0)
     const by: Record<SortKey, (a: MetricsPerson, b: MetricsPerson) => number> = {
       risk: (a, b) => Number(b.atRisk) - Number(a.atRisk) || last(a) - last(b),
@@ -177,7 +180,7 @@ const AdminMetricas = () => {
       <div role="tablist" className="mb-6 flex gap-1 border-b border-white/10">
         {(
           [
-            ["people", t("admin-metrics.tab.people", "Personas")],
+            ["people", t("admin-metrics.tab.summary", "Resumen")],
             ["activity", t("admin-metrics.tab.activity", "Actividad")],
             ["waitlist", t("admin-metrics.tab.waitlist", "Lista de espera")],
           ] as [Tab, string][]
@@ -264,7 +267,12 @@ const AdminMetricas = () => {
         {/* Personas */}
         <section>
           <div className="mb-3 flex flex-wrap items-center gap-3">
-            <h2 className="mr-auto text-sm font-bold uppercase tracking-wide text-white/60">{t("admin-metrics.people", "Personas")}</h2>
+            <h2 className="mr-auto text-sm font-bold uppercase tracking-wide text-white/60">
+              {t("admin-metrics.at-risk-people", "En riesgo")}{" "}
+              <Link to="/app/admin/usuarios" className="ml-2 text-xs font-semibold normal-case tracking-normal text-neon-cyan hover:underline">
+                {t("admin-metrics.see-all-users", "Ver todas las cuentas en Usuarios")}
+              </Link>
+            </h2>
             <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className={select} aria-label={t("admin-metrics.sort", "Ordenar")}>
               <option value="risk">{t("admin-metrics.sort.risk", "En riesgo primero")}</option>
               <option value="lastActive">{t("admin-metrics.sort.last-active", "Último acceso")}</option>
@@ -274,7 +282,7 @@ const AdminMetricas = () => {
             </select>
           </div>
 
-          {data && people.length === 0 && <p className="text-sm text-white/40">{t("admin-metrics.empty", "Nadie con estos filtros.")}</p>}
+          {data && people.length === 0 && <p className="text-sm text-white/40">{t("admin-metrics.no-risk", "Nadie en riesgo con estos filtros.")}</p>}
 
           {/* Móvil: una tarjeta por persona. */}
           <ul className="space-y-2 md:hidden">
