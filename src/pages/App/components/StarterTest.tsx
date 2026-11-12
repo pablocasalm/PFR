@@ -153,7 +153,7 @@ export const ConceptsToWork = ({ managing }: { managing: boolean }) => {
           <p className="mt-3 text-xs text-white/50">
             {t("starter-test.mylist.change", "¿Quieres cambiarlos?")}{" "}
             <Link to={testHref("my_list")} className="font-semibold text-neon-cyan">
-              {t("starter-test.retake", "Repetir el test")} ›
+              {t("starter-test.retake", "Repetir el test")}
             </Link>
           </p>
         </>

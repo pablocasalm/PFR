@@ -501,7 +501,11 @@ const Pildoras = () => {
   const tax = useTaxonomy()
   const blockIdOf = (p: ContentItem) => p.blockId ?? (p.block ? tax.blockIdByName.get(p.block) : undefined)
   // El bloque que se recorre: el de la píldora pulsada (o el de la primera, si se entra sin ninguna).
-  const [blockId, setBlockId] = useState<number | undefined>(undefined)
+  // Con ?b= (botón «Píldoras» de un bloque en Explorar), ese bloque desde su primera píldora.
+  const [blockId, setBlockId] = useState<number | undefined>(() => {
+    const b = Number(params.get("b"))
+    return Number.isInteger(b) && b > 0 ? b : undefined
+  })
   const startPill = allPills.find((p) => p.id === startId) ?? allPills[0]
   const currentBlockId = blockId ?? (startPill ? blockIdOf(startPill) : undefined)
   const slides = allPills.filter((p) => blockIdOf(p) === currentBlockId)
@@ -606,7 +610,7 @@ const Pildoras = () => {
         style={{ ["--pill-h" as string]: height }}
       >
         {slides.map((item, i) => (
-          <div key={`${currentBlockId}-${item.id}`} className="h-full">
+          <div key={`${currentBlockId}-${item.id}-${i}`} className="h-full">
             <PillSlide
               item={item}
               active={i === activeIndex}

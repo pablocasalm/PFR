@@ -6,6 +6,7 @@ const AppLayout = lazy(() => import("../../pages/App"))
 const Inicio = lazy(() => import("../../pages/App/pages/Inicio"))
 const Explorar = lazy(() => import("../../pages/App/pages/Explorar"))
 const MiLista = lazy(() => import("../../pages/App/pages/MiLista"))
+const Historial = lazy(() => import("../../pages/App/pages/Historial"))
 const MiJuego = lazy(() => import("../../pages/App/pages/MiJuego"))
 const MiCuenta = lazy(() => import("../../pages/App/pages/MiCuenta"))
 const ComoFunciona = lazy(() => import("../../pages/App/pages/ComoFunciona"))
@@ -69,6 +70,8 @@ const router = createBrowserRouter([
       { path: "inicio", element: withSuspense(<RequireSubscription><Inicio /></RequireSubscription>) },
       { path: "explorar", element: withSuspense(<RequireSubscription><Explorar /></RequireSubscription>) },
       { path: "mi-lista", element: withSuspense(<RequireSubscription><MiLista /></RequireSubscription>) },
+      { path: "mi-lista/carpeta/:folderId", element: withSuspense(<RequireSubscription><MiLista /></RequireSubscription>) },
+      { path: "historial", element: withSuspense(<RequireSubscription><Historial /></RequireSubscription>) },
       { path: "mi-juego", element: withSuspense(<RequireSubscription><MiJuego /></RequireSubscription>) },
       { path: "mi-cuenta", element: withSuspense(<MiCuenta />) },
       { path: "como-funciona", element: withSuspense(<ComoFunciona />) },

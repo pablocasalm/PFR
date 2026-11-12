@@ -25,7 +25,7 @@ import { audioDefaultOf, handleVideoTourDone } from "../../../lib/player/videoTo
 import { NextUpCard, pickNextRelated } from "../../../lib/player/NextUp"
 import { saveProgress } from "../../../lib/api/history"
 import EditContentLink from "../components/EditContentLink"
-import WatchedBadge from "../components/WatchedBadge"
+import ProgressLine from "../components/ProgressLine"
 import ErrorScreen from "../components/ErrorScreen"
 import { useAuth } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
@@ -409,7 +409,7 @@ const RelatedClips = ({ related, clip, vertical = false }: { related: ContentIte
             <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
               {formatDuration(item.durationSeconds)}
             </span>
-            {item.completed && <WatchedBadge />}
+            <ProgressLine progress={item.progress} completed={item.completed} />
           </div>
           <p className="mt-2 line-clamp-2 text-sm font-medium text-white">{pickText(item.title, item.titleEn, lang)}</p>
           {!vertical && (

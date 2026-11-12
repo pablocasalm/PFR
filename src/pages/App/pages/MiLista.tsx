@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react"
-import { Link } from "react-router-dom"
-import { Trophy, Bookmark, Compass, Settings2, Trash2, X, Check, Play, FolderPlus, FolderInput, FolderMinus, Pencil, ChevronLeft, ChevronRight } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Link, useNavigate, useParams } from "react-router-dom"
+import { Trophy, Bookmark, Compass, Settings2, Trash2, X, Check, FolderPlus, FolderInput, FolderMinus, Pencil, ChevronRight, ArrowLeft, Folder, ListVideo, MoreVertical } from "lucide-react"
 import type { ContentItem } from "../../../lib/api/types"
 import { useSavedItems, toggleSavedItem } from "../../../lib/saved/store"
-import { useFolders, itemKey, createFolder, renameFolder, deleteFolder, moveFolder, addToFolder, removeFromFolder } from "../../../lib/saved/folders"
+import { useFolders, itemKey, createFolder, renameFolder, deleteFolder, addToFolder, removeFromFolder } from "../../../lib/saved/folders"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getRecent } from "../../../lib/api/history"
 import { getMyDeliveredAnalyses } from "../../../lib/api/personalAnalysis"
@@ -15,6 +15,12 @@ import { pickText } from "../../../lib/i18n/content"
 import { useTaxonomy, conceptRank, type Taxonomy } from "../../../lib/taxonomy"
 import { ConceptsToWork } from "../components/StarterTest"
 import { useStarterTest } from "../../../lib/starterTest"
+import PillCard from "../components/PillCard"
+import { PILLS_ENABLED } from "../../../lib/pills"
+import CardRow from "../../../lib/ui/CardRow"
+import { BottomSheet } from "../../../lib/ui/BottomSheet"
+import ContentCard from "../components/ContentCard"
+import ProgressLine from "../components/ProgressLine"
 
 /**
  * MiLista — biblioteca personal del usuario (§12), con carpetas:
@@ -52,21 +58,17 @@ const thumbStyle = (hue: number) => ({
 const watchHref = (item: ContentItem) =>
   item.type === "analysis" ? `/app/watch?v=${item.id}` : `/app/watch?c=${item.id}`
 
-const Thumb = ({ src, hue, progress }: { src?: string; hue: number; progress?: number }) => (
+const Thumb = ({ src, hue, progress, completed }: { src?: string; hue: number; progress?: number; completed?: boolean }) => (
   <div className="relative aspect-video w-full overflow-hidden" style={thumbStyle(hue)}>
     {src && <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />}
-    {progress !== undefined && progress > 0 && (
-      <span className="absolute inset-x-0 bottom-0 h-1 bg-white/20">
-        <span className="block h-full bg-neon-cyan" style={{ width: `${Math.min(progress, 100)}%` }} />
-      </span>
-    )}
+    <ProgressLine progress={progress} completed={completed} />
   </div>
 )
 
-const SectionHeading = ({ title, count, action }: { title: string; count: number; action?: React.ReactNode }) => (
+const SectionHeading = ({ title, count, action }: { title: string; count?: number; action?: React.ReactNode }) => (
   <div className="mb-4 flex items-center gap-2.5">
     <h2 className="text-lg font-bold text-white">{title}</h2>
-    <span className="rounded-full bg-neon-cyan/10 px-2 py-0.5 text-xs font-semibold text-neon-cyan">{count}</span>
+    {count != null && <span className="rounded-full bg-neon-cyan/10 px-2 py-0.5 text-xs font-semibold text-neon-cyan">{count}</span>}
     {action && <div className="ml-auto">{action}</div>}
   </div>
 )
@@ -121,18 +123,12 @@ const SavedCard = ({
   selected: boolean
   onToggleSelect: (id: string) => void
 }) => {
-  const { t } = useI18n()
   const media = (
     <div className="relative">
-      <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} />
+      <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} progress={item.progress} completed={item.completed} />
       <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
         {formatDuration(item.durationSeconds)}
       </span>
-      {item.completed && !managing && (
-        <span className="absolute right-2 top-2 rounded bg-neon-lime px-1.5 py-0.5 text-[10px] font-bold uppercase text-midnight">
-          {t("mi-lista.watched-badge", "Visto")}
-        </span>
-      )}
       {managing ? (
         <span
           className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-md border-2 ${
@@ -172,27 +168,6 @@ const SavedCard = ({
     </Link>
   )
 }
-
-// Tarjeta de "Vistos recientemente": barra de progreso + acceso para continuar.
-const RecentCard = ({ item, tax }: { item: ContentItem; tax: Taxonomy }) => (
-  <Link
-    to={watchHref(item)}
-    className="group block overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition hover:border-white/20"
-  >
-    <div className="relative">
-      <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} progress={item.progress} />
-      <span className="absolute right-2 top-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
-        {formatDuration(item.durationSeconds)}
-      </span>
-      <span className="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
-        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-neon-cyan text-midnight">
-          <Play className="h-5 w-5 translate-x-0.5" fill="currentColor" />
-        </span>
-      </span>
-    </div>
-    <CardMeta item={item} tax={tax} />
-  </Link>
-)
 
 // ---------------------------------------------------------------------------
 // Estado vacío (§12.5)
@@ -268,16 +243,199 @@ const mainConcept = (item: ContentItem, tax: Taxonomy) =>
   [...item.concepts].sort((a, b) => conceptRank(tax, a) - conceptRank(tax, b))[0]
 
 // ---------------------------------------------------------------------------
+// Carpetas (vista general)
+// ---------------------------------------------------------------------------
+
+/** Ruta de una carpeta: «todos» (todo lo guardado), «coach» (análisis de Coach) o su id. */
+const folderHref = (key: string | number) => `/app/mi-lista/carpeta/${key}`
+
+/** Portada de una carpeta, al estilo de las listas de YouTube: la miniatura del último guardado,
+ * entera (16:9, sin recortes ni mosaicos), con dos capas detrás que la hacen ver como un montón,
+ * y el número de vídeos encima. Sin contenido, un fondo neutro con el icono de carpeta. */
+const FolderCover = ({ item, count, accent = false }: { item?: ContentItem; count: number; accent?: boolean }) => (
+  <div className="relative pt-2.5">
+    <span className={`absolute inset-x-4 top-0 h-3 rounded-t-lg ${accent ? "bg-neon-lime/15" : "bg-white/[0.07]"}`} />
+    <span className={`absolute inset-x-2 top-[5px] h-3 rounded-t-lg ${accent ? "bg-neon-lime/25" : "bg-white/[0.13]"}`} />
+    <div className="relative overflow-hidden rounded-lg border border-white/10">
+      {item ? (
+        <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} />
+      ) : (
+        <div className="flex aspect-video w-full items-center justify-center bg-white/[0.04] text-white/25">
+          <Folder className="h-8 w-8" />
+        </div>
+      )}
+      <span className="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+        <ListVideo className="h-3.5 w-3.5" /> {count}
+      </span>
+    </div>
+  </div>
+)
+
+/** Portada de «Nueva carpeta»: igual que la de una carpeta vacía (montón y fondo neutro), con la
+ * carpeta con «+» en azul para que se vea que sirve para crear una. `active`: escribiendo el nombre. */
+const NewFolderCover = ({ active = false }: { active?: boolean }) => (
+  <div className="relative pt-2.5">
+    <span className="absolute inset-x-4 top-0 h-3 rounded-t-lg bg-white/[0.07]" />
+    <span className="absolute inset-x-2 top-[5px] h-3 rounded-t-lg bg-white/[0.13]" />
+    <div
+      className={`relative flex aspect-video w-full items-center justify-center rounded-lg border bg-white/[0.04] text-neon-cyan transition ${
+        active ? "border-neon-cyan/60" : "border-white/10 group-hover:border-neon-cyan/50"
+      }`}
+    >
+      <FolderPlus className="h-8 w-8" />
+    </div>
+  </div>
+)
+
+/** Menú de tres puntos de una carpeta del usuario (a la derecha del nombre, como en YouTube):
+ * renombrarla y borrarla (en el orden en que se crearon; moverlas se quitó por aportar poco). En el móvil y la tableta, una hoja desde abajo
+ * (un desplegable se salía de la pantalla en la columna izquierda); en escritorio, desplegable.
+ * Se cierra al tocar fuera o con Esc. */
+const FolderMenu = ({
+  name,
+  onRename,
+  onDelete,
+}: {
+  name: string
+  onRename: () => void
+  onDelete: () => void
+}) => {
+  const { t } = useI18n()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener("pointerdown", close)
+    document.addEventListener("keydown", close)
+    return () => {
+      document.removeEventListener("pointerdown", close)
+      document.removeEventListener("keydown", close)
+    }
+  }, [open])
+  const item = "flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-base text-white/85 transition hover:bg-white/[0.06] disabled:opacity-30 lg:py-2.5 lg:text-sm"
+  const pick = (fn?: () => void) => () => {
+    setOpen(false)
+    fn?.()
+  }
+  const options = (
+    <>
+      <button type="button" onClick={pick(onRename)} className={item}>
+        <Pencil className="h-4 w-4" /> {t("mi-lista.folder.rename", "Renombrar")}
+      </button>
+      <button type="button" onClick={pick(onDelete)} className={`${item} !text-red-300`}>
+        <Trash2 className="h-4 w-4" /> {t("mi-lista.folder.delete", "Borrar carpeta")}
+      </button>
+    </>
+  )
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label={t("mi-lista.folder.options", "Opciones de la carpeta")}
+        aria-expanded={open}
+        className="-mr-1.5 flex h-8 w-8 items-center justify-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white"
+      >
+        <MoreVertical className="h-4 w-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-20 mt-1 hidden w-52 overflow-hidden rounded-xl border border-white/12 bg-midnight p-1 shadow-xl lg:block">{options}</div>
+      )}
+      <BottomSheet open={open} onClose={() => setOpen(false)} title={name}>
+        <div className="-mx-1 -my-1">{options}</div>
+      </BottomSheet>
+    </div>
+  )
+}
+
+/** «¿Borrar la carpeta?» en un modal en medio de la pantalla (también en el móvil). Se cierra con
+ * Cancelar, tocando fuera o con Esc. */
+const DeleteFolderDialog = ({ name, onCancel, onConfirm }: { name: string; onCancel: () => void; onConfirm: () => void }) => {
+  const { t } = useI18n()
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCancel()
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [onCancel])
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+      {/* Fondo alargado por arriba y por abajo, como en BottomSheet: en Safari de iPhone, con `inset-0`
+          quedaba una franja sin oscurecer bajo la barra de estado. */}
+      <div className="absolute inset-x-0 -inset-y-32 bg-black/70 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-midnight p-5 text-center sm:p-6">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-500/15 text-red-300">
+          <Trash2 className="h-5 w-5" />
+        </span>
+        <h2 className="mt-4 font-display text-lg font-bold text-white">{t("mi-lista.folder.delete-title", "¿Borrar «{name}»?", { name })}</h2>
+        <p className="mt-2 text-sm text-white/60">{t("mi-lista.folder.delete-text", "Se borra solo la carpeta: los vídeos que tiene siguen guardados en Mi Lista.")}</p>
+        <div className="mt-6 flex gap-3">
+          <button type="button" onClick={onCancel} className="flex-1 rounded-lg border border-white/15 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/5">
+            {t("common.cancel", "Cancelar")}
+          </button>
+          <button type="button" onClick={onConfirm} className="flex-1 rounded-lg bg-red-500/90 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500">
+            {t("mi-lista.folder.delete-yes", "Borrar")}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Una carpeta: portada y nombre (el número de vídeos ya va en la portada). `menu`: los tres
+ * puntos, solo en las del usuario. */
+const FolderTile = ({
+  to,
+  name,
+  item,
+  count,
+  accent = false,
+  menu,
+}: {
+  to: string
+  name: string
+  item?: ContentItem
+  count: number
+  accent?: boolean
+  menu?: React.ReactNode
+}) => (
+  <div className="group">
+    <Link to={to} className="block">
+      <FolderCover item={item} count={count} accent={accent} />
+    </Link>
+    <div className="mt-2 flex items-center gap-1">
+      <Link to={to} className={`min-w-0 flex-1 truncate text-sm font-semibold ${accent ? "text-neon-lime" : "text-white"} hover:underline`}>
+        {name}
+      </Link>
+      {menu}
+    </div>
+  </div>
+)
+
+// ---------------------------------------------------------------------------
 // Página
 // ---------------------------------------------------------------------------
 
-type Tab = "all" | "coach" | number
-
+/**
+ * Mi Lista. Sin carpeta en la ruta, la vista general: cabecera (Nueva carpeta, Gestionar),
+ * conceptos para trabajar, las carpetas como carpetas («Todos los guardados» primero), las
+ * píldoras guardadas y los vistos recientemente. Con /carpeta/:folderId, esa carpeta en su propia
+ * pantalla, con su orden, filtros y modo gestión. Las píldoras (verticales) nunca entran en las
+ * carpetas: tienen su propia fila.
+ */
 const MiLista = () => {
   const { t, lang } = useI18n()
   const tax = useTaxonomy()
+  const navigate = useNavigate()
+  const { folderId } = useParams()
   const { data: starterTest } = useStarterTest()
-  const saved = useSavedItems()
+  // Las píldoras (verticales) van aparte, en su propia fila: nunca entre las tarjetas
+  // horizontales de las carpetas.
+  const allSaved = useSavedItems()
+  const saved = useMemo(() => allSaved.filter((i) => i.type !== "pill"), [allSaved])
+  const savedPills = useMemo(() => allSaved.filter((i) => i.type === "pill"), [allSaved])
   const folders = useFolders()
 
   const { data: recent } = useApi(getRecent, [], "recent")
@@ -287,13 +445,13 @@ const MiLista = () => {
   const hasCoach = hasFeature(user, "personalAnalysis")
   const { data: coachAnalyses } = useApi(() => (hasCoach ? Promise.resolve([]) : getMyDeliveredAnalyses().catch(() => [])), [hasCoach], "my-delivered-analyses")
   const hasCoachAnalyses = !hasCoach && (coachAnalyses ?? []).length > 0
-  const recentItems = recent ?? []
-  const inProgressItems = recentItems.filter((i) => !i.completed)
-  const finishedItems = recentItems.filter((i) => i.completed)
+  const recentItems = (recent ?? []).filter((i) => i.type !== "pill")
 
-  const [tab, setTab] = useState<Tab>("all")
-  const activeFolder = typeof tab === "number" ? folders.find((f) => f.id === tab) : undefined
-  const currentTab: Tab = typeof tab === "number" && !activeFolder ? "all" : tab === "coach" && !hasCoachAnalyses ? "all" : tab
+  // Carpeta abierta (ruta): «todos», «coach» o el id de una del usuario.
+  const openKey = folderId ?? null
+  const activeFolder = openKey && /^\d+$/.test(openKey) ? folders.find((f) => f.id === Number(openKey)) : undefined
+  const isAll = openKey === "todos"
+  const isCoach = openKey === "coach"
 
   const [view, setViewState] = useState<View>(readView)
   const setView = (patch: Partial<View>) => {
@@ -305,14 +463,24 @@ const MiLista = () => {
   const [managing, setManaging] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [newFolderName, setNewFolderName] = useState<string | null>(null)
-  const [renaming, setRenaming] = useState<string | null>(null)
+  const [renaming, setRenaming] = useState<{ id: number; name: string } | null>(null)
   // Confirmación de «Borrar carpeta» dentro de la app (reporte #93): window.confirm a veces no
   // se muestra en el iPhone (app en la pantalla de inicio, navegadores integrados) y cuenta como
   // "Cancelar", así que no se borraba nada.
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Lo que se ve: la pestaña (Todo o una carpeta), el filtro y el orden.
+  // Al cambiar de pantalla (general ↔ carpeta) se sale del modo gestión.
+  const [lastKey, setLastKey] = useState(openKey)
+  if (lastKey !== openKey) {
+    setLastKey(openKey)
+    setManaging(false)
+    setSelected(new Set())
+    setRenaming(null)
+    setConfirmingDeleteId(null)
+  }
+
+  // Lo que se ve dentro de una carpeta: su contenido, el filtro y el orden.
   const visible = useMemo(() => {
     let list = saved
     if (activeFolder) {
@@ -379,6 +547,8 @@ const MiLista = () => {
   const exitManage = () => {
     setManaging(false)
     setSelected(new Set())
+    setRenaming(null)
+    setConfirmingDeleteId(null)
   }
 
   const selectedItems = saved.filter((i) => selected.has(i.id))
@@ -389,8 +559,8 @@ const MiLista = () => {
     items.forEach((it) => toggleSavedItem(it))
     exitManage()
   }
-  const addSelectedTo = (folderId: number) => {
-    addToFolder(folderId, selectedItems.map(itemKey)).catch(fail)
+  const addSelectedTo = (id: number) => {
+    addToFolder(id, selectedItems.map(itemKey)).catch(fail)
     exitManage()
   }
   const removeSelectedFromFolder = () => {
@@ -403,23 +573,22 @@ const MiLista = () => {
     if (!name) return
     setError(null)
     try {
-      const created = await createFolder(name)
+      await createFolder(name)
       setNewFolderName(null)
-      setTab(created.id)
     } catch {
       fail()
     }
   }
   const submitRename = () => {
-    const name = (renaming ?? "").trim()
-    if (activeFolder && name && name !== activeFolder.name) renameFolder(activeFolder.id, name).catch(fail)
+    if (!renaming) return
+    const name = renaming.name.trim()
+    const folder = folders.find((f) => f.id === renaming.id)
+    if (folder && name && name !== folder.name) renameFolder(folder.id, name).catch(fail)
     setRenaming(null)
   }
-  const confirmDelete = () => {
-    if (!activeFolder) return
-    deleteFolder(activeFolder.id).catch(fail)
+  const confirmDelete = (id: number) => {
+    deleteFolder(id).catch(fail)
     setConfirmingDeleteId(null)
-    setTab("all")
   }
 
   const nothingSaved = saved.length === 0
@@ -427,39 +596,192 @@ const MiLista = () => {
   // la pantalla vacía sin ellos, justo después de que el test dijera «los hemos guardado en Mi
   // Lista» (reporte #97).
   const hasConceptsToWork = (starterTest?.concepts.length ?? 0) > 0
-  const nothingAtAll = nothingSaved && recentItems.length === 0 && !hasCoachAnalyses && folders.length === 0 && !hasConceptsToWork
+  const nothingAtAll = nothingSaved && savedPills.length === 0 && recentItems.length === 0 && !hasCoachAnalyses && folders.length === 0 && !hasConceptsToWork
   const select = "rounded-lg border border-white/12 bg-white/[0.04] px-2.5 py-2 text-base text-white/80 sm:text-xs"
+  const headerButton = "flex shrink-0 items-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/5 sm:px-4 sm:py-2.5"
+  const errorBox = error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>
 
-  const tabClass = (on: boolean, extra = "") =>
-    `shrink-0 rounded-full border px-3.5 py-1.5 text-sm transition ${
-      on ? "border-neon-cyan bg-neon-cyan font-bold text-midnight" : `border-white/12 text-white/75 hover:text-white ${extra}`
-    }`
+  // ------------------------------------------------------------------------
+  // Una carpeta, en su propia pantalla
+  // ------------------------------------------------------------------------
+  if (openKey) {
+    const folderItems = activeFolder ? saved.filter((i) => activeFolder.items.includes(itemKey(i))) : saved
+    const title = isCoach
+      ? t("mi-lista.coach-analyses", "Tus análisis de Coach")
+      : isAll
+        ? t("mi-lista.folder.all", "Todos los guardados")
+        : activeFolder?.name
+    const known = isAll || (isCoach && hasCoachAnalyses) || !!activeFolder
+    const empty = folderItems.length === 0
 
-  return (
-    <main className="w-full space-y-8 py-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">{t("header.nav.mi-lista", "Mi Lista")}</h1>
-          <p className="mt-2 text-sm text-white/60">
-            {t("mi-lista.subtitle", "Clips y análisis que has guardado para volver cuando quieras.")}
-          </p>
+    return (
+      <main className="w-full space-y-6 py-8">
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => navigate("/app/mi-lista")}
+            aria-label={t("common.back", "Volver")}
+            className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/12 text-white/80 transition hover:bg-white/5"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/45">{t("header.nav.mi-lista", "Mi Lista")}</p>
+            <h1 className={`line-clamp-2 break-words font-display text-2xl font-bold leading-tight sm:text-3xl ${isCoach ? "text-neon-lime" : "text-white"}`}>{title ?? "…"}</h1>
+            {known && (
+              <p className="mt-0.5 text-sm text-white/50">
+                {t("mi-lista.folder.count", "{count} vídeos", { count: isCoach ? coachAnalyses!.length : folderItems.length })}
+              </p>
+            )}
+          </div>
+          {known && !isCoach && !empty && (
+            // En el móvil solo el icono: con el texto, el nombre de la carpeta se cortaba.
+            <button
+              type="button"
+              onClick={managing ? exitManage : () => setManaging(true)}
+              aria-label={managing ? t("common.exit", "Salir") : t("mi-lista.manage", "Gestionar")}
+              className={headerButton}
+            >
+              {managing ? <X className="h-4 w-4" /> : <Settings2 className="h-4 w-4" />}
+              <span className="hidden sm:inline">{managing ? t("common.exit", "Salir") : t("mi-lista.manage", "Gestionar")}</span>
+            </button>
+          )}
         </div>
-        {!nothingSaved && currentTab !== "coach" &&
-          (managing ? (
-            <button
-              onClick={exitManage}
-              className="flex shrink-0 items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/5"
-            >
-              <X className="h-4 w-4" /> {t("common.exit", "Salir")}
-            </button>
-          ) : (
-            <button
-              onClick={() => setManaging(true)}
-              className="flex shrink-0 items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/5"
-            >
-              <Settings2 className="h-4 w-4" /> {t("mi-lista.manage", "Gestionar")}
-            </button>
-          ))}
+
+        {errorBox}
+
+        {!known ? (
+          <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/50">
+            {t("mi-lista.folder.not-found", "Esta carpeta ya no existe.")}{" "}
+            <Link to="/app/mi-lista" className="font-semibold text-neon-cyan">
+              {t("mi-lista.folder.back", "Volver a Mi Lista")}
+            </Link>
+          </p>
+        ) : isCoach ? (
+          <PastAnalysesList items={coachAnalyses!} />
+        ) : (
+          <>
+            {/* Barra de acciones del modo gestión (§12.1). */}
+            {managing && (
+              <div className="sticky top-20 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-neon-cyan/30 bg-midnight/90 p-3 backdrop-blur">
+                <span className="mr-auto text-sm font-medium text-white">{t("mi-lista.selected-count", "{count} seleccionados", { count: selected.size })}</span>
+                {folders.filter((f) => f.id !== activeFolder?.id).length > 0 && (
+                  <label className="flex items-center gap-1.5 text-sm text-white/80">
+                    <FolderInput className="h-4 w-4" />
+                    <select
+                      value=""
+                      disabled={selected.size === 0}
+                      onChange={(e) => e.target.value && addSelectedTo(Number(e.target.value))}
+                      className={`${select} disabled:opacity-40`}
+                    >
+                      <option value="">{t("mi-lista.manage.add-to", "Añadir a carpeta…")}</option>
+                      {folders
+                        .filter((f) => f.id !== activeFolder?.id)
+                        .map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                )}
+                {activeFolder && (
+                  <button
+                    onClick={removeSelectedFromFolder}
+                    disabled={selected.size === 0}
+                    className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5 disabled:opacity-40"
+                  >
+                    <FolderMinus className="h-4 w-4" /> {t("mi-lista.manage.remove-from-folder", "Quitar de la carpeta")}
+                  </button>
+                )}
+                <button
+                  onClick={() => removeFromMyList(selectedItems)}
+                  disabled={selected.size === 0}
+                  className="flex items-center gap-1.5 rounded-lg bg-red-500/90 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40"
+                >
+                  <Trash2 className="h-4 w-4" /> {t("mi-lista.manage.remove-from-list", "Quitar de Mi Lista")}
+                </button>
+                {isAll && (
+                  <button
+                    onClick={() => removeFromMyList(saved)}
+                    className="rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5"
+                  >
+                    {t("mi-lista.empty-all", "Vaciar todo")}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Ordenar y filtrar. */}
+            {!empty && (
+              <div className="flex flex-wrap gap-2">
+                <select value={view.sort} onChange={(e) => setView({ sort: e.target.value as SortKey })} className={select} aria-label={t("mi-lista.sort", "Ordenar")}>
+                  <option value="recent">{t("mi-lista.sort.recent", "Más recientes")}</option>
+                  <option value="oldest">{t("mi-lista.sort.oldest", "Más antiguos")}</option>
+                  <option value="block">{t("mi-lista.sort.block", "Por bloque")}</option>
+                  <option value="concept">{t("mi-lista.sort.concept", "Por concepto")}</option>
+                  <option value="unseen">{t("mi-lista.sort.unseen", "Sin ver primero")}</option>
+                  <option value="duration">{t("mi-lista.sort.duration", "Más cortos primero")}</option>
+                </select>
+                <select value={view.type} onChange={(e) => setView({ type: e.target.value as TypeFilter })} className={select} aria-label={t("mi-lista.filter.type", "Tipo")}>
+                  <option value="all">{t("mi-lista.filter.all", "Clips y análisis")}</option>
+                  <option value="clip">{t("mi-lista.filter.clips", "Solo clips")}</option>
+                  <option value="analysis">{t("mi-lista.filter.analyses", "Solo análisis")}</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setView({ hideWatched: !view.hideWatched })}
+                  aria-pressed={view.hideWatched}
+                  className={`rounded-lg border px-2.5 py-2 text-sm transition sm:text-xs ${
+                    view.hideWatched ? "border-neon-cyan/60 bg-neon-cyan/10 text-neon-cyan" : "border-white/12 bg-white/[0.04] text-white/80"
+                  }`}
+                >
+                  {view.hideWatched ? "● " : "○ "}
+                  {t("mi-lista.filter.hide-watched", "Ocultar vistos")}
+                </button>
+              </div>
+            )}
+
+            {/* Contenido de la carpeta, agrupado si se ordena por bloque o por concepto. */}
+            {visible.length > 0 ? (
+              <div className="space-y-7">
+                {groups.map((g) => (
+                  <section key={g.key}>
+                    {g.title && <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white/55">{g.title}</h2>}
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                      {g.items.map((c) => (
+                        <SavedCard key={c.id} item={c} tax={tax} managing={managing} selected={selected.has(c.id)} onToggleSelect={toggleSelect} />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/50">
+                {activeFolder
+                  ? t("mi-lista.folder.empty", "Esta carpeta está vacía. Pulsa el icono de guardar en cualquier clip y elige esta carpeta.")
+                  : empty
+                    ? t("mi-lista.no-saved-hint", "Aún no has guardado clips ni análisis. Pulsa el icono de guardar en cualquier contenido para tenerlo aquí.")
+                    : t("mi-lista.filter.empty", "No hay nada con estos filtros.")}
+              </p>
+            )}
+          </>
+        )}
+      </main>
+    )
+  }
+
+  // ------------------------------------------------------------------------
+  // Vista general
+  // ------------------------------------------------------------------------
+  return (
+    <main className="w-full space-y-10 py-8">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">{t("header.nav.mi-lista", "Mi Lista")}</h1>
+        </div>
+
+        {errorBox}
       </div>
 
       {nothingAtAll ? (
@@ -467,268 +789,137 @@ const MiLista = () => {
       ) : (
         <>
           {/* Test inicial: conceptos para trabajar (o la invitación a hacer el test). */}
-          <ConceptsToWork managing={managing} />
+          <ConceptsToWork managing={false} />
 
-          {/* Carpetas: Todo, las del usuario, las del sistema y «Nueva». */}
-          <div>
-            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-hide sm:mx-0 sm:px-0">
-              <button type="button" onClick={() => setTab("all")} className={tabClass(currentTab === "all")}>
-                {t("mi-lista.tab.all", "Todo")} <span className="opacity-60">{saved.length}</span>
-              </button>
-              {folders.map((f) => (
-                <button key={f.id} type="button" onClick={() => setTab(f.id)} className={tabClass(currentTab === f.id)}>
-                  {f.name} <span className="opacity-60">{saved.filter((i) => f.items.includes(itemKey(i))).length}</span>
-                </button>
-              ))}
-              {hasCoachAnalyses && (
-                <button type="button" onClick={() => setTab("coach")} className={tabClass(currentTab === "coach", "border-neon-lime/45 !text-neon-lime")}>
-                  {t("mi-lista.tab.coach", "Análisis de Coach")} <span className="opacity-60">{coachAnalyses!.length}</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setNewFolderName("")}
-                className="flex shrink-0 items-center gap-1.5 rounded-full border border-dashed border-neon-cyan/50 px-3.5 py-1.5 text-sm text-neon-cyan"
-              >
-                <FolderPlus className="h-4 w-4" /> {t("mi-lista.tab.new", "Nueva")}
-              </button>
-            </div>
-
-            {newFolderName !== null && (
-              <form
-                className="mt-3 flex max-w-md items-center gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  submitNewFolder()
-                }}
-              >
-                <input
-                  autoFocus
-                  value={newFolderName}
-                  maxLength={60}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  placeholder={t("save-to.folder-name", "Nombre de la carpeta")}
-                  className="min-w-0 flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-base text-white placeholder:text-white/30 sm:text-sm"
-                />
-                <button type="submit" disabled={!newFolderName.trim()} className="rounded-lg bg-neon-cyan px-3 py-2 text-sm font-bold text-midnight disabled:opacity-40">
-                  {t("save-to.create", "Crear")}
-                </button>
-                <button type="button" onClick={() => setNewFolderName(null)} aria-label={t("common.close", "Cerrar")} className="p-2 text-white/50">
-                  <X className="h-4 w-4" />
-                </button>
-              </form>
-            )}
-
-            {/* Acciones de la carpeta abierta: renombrar, mover y borrar. */}
-            {activeFolder && !managing && (
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                {renaming === null ? (
-                  <>
-                    <button type="button" onClick={() => setRenaming(activeFolder.name)} className="flex items-center gap-1 rounded-lg border border-white/12 px-2.5 py-1.5 text-white/70 hover:text-white">
-                      <Pencil className="h-3.5 w-3.5" /> {t("mi-lista.folder.rename", "Renombrar")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveFolder(activeFolder.id, -1).catch(fail)}
-                      aria-label={t("mi-lista.folder.move-left", "Mover a la izquierda")}
-                      className="rounded-lg border border-white/12 p-1.5 text-white/70 hover:text-white"
-                    >
-                      <ChevronLeft className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveFolder(activeFolder.id, 1).catch(fail)}
-                      aria-label={t("mi-lista.folder.move-right", "Mover a la derecha")}
-                      className="rounded-lg border border-white/12 p-1.5 text-white/70 hover:text-white"
-                    >
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </button>
-                    {confirmingDeleteId === activeFolder.id ? (
-                      <div className="flex w-full flex-wrap items-center gap-2 rounded-lg border border-red-400/30 bg-red-500/[0.06] px-3 py-2">
-                        <span className="text-white/80">
-                          {t("mi-lista.folder.delete-confirm", "¿Borrar la carpeta «{name}»? Lo que tiene sigue en Mi Lista.", { name: activeFolder.name })}
-                        </span>
-                        <span className="ml-auto flex gap-2">
-                          <button type="button" onClick={() => setConfirmingDeleteId(null)} className="rounded-lg border border-white/15 px-2.5 py-1.5 text-white/70 hover:text-white">
-                            {t("common.cancel", "Cancelar")}
-                          </button>
-                          <button type="button" onClick={confirmDelete} className="rounded-lg bg-red-500/80 px-2.5 py-1.5 font-semibold text-white hover:bg-red-500">
-                            {t("mi-lista.folder.delete-yes", "Borrar")}
-                          </button>
-                        </span>
-                      </div>
-                    ) : (
-                      <button type="button" onClick={() => setConfirmingDeleteId(activeFolder.id)} className="flex items-center gap-1 rounded-lg border border-red-400/30 px-2.5 py-1.5 text-red-300 hover:bg-red-500/10">
-                        <Trash2 className="h-3.5 w-3.5" /> {t("mi-lista.folder.delete", "Borrar carpeta")}
-                      </button>
-                    )}
-                  </>
+          {/* Carpetas: «Todos los guardados», las del usuario y, si hay, «Análisis de Coach». */}
+          <section>
+            <h2 className="mb-1 text-lg font-bold text-white">{t("mi-lista.folders", "Carpetas")}</h2>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
+              {/* «Nueva carpeta» como una carpeta más, la primera para que se vea aunque haya muchas
+                  (al estilo de «Nueva lista» de YouTube): al pulsarla, el nombre se escribe ahí mismo. */}
+              {newFolderName === null ? (
+                  <button type="button" onClick={() => setNewFolderName("")} className="group block text-left">
+                    <NewFolderCover />
+                    <p className="mt-2 text-sm font-semibold text-neon-cyan group-hover:underline">{t("mi-lista.folder.new", "Nueva carpeta")}</p>
+                  </button>
                 ) : (
                   <form
-                    className="flex max-w-md flex-1 items-center gap-2"
+                    className="block"
                     onSubmit={(e) => {
                       e.preventDefault()
-                      submitRename()
+                      submitNewFolder()
                     }}
                   >
+                    <NewFolderCover active />
                     <input
                       autoFocus
-                      value={renaming}
+                      value={newFolderName}
                       maxLength={60}
-                      onChange={(e) => setRenaming(e.target.value)}
-                      className="min-w-0 flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-base text-white sm:text-sm"
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Escape" && setNewFolderName(null)}
+                      placeholder={t("mi-lista.folder.name-short", "Nombre")}
+                      className="mt-2 w-full rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-base text-white placeholder:text-white/30 sm:text-sm"
                     />
-                    <button type="submit" className="rounded-lg bg-neon-cyan px-3 py-2 text-sm font-bold text-midnight">
-                      {t("common.save", "Guardar")}
-                    </button>
+                    <div className="mt-1.5 flex gap-1.5">
+                      <button type="button" onClick={() => setNewFolderName(null)} className="flex-1 rounded-lg border border-white/15 py-1.5 text-xs text-white/70">
+                        {t("common.cancel", "Cancelar")}
+                      </button>
+                      <button type="submit" disabled={!newFolderName.trim()} className="flex-1 rounded-lg bg-neon-cyan py-1.5 text-xs font-bold text-midnight disabled:opacity-40">
+                        {t("save-to.create", "Crear")}
+                      </button>
+                    </div>
                   </form>
                 )}
-              </div>
-            )}
-            {error && <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
-          </div>
-
-          {currentTab === "coach" ? (
-            <section>
-              <SectionHeading title={t("mi-lista.coach-analyses", "Tus análisis de Coach")} count={coachAnalyses!.length} />
-              <PastAnalysesList items={coachAnalyses!} />
-            </section>
-          ) : (
-            <>
-              {/* Barra de acciones del modo gestión (§12.1). */}
-              {managing && (
-                <div className="sticky top-20 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-neon-cyan/30 bg-midnight/90 p-3 backdrop-blur">
-                  <span className="mr-auto text-sm font-medium text-white">{t("mi-lista.selected-count", "{count} seleccionados", { count: selected.size })}</span>
-                  {folders.length > 0 && (
-                    <label className="flex items-center gap-1.5 text-sm text-white/80">
-                      <FolderInput className="h-4 w-4" />
-                      <select
-                        value=""
-                        disabled={selected.size === 0}
-                        onChange={(e) => e.target.value && addSelectedTo(Number(e.target.value))}
-                        className={`${select} disabled:opacity-40`}
+              <FolderTile to={folderHref("todos")} name={t("mi-lista.folder.all", "Todos los guardados")} item={saved[0]} count={saved.length} />
+              {folders.map((f) => {
+                const items = saved.filter((it) => f.items.includes(itemKey(it)))
+                return (
+                  <div key={f.id}>
+                    {renaming?.id === f.id ? (
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          submitRename()
+                        }}
                       >
-                        <option value="">{t("mi-lista.manage.add-to", "Añadir a carpeta…")}</option>
-                        {folders.map((f) => (
-                          <option key={f.id} value={f.id}>
-                            {f.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                  {activeFolder && (
-                    <button
-                      onClick={removeSelectedFromFolder}
-                      disabled={selected.size === 0}
-                      className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5 disabled:opacity-40"
-                    >
-                      <FolderMinus className="h-4 w-4" /> {t("mi-lista.manage.remove-from-folder", "Quitar de la carpeta")}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => removeFromMyList(selectedItems)}
-                    disabled={selected.size === 0}
-                    className="flex items-center gap-1.5 rounded-lg bg-red-500/90 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40"
-                  >
-                    <Trash2 className="h-4 w-4" /> {t("mi-lista.manage.remove-from-list", "Quitar de Mi Lista")}
-                  </button>
-                  {currentTab === "all" && (
-                    <button
-                      onClick={() => removeFromMyList(saved)}
-                      className="rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5"
-                    >
-                      {t("mi-lista.empty-all", "Vaciar todo")}
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Ordenar y filtrar. */}
-              {!nothingSaved && (
-                <div className="flex flex-wrap gap-2">
-                  <select value={view.sort} onChange={(e) => setView({ sort: e.target.value as SortKey })} className={select} aria-label={t("mi-lista.sort", "Ordenar")}>
-                    <option value="recent">{t("mi-lista.sort.recent", "Más recientes")}</option>
-                    <option value="oldest">{t("mi-lista.sort.oldest", "Más antiguos")}</option>
-                    <option value="block">{t("mi-lista.sort.block", "Por bloque")}</option>
-                    <option value="concept">{t("mi-lista.sort.concept", "Por concepto")}</option>
-                    <option value="unseen">{t("mi-lista.sort.unseen", "Sin ver primero")}</option>
-                    <option value="duration">{t("mi-lista.sort.duration", "Más cortos primero")}</option>
-                  </select>
-                  <select value={view.type} onChange={(e) => setView({ type: e.target.value as TypeFilter })} className={select} aria-label={t("mi-lista.filter.type", "Tipo")}>
-                    <option value="all">{t("mi-lista.filter.all", "Clips y análisis")}</option>
-                    <option value="clip">{t("mi-lista.filter.clips", "Solo clips")}</option>
-                    <option value="analysis">{t("mi-lista.filter.analyses", "Solo análisis")}</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => setView({ hideWatched: !view.hideWatched })}
-                    aria-pressed={view.hideWatched}
-                    className={`rounded-lg border px-2.5 py-2 text-sm transition sm:text-xs ${
-                      view.hideWatched ? "border-neon-cyan/60 bg-neon-cyan/10 text-neon-cyan" : "border-white/12 bg-white/[0.04] text-white/80"
-                    }`}
-                  >
-                    {view.hideWatched ? "● " : "○ "}
-                    {t("mi-lista.filter.hide-watched", "Ocultar vistos")}
-                  </button>
-                </div>
-              )}
-
-              {/* Contenido de la pestaña, agrupado si se ordena por bloque o por concepto. */}
-              {visible.length > 0 ? (
-                <div className="space-y-7">
-                  {groups.map((g) => (
-                    <section key={g.key}>
-                      {g.title && <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white/55">{g.title}</h2>}
-                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                        {g.items.map((c) => (
-                          <SavedCard key={c.id} item={c} tax={tax} managing={managing} selected={selected.has(c.id)} onToggleSelect={toggleSelect} />
-                        ))}
-                      </div>
-                    </section>
-                  ))}
-                </div>
-              ) : (
-                <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/50">
-                  {activeFolder
-                    ? t("mi-lista.folder.empty", "Esta carpeta está vacía. Pulsa el icono de guardar en cualquier clip y elige esta carpeta.")
-                    : nothingSaved
-                      ? t("mi-lista.no-saved-hint", "Aún no has guardado clips ni análisis. Pulsa el icono de guardar en cualquier contenido para tenerlo aquí.")
-                      : t("mi-lista.filter.empty", "No hay nada con estos filtros.")}
-                </p>
-              )}
-
-              {/* Vistos recientemente (§12.4), solo en «Todo»: en curso primero, luego finalizados. */}
-              {currentTab === "all" && inProgressItems.length > 0 && (
-                <section>
-                  <SectionHeading title={t("mi-lista.continue-watching", "Continuar viendo")} count={inProgressItems.length} />
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                    {inProgressItems.map((item) => (
-                      <RecentCard key={item.id} item={item} tax={tax} />
-                    ))}
+                        <FolderCover item={items[0]} count={items.length} />
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <input
+                            autoFocus
+                            value={renaming.name}
+                            maxLength={60}
+                            onChange={(e) => setRenaming({ id: f.id, name: e.target.value })}
+                            onKeyDown={(e) => e.key === "Escape" && setRenaming(null)}
+                            className="min-w-0 flex-1 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-base text-white sm:text-sm"
+                          />
+                          <button type="submit" aria-label={t("common.save", "Guardar")} className="rounded-lg bg-neon-cyan p-1.5 text-midnight">
+                            <Check className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <FolderTile
+                        to={folderHref(f.id)}
+                        name={f.name}
+                        item={items[0]}
+                        count={items.length}
+                        menu={
+                          <FolderMenu
+                            name={f.name}
+                            onRename={() => setRenaming({ id: f.id, name: f.name })}
+                            onDelete={() => setConfirmingDeleteId(f.id)}
+                          />
+                        }
+                      />
+                    )}
                   </div>
-                </section>
+                )
+              })}
+              {hasCoachAnalyses && (
+                <FolderTile to={folderHref("coach")} name={t("mi-lista.tab.coach", "Análisis de Coach")} count={coachAnalyses!.length} accent />
               )}
+            </div>
+          </section>
 
-              {currentTab === "all" && finishedItems.length > 0 && (
-                <section>
-                  <SectionHeading
-                    title={t("mi-lista.recently-watched", "Vistos recientemente")}
-                    count={finishedItems.length}
-                    action={
-                      <Link to="/app/search?feed=history" className="text-sm font-medium text-neon-cyan transition hover:brightness-110">
-                        {t("mi-lista.see-full-history", "Ver historial completo")}
-                      </Link>
-                    }
-                  />
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                    {finishedItems.map((item) => (
-                      <RecentCard key={item.id} item={item} tax={tax} />
-                    ))}
-                  </div>
-                </section>
-              )}
-            </>
+          {confirmingDeleteId != null && (
+            <DeleteFolderDialog
+              name={folders.find((f) => f.id === confirmingDeleteId)?.name ?? ""}
+              onCancel={() => setConfirmingDeleteId(null)}
+              onConfirm={() => confirmDelete(confirmingDeleteId)}
+            />
+          )}
+
+          {/* Píldoras guardadas: su propia fila de tarjetas verticales. */}
+          {PILLS_ENABLED && savedPills.length > 0 && (
+            <section>
+              <SectionHeading title={t("mi-lista.saved-pills", "Píldoras guardadas")} count={savedPills.length} />
+              <CardRow itemWidth="w-[28vw]" cols="sm:grid-cols-5 lg:grid-cols-8">
+                {savedPills.map((p) => (
+                  <PillCard key={p.id} item={p} />
+                ))}
+              </CardRow>
+            </section>
+          )}
+
+          {/* Vistos recientemente (§12.4): como las filas de Inicio, los 5 últimos con una línea de
+              lo visto en la miniatura; en el móvil se deslizan, en tableta caben 3 y en escritorio
+              los 5. El resto, en Historial. */}
+          {recentItems.length > 0 && (
+            <section>
+              <SectionHeading
+                title={t("mi-lista.recently-watched", "Vistos recientemente")}
+                action={
+                  <Link to="/app/historial" className="flex items-center gap-1.5 text-sm font-medium text-neon-cyan transition hover:brightness-110">
+                    {t("mi-lista.see-history", "Ver historial")} <ChevronRight className="h-4 w-4" />
+                  </Link>
+                }
+              />
+              <CardRow max={5}>
+                {recentItems.map((item) => (
+                  <ContentCard key={item.id} item={item} />
+                ))}
+              </CardRow>
+            </section>
           )}
         </>
       )}

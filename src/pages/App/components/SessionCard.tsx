@@ -5,7 +5,7 @@ import { formatDuration, hueFor } from "../../../lib/format"
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText } from "../../../lib/i18n/content"
 import { Thumb } from "./ContentCard"
-import WatchedBadge from "./WatchedBadge"
+import ProgressLine from "./ProgressLine"
 
 /**
  * Tarjeta de sesión — como ContentCard pero sin fila de conceptos (una sesión no los tiene).
@@ -18,7 +18,7 @@ const SessionCard = ({ session }: { session: SessionSummary }) => {
     <Link to={`/app/watch?s=${session.id}`} className="group block w-full cursor-pointer">
       <div className="relative overflow-hidden rounded-xl border border-white/10">
         <Thumb src={session.thumbnailUrl} hue={hueFor(String(session.id))} className="aspect-video w-full" />
-        {session.completed && <WatchedBadge />}
+        <ProgressLine completed={session.completed} />
         <span className="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm">
             <Play className="h-4 w-4 text-white" fill="currentColor" />

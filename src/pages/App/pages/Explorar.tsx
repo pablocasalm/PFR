@@ -1,4 +1,4 @@
-import { SlidersHorizontal, ArrowRight, ChevronRight, ChevronLeft, MoreVertical, LayoutGrid, ArrowLeftRight, Grip, ClipboardList, Clapperboard, X } from "lucide-react"
+import { SlidersHorizontal, ArrowRight, ChevronRight, ChevronLeft, MoreVertical, LayoutGrid, ArrowLeftRight, Grip, ClipboardList, Clapperboard, X, Play } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
@@ -11,14 +11,14 @@ import { Skeleton, CardSkeleton } from "../../../lib/ui/Skeleton"
 import CardRow from "../../../lib/ui/CardRow"
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import FilterPanel, { type FilterSection } from "../components/FilterPanel"
-import WatchedBadge from "../components/WatchedBadge"
-import EnglishBadge from "../components/EnglishBadge"
+import ProgressLine from "../components/ProgressLine"
 import ErrorScreen from "../components/ErrorScreen"
 import { useI18n, type TFunc } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
 import { useTaxonomy, blockSearchHref } from "../../../lib/taxonomy"
 import { useHideWatched, watchedLast } from "../../../lib/watched"
 import HideWatchedToggle from "../../../lib/ui/HideWatchedToggle"
+import { usePills } from "../../../lib/pills"
 
 /**
  * Explorar — Biblioteca táctica. Consume GET /api/explore (bloques + análisis).
@@ -49,19 +49,18 @@ const Thumb = ({
   src,
   hue,
   className = "",
+  progress,
   completed = false,
-  hasEnglishVersion = false,
 }: {
   src?: string
   hue: number
   className?: string
+  progress?: number
   completed?: boolean
-  hasEnglishVersion?: boolean
 }) => (
   <div className={`relative overflow-hidden ${className}`} style={thumbStyle(hue)}>
     {src && <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />}
-    {completed && <WatchedBadge />}
-    {hasEnglishVersion && <EnglishBadge />}
+    <ProgressLine progress={progress} completed={completed} />
   </div>
 )
 
@@ -240,7 +239,7 @@ const ClipCard = ({ clip, currentBlock }: { clip: ContentItem; currentBlock: str
   return (
     <Link to={watchHref(clip)} className="group block cursor-pointer">
       <div className="relative overflow-hidden rounded-lg border border-white/10">
-        <Thumb src={clip.thumbnailUrl} hue={hueFor(clip.id)} className="aspect-video w-full" completed={clip.completed} hasEnglishVersion={clip.hasEnglishVersion} />
+        <Thumb src={clip.thumbnailUrl} hue={hueFor(clip.id)} className="aspect-video w-full" progress={clip.progress} completed={clip.completed} />
         <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
           {formatDuration(clip.durationSeconds)}
         </span>
@@ -265,16 +264,29 @@ const ClipCard = ({ clip, currentBlock }: { clip: ContentItem; currentBlock: str
   )
 }
 
+/** Acceso a las píldoras de un bloque (tarjetas #134/#136): pequeño, al principio de los
+ * conceptos, con el color de la etiqueta «Píldora». Abre el reproductor en ese bloque. */
+const PillsButton = ({ blockId, count }: { blockId: number; count: number }) => (
+  <Link
+    to={`/app/pildoras?b=${blockId}`}
+    className="flex shrink-0 items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-300 transition hover:bg-amber-400/20"
+  >
+    <Play className="h-3 w-3" fill="currentColor" /> Píldoras <span className="opacity-70">{count}</span>
+  </Link>
+)
+
 const ConceptSection = ({
   section,
   index,
   selected,
   onToggleConcept,
+  pillCount,
 }: {
   section: ExploreSection
   index: number
   selected: Set<string>
   onToggleConcept: (concept: string) => void
+  pillCount: (blockId: number) => number
 }) => {
   const { lang } = useI18n()
   const tax = useTaxonomy()
@@ -288,10 +300,35 @@ const ConceptSection = ({
           <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${accent}`}>
             <Icon className="h-4 w-4" />
           </span>
-          <h2 className="min-w-0 flex-1 truncate text-sm font-bold uppercase tracking-[0.12em] text-white">{pickText(section.block, section.blockEn, lang)}</h2>
-          <VerTodo to={blockId != null ? blockSearchHref(blockId) : "/app/explorar"} />
+          {/* Móvil y tablet: el título lleva a todo el bloque (con «›», como en YouTube) y a la
+              derecha va el botón de las píldoras en lugar de «Ver todo». Escritorio: como antes. */}
+          <Link
+            to={blockId != null ? blockSearchHref(blockId) : "/app/explorar"}
+            className="min-w-0 flex-1 text-white transition hover:text-neon-cyan lg:hidden"
+          >
+            {/* En dos líneas si hace falta (con el botón de píldoras al lado se cortaba); la «›» va
+                siempre pegada al final del texto. */}
+            <h2 className="text-sm font-bold uppercase leading-snug tracking-[0.12em]">
+              {pickText(section.block, section.blockEn, lang)}
+              <ChevronRight className="ml-1 inline h-4 w-4 align-[-3px] text-white/60" />
+            </h2>
+          </Link>
+          {blockId != null && pillCount(blockId) > 0 && (
+            <span className="lg:hidden">
+              <PillsButton blockId={blockId} count={pillCount(blockId)} />
+            </span>
+          )}
+          <h2 className="hidden min-w-0 flex-1 truncate text-sm font-bold uppercase tracking-[0.12em] text-white lg:block">{pickText(section.block, section.blockEn, lang)}</h2>
+          <span className="hidden lg:block">
+            <VerTodo to={blockId != null ? blockSearchHref(blockId) : "/app/explorar"} />
+          </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {blockId != null && pillCount(blockId) > 0 && (
+            <span className="hidden lg:block">
+              <PillsButton blockId={blockId} count={pillCount(blockId)} />
+            </span>
+          )}
           {section.concepts.map((c, i) => (
             <Chip key={c} active={selected.has(c)} onClick={() => onToggleConcept(c)}>
               {pickText(c, section.conceptsEn[i], lang)}
@@ -309,7 +346,7 @@ const AnalisisCard = ({ item }: { item: ContentItem }) => {
   const { lang } = useI18n()
   return (
     <Link to={watchHref(item)} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-3 transition hover:border-white/20">
-      <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-28 shrink-0 rounded-lg" completed={item.completed} hasEnglishVersion={item.hasEnglishVersion} />
+      <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-28 shrink-0 rounded-lg" progress={item.progress} completed={item.completed} />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-white">{pickText(item.title, item.titleEn, lang)}</p>
         <p className="mt-1 text-xs leading-relaxed text-white/50">
@@ -358,6 +395,11 @@ const Explorar = () => {
   const { t, lang } = useI18n()
   const TYPE_LABELS = useMemo(() => typeLabels(t), [t])
   const { data, loading, error, errorStatus } = useApi(getExplore, [], "explore")
+  // Píldoras por bloque, para el botón de cada bloque (prototipo: clips de relleno mientras no haya).
+  const { items: pills } = usePills()
+  const tax = useTaxonomy()
+  const pillCount = (blockId: number) =>
+    pills.filter((p) => (p.blockId ?? (p.block ? tax.blockIdByName.get(p.block) : undefined)) === blockId).length
 
   const [showFilters, setShowFilters] = useState(false)
   const [type, setType] = useState<ContentType>("all")
@@ -569,7 +611,7 @@ const Explorar = () => {
       )}
 
       {visibleSections.map((section, i) => (
-        <ConceptSection key={section.block} section={section} index={i} selected={selected} onToggleConcept={toggleConceptFromSection} />
+        <ConceptSection key={section.block} section={section} index={i} selected={selected} onToggleConcept={toggleConceptFromSection} pillCount={pillCount} />
       ))}
 
       {visibleAnalyses.length > 0 && (
@@ -585,9 +627,12 @@ const Explorar = () => {
               <VerTodo to="/app/search?type=analysis" />
             </div>
           </div>
+          {/* Plegado: 3 en el móvil y 4 en tableta (el resto, en «Ver todo»); en escritorio, todos. */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {visibleAnalyses.map((item) => (
-              <AnalisisCard key={item.id} item={item} />
+            {visibleAnalyses.map((item, i) => (
+              <div key={item.id} className={`[&>a]:h-full ${i >= 4 ? "hidden lg:block" : i >= 3 ? "hidden sm:block" : ""}`}>
+                <AnalisisCard item={item} />
+              </div>
             ))}
           </div>
         </section>

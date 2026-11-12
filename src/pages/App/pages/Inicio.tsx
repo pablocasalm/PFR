@@ -1,16 +1,14 @@
 import { useMemo } from "react"
-import { Play, ChevronRight } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useApi } from "../../../lib/hooks/useApi"
 import { getHome } from "../../../lib/api/home"
 import { getMonthlyPick } from "../../../lib/api/club"
 import type { ContentItem, PopularConcept } from "../../../lib/api/types"
 import { useAuth, hasFeature } from "../../../lib/auth/store"
-import { formatDuration, hueFor, watchHref } from "../../../lib/format"
 import { Skeleton, CardGridSkeleton } from "../../../lib/ui/Skeleton"
 import CardRow from "../../../lib/ui/CardRow"
-import ContentCard, { Thumb } from "../components/ContentCard"
-import { TOUR_OPEN_FEEDBACK_EVENT } from "../components/FeedbackButton"
+import ContentCard from "../components/ContentCard"
 import ErrorScreen from "../components/ErrorScreen"
 import LockedTeaser from "../components/LockedTeaser"
 import PlanHomeCard from "../components/PlanHomeCard"
@@ -20,6 +18,7 @@ import { StarterTestBanner } from "../components/StarterTest"
 import { useTaxonomy, conceptSearchHref } from "../../../lib/taxonomy"
 import { watchedLast } from "../../../lib/watched"
 import { usePills } from "../../../lib/pills"
+import PillCard from "../components/PillCard"
 
 /**
  * Inicio — Dashboard principal. Consume GET /api/home (endpoint con forma de pantalla).
@@ -32,54 +31,31 @@ import { usePills } from "../../../lib/pills"
 // #136): una fila de vídeos verticales que abren la vista vertical del clip. De momento, con
 // clips de siempre como sustitutos de las píldoras, que aún no están grabadas.
 
-const PillCard = ({ item }: { item: ContentItem }) => {
-  const { lang } = useI18n()
-  return (
-    <Link to={`/app/pildoras?p=${item.id}`} className="group block w-full">
-      <div className="relative overflow-hidden rounded-xl border border-white/10">
-        <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-[9/16] w-full" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
-        <span className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-neon-cyan">
-          {formatDuration(item.durationSeconds)}
-        </span>
-        <span className="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-neon-cyan/90 text-midnight">
-            <Play className="h-5 w-5" fill="currentColor" />
-          </span>
-        </span>
-        <p className="absolute inset-x-2 bottom-2 line-clamp-3 text-xs font-semibold leading-snug text-white sm:text-sm">
-          {pickText(item.title, item.titleEn, lang)}
-        </p>
-      </div>
-    </Link>
-  )
-}
+/** PRUEBA (solo en local, `npm run dev`; nunca en producción): con pocas píldoras publicadas, la
+ * fila de Inicio las repite hasta llenar 8 huecos, para ver cómo queda llena. Solo la fila: Explorar,
+ * el reproductor y el test usan las de verdad. Quitar antes de llevar la rama a main. */
+const REPEAT_UNTIL = import.meta.env.DEV ? 8 : 0
+const repeatForTesting = (items: ContentItem[]) =>
+  items.length === 0 || items.length >= REPEAT_UNTIL ? items : Array.from({ length: REPEAT_UNTIL }, (_, i) => items[i % items.length])
 
-const PillsRow = ({ items }: { items: ContentItem[] }) => {
-  const blocks = ["Juego en la red", "Uso del globo", "Juego en pareja", "Juego desde el fondo"]
+const PillsRow = ({ items: realItems }: { items: ContentItem[] }) => {
+  const items = repeatForTesting(realItems)
   if (items.length === 0) return null
   return (
     <section>
-      <div className="mb-2 flex items-center gap-2">
+      <div className="mb-4 flex items-center gap-2">
         <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">Píldoras</h2>
         <span className="rounded border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-300">Prototipo</span>
       </div>
-      <p className="mb-4 text-sm text-white/55">Un consejo concreto de Guille, en vídeo vertical.</p>
-      <div className="mb-4 flex gap-2 overflow-x-auto scrollbar-hide">
-        {blocks.map((b, i) => (
-          <span
-            key={b}
-            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium ${i === 0 ? "border-neon-cyan bg-neon-cyan/10 text-neon-cyan" : "border-white/15 text-white/70"}`}
-          >
-            {b}
-          </span>
+      {/* Una sola fila, sin deslizar: 3 fijas en el móvil (deslizando hasta 8 era un scroll demasiado
+          largo), 5 en tableta y 8 en escritorio. */}
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-4 lg:grid-cols-8">
+        {items.slice(0, 8).map((item, i) => (
+          <div key={`${item.id}-${i}`} className={i >= 5 ? "hidden lg:block" : i >= 3 ? "hidden sm:block" : ""}>
+            <PillCard item={item} />
+          </div>
         ))}
       </div>
-      <CardRow itemWidth="w-[34vw]" cols="sm:grid-cols-4 lg:grid-cols-7">
-        {items.map((item) => (
-          <PillCard key={item.id} item={item} />
-        ))}
-      </CardRow>
     </section>
   )
 }
@@ -99,68 +75,6 @@ const SectionHeading = ({ title, to }: { title: string; to?: string }) => {
         </Link>
       )}
     </div>
-  )
-}
-
-/**
- * Banner de beta (§reporte de beta #58): sustituye al antiguo Hero a pantalla completa, que
- * con el catálogo todavía pequeño solía salir vacío/negro y no aportaba nada. Abre el mismo
- * modal de feedback que el botón flotante global, sin duplicar esa lógica.
- *
- * Para el lanzamiento oficial: no se ha borrado el diseño de Hero (recuperable del historial
- * de git), pero el plan acordado es sustituirlo por una promo estática (título/subtítulo/CTA
- * fijos en el código, editables a mano, sin fila en BD) en vez de traerlo de vuelta.
- */
-const BetaBanner = () => {
-  const { t } = useI18n()
-  return (
-    <section className="flex items-center gap-3.5 rounded-xl border border-white/15 border-l-[3px] border-l-neon-cyan bg-gradient-to-r from-neon-cyan/[0.08] to-transparent px-4 py-3.5 sm:gap-4">
-      <span className="h-2 w-2 shrink-0 rounded-full bg-neon-cyan shadow-[0_0_0_4px_rgba(40,240,224,0.14)]" />
-      <p className="flex-1 text-sm text-white">
-        <span className="font-semibold">{t("inicio.beta-banner.badge", "Beta")}</span>{" "}
-        {t("inicio.beta-banner.message", "— si ves algo que no cuadra o falta, cuéntanoslo.")}
-      </p>
-      <button
-        onClick={() => window.dispatchEvent(new CustomEvent(TOUR_OPEN_FEEDBACK_EVENT, { detail: true }))}
-        className="shrink-0 whitespace-nowrap rounded-full bg-neon-cyan px-4 py-2 text-xs font-bold text-midnight transition hover:brightness-110"
-      >
-        {t("inicio.beta-banner.cta", "Reportar")}
-      </button>
-    </section>
-  )
-}
-
-const ContinueCard = ({ item }: { item: ContentItem }) => {
-  const { lang } = useI18n()
-  const progress = item.progress ?? 0
-  const current = Math.round((item.durationSeconds * progress) / 100)
-  return (
-    <Link
-      to={watchHref(item)}
-      className="flex w-[85vw] shrink-0 snap-start flex-row overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition hover:border-white/20 sm:w-80"
-    >
-      {/* Siempre en horizontal (miniatura pequeña + texto), también en el móvil: apilada, la
-          miniatura a 16:9 ocupaba casi toda la pantalla al entrar y el título quedaba debajo. */}
-      <div className="relative w-28 shrink-0 sm:w-32">
-        <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="h-full min-h-[88px] w-full sm:min-h-[120px]" />
-        <span className="absolute inset-0 flex items-center justify-center">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/80 bg-black/30 backdrop-blur-sm sm:h-14 sm:w-14">
-            <Play className="h-4 w-4 text-white sm:h-5 sm:w-5" fill="currentColor" />
-          </span>
-        </span>
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-2 p-3 sm:gap-3 sm:p-4">
-        <h3 className="line-clamp-2 text-sm font-medium leading-snug text-white">{pickText(item.title, item.titleEn, lang)}</h3>
-        <div>
-          <p className="mb-1.5 text-xs text-neon-cyan sm:mb-2 sm:text-sm">
-            {formatDuration(current)} / {formatDuration(item.durationSeconds)}
-          </p>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-            <div className="h-full rounded-full bg-neon-cyan" style={{ width: `${progress}%` }} />
-          </div>
-        </div>
-      </div>
-    </Link>
   )
 }
 
@@ -253,31 +167,14 @@ const Inicio = () => {
   const home = data
   // Lo ya visto, al final (reporte #104). En «Más vistos» no: es un ranking numerado.
   const newThisWeek = watchedLast(home?.newThisWeek ?? [])
-  const continueWatching = home?.continueWatching ?? []
   const popularConcepts = home?.popularConcepts ?? []
   const mostViewed = home?.mostViewedThisWeek ?? []
-  const pillStandIns = pillItems.slice(0, 7)
+  const pillStandIns = pillItems.slice(0, 8)
 
   return (
     <main className="w-full space-y-12 py-8">
-      <BetaBanner />
-      {/* Test inicial: debajo del de la beta, hasta que lo haga o lo cierre. */}
+      {/* Test inicial: arriba del todo, hasta que lo haga o lo cierre. */}
       <StarterTestBanner />
-
-      {/* Continúa viendo — solo si hay contenido iniciado y no completado */}
-      {continueWatching.length > 0 && (
-        <section>
-          <SectionHeading title={t("inicio.section.continue", "Continúa viendo")} />
-          {/* Fila de ancho fijo, nunca en rejilla: con el límite del backend (5) cabe entera sin
-              scroll en escritorio; en pantallas más pequeñas (táctiles) se desliza en horizontal
-              en vez de apilarse en vertical (§reporte de beta). */}
-          <div className="flex snap-x snap-mandatory gap-5 overflow-x-auto scrollbar-hide pb-1">
-            {continueWatching.map((item) => (
-              <ContinueCard key={item.id} item={item} />
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Recomendado del mes (§Club hub, Fase 1; §rediseño Club/Coach): visible siempre, incluso
           para Starter — así se ve que existe la función, no solo cuando ya se tiene el plan.
@@ -311,7 +208,8 @@ const Inicio = () => {
       {newThisWeek.length > 0 && (
         <section>
           <SectionHeading title={t("inicio.section.new", "Nuevo esta semana")} to="/app/search?feed=new" />
-          <CardRow>
+          {/* Como mucho 5 (3 en tableta): el resto, en «Ver todo». */}
+          <CardRow max={5}>
             {newThisWeek.map((item) => (
               <ContentCard key={item.id} item={item} />
             ))}
@@ -325,7 +223,7 @@ const Inicio = () => {
       {/* Conceptos populares */}
       {popularConcepts.length > 0 && (
         <section>
-          <SectionHeading title={t("inicio.section.popular-concepts", "Conceptos populares")} to="/app/explorar" />
+          <SectionHeading title={t("inicio.section.popular-concepts", "Conceptos populares")} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {popularConcepts.map((c) => (
               <ConceptoCard key={c.name} concept={c} />
@@ -338,7 +236,8 @@ const Inicio = () => {
       {mostViewed.length > 0 && (
         <section>
           <SectionHeading title={t("inicio.section.most-viewed", "Más vistos esta semana")} to="/app/search?feed=popular" />
-          <CardRow>
+          {/* Como mucho 5 (3 en tableta), en una sola fila: con 6 se partía en dos. */}
+          <CardRow max={5}>
             {mostViewed.map((item, i) => (
               <ContentCard key={item.id} item={item} rank={i + 1} />
             ))}

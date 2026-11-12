@@ -23,7 +23,7 @@ import { useShare } from "../../../lib/share"
 import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import { useRef, useState } from "react"
 import EditContentLink from "../components/EditContentLink"
-import WatchedBadge from "../components/WatchedBadge"
+import ProgressLine from "../components/ProgressLine"
 import ErrorScreen from "../components/ErrorScreen"
 import { useAuth } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
@@ -204,7 +204,7 @@ const KeepLearningPanel = ({ next }: { next?: ContentItem }) => {
               <Play className="h-4 w-4 text-white" fill="currentColor" />
             </span>
           </span>
-          {next.completed && <WatchedBadge />}
+          <ProgressLine progress={next.progress} completed={next.completed} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold leading-snug text-white">{pickText(next.title, next.titleEn, lang)}</p>

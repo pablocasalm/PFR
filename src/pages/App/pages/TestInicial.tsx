@@ -6,6 +6,9 @@ import { submitStarterTest, trackTestEvent, type ConceptCard, type Frequency, ty
 import { FREQUENCY, GAME, PHRASES, PLAYTOMIC } from "../../../lib/starterTestOptions"
 import { invalidateStarterTest } from "../../../lib/starterTest"
 import { ConceptChip } from "../components/StarterTest"
+import PillCard from "../components/PillCard"
+import { usePills } from "../../../lib/pills"
+import { useTaxonomy } from "../../../lib/taxonomy"
 
 /**
  * Test inicial «¿Por dónde empiezo?» (documento de Andrea del 20/10/2026, tabla validada por
@@ -13,6 +16,40 @@ import { ConceptChip } from "../components/StarterTest"
  * sale solo de la pregunta 3; el nivel de Playtomic (obligatorio, con «No uso Playtomic») y la
  * frecuencia son solo un dato. El resultado se guarda en Mi Lista.
  */
+
+/**
+ * Píldoras para empezar (prototipo, tarjetas #134/#136): al terminar el test, hasta 3 píldoras
+ * elegidas por el resultado: primero las de sus conceptos, luego las de sus bloques y, si no hay
+ * resultado («no lo sé») o no llega, las primeras del recorrido.
+ */
+const StarterPills = ({ concepts, center = false }: { concepts: ConceptCard[]; center?: boolean }) => {
+  const { items } = usePills()
+  const tax = useTaxonomy()
+  const names = new Set(concepts.map((c) => c.nameEs))
+  const blocks = new Set(concepts.map((c) => (c.blockEs ? tax.blockIdByName.get(c.blockEs) : undefined)))
+  const blockOf = (p: (typeof items)[number]) => p.blockId ?? (p.block ? tax.blockIdByName.get(p.block) : undefined)
+  const inBlocks = (p: (typeof items)[number]) => {
+    const id = blockOf(p)
+    return id != null && blocks.has(id)
+  }
+  const rank = (p: (typeof items)[number]) => (p.concepts.some((c) => names.has(c)) ? 0 : inBlocks(p) ? 1 : 2)
+  const picks = items
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => rank(a.p) - rank(b.p) || a.i - b.i)
+    .slice(0, 3)
+    .map(({ p }) => p)
+  if (picks.length === 0) return null
+  return (
+    <section className="mt-8">
+      <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">Empieza con una píldora</h2>
+      <div className={`mt-3 grid max-w-sm grid-cols-3 gap-2 ${center ? "mx-auto" : ""}`}>
+        {picks.map((p, i) => (
+          <PillCard key={`${p.id}-${i}`} item={p} />
+        ))}
+      </div>
+    </section>
+  )
+}
 
 const ORIGINS: TestOrigin[] = ["how_it_works", "home_banner", "my_list", "account"]
 
@@ -109,6 +146,7 @@ const TestInicial = () => {
             >
               {t("starter-test.unsure.cta", "Ir a Explorar")}
             </Link>
+            <StarterPills concepts={[]} center />
           </div>
         ) : (
           <div>
@@ -125,6 +163,7 @@ const TestInicial = () => {
             <Link to="/app/mi-lista" className="mt-6 inline-block rounded-lg bg-neon-cyan px-6 py-3 text-sm font-bold text-midnight transition hover:brightness-110">
               {t("starter-test.result.my-list", "Ir a Mi Lista")}
             </Link>
+            <StarterPills concepts={result.concepts} />
           </div>
         )}
       </main>

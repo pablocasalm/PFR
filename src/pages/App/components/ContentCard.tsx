@@ -4,8 +4,7 @@ import { formatDuration, hueFor, thumbStyle, watchHref } from "../../../lib/form
 import { useI18n } from "../../../lib/i18n/store"
 import { pickText, pickList } from "../../../lib/i18n/content"
 import SaveButton from "../../../lib/saved/SaveButton"
-import WatchedBadge from "./WatchedBadge"
-import EnglishBadge from "./EnglishBadge"
+import ProgressLine from "./ProgressLine"
 
 /** Tarjeta de contenido común (clip o análisis) — usada en Inicio, Club y donde haga falta una
  * fila de tarjetas estándar. Extraída de Inicio.tsx para no duplicarla (§Club hub, Fase 1). */
@@ -43,8 +42,6 @@ const ContentCard = ({ item, rank }: { item: ContentItem; rank?: number }) => {
     <Link to={watchHref(item)} className="group block w-full cursor-pointer">
       <div className="relative overflow-hidden rounded-xl border border-white/10">
         <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-full" />
-        {item.completed && <WatchedBadge />}
-        {item.hasEnglishVersion && rank == null && <EnglishBadge />}
         {rank != null && (
           <span className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-neon-cyan text-sm font-bold text-midnight">
             {rank}
@@ -56,6 +53,7 @@ const ContentCard = ({ item, rank }: { item: ContentItem; rank?: number }) => {
         <span className="absolute bottom-2 right-2">
           <SaveButton item={item} variant="icon" />
         </span>
+        <ProgressLine progress={item.progress} completed={item.completed} />
       </div>
       <div className="mt-2.5">
         <TypeBadge type={item.type} />

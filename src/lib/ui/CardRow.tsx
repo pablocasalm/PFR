@@ -14,21 +14,30 @@ import { Children } from "react"
  * dentro del padding normal de la página: mismo alineado que el título de la sección,
  * sin cálculos propios que puedan fallar.
  */
+/** `max` (Nuevo esta semana, Vistos recientemente): como mucho esas tarjetas, en una sola fila —
+ * con las columnas por defecto, en tableta solo las 3 primeras y en escritorio las 5; en el móvil
+ * se deslizan todas. */
 const CardRow = ({
   children,
   itemWidth = "w-[40vw]",
   cols = "sm:grid-cols-3 lg:grid-cols-5",
+  max,
 }: {
   children: React.ReactNode
   itemWidth?: string
   cols?: string
+  max?: number
 }) => (
   <div
     className={`flex snap-x snap-mandatory gap-4 overflow-x-auto scrollbar-hide pb-1 sm:grid sm:gap-4 sm:overflow-visible sm:pb-0 ${cols}`}
   >
-    {Children.map(children, (child) => (
-      <div className={`shrink-0 snap-start ${itemWidth} sm:w-auto sm:shrink`}>{child}</div>
-    ))}
+    {Children.toArray(children)
+      .slice(0, max)
+      .map((child, i) => (
+        <div key={i} className={`shrink-0 snap-start ${itemWidth} sm:w-auto sm:shrink ${max != null && i >= 3 ? "sm:hidden lg:block" : ""}`}>
+          {child}
+        </div>
+      ))}
   </div>
 )
 
