@@ -1,4 +1,5 @@
 import { apiGet } from "./client"
+import type { AdminUserStatus } from "./adminUsers"
 
 /** Periodo del panel: últimos 7 o 30 días, o desde el inicio (0). */
 export type MetricsDays = 7 | 30 | 0
@@ -18,9 +19,15 @@ export type MetricsPerson = {
   displayName: string | null
   wave: string | null
   activatedAtUtc: string
-  /** Día de la prueba (1–14) si sigue en ella; null si no. */
+  /** Día de la prueba (1–14 en la beta, 1–7 en la de Stripe) si sigue en ella; null si no. */
   trialDay: number | null
+  /** Días que dura su prueba: 14 (beta) o 7 (Stripe). Sin dato con un backend anterior al 11/11/2026. */
+  trialLength?: number
   trialEndsAtUtc: string | null
+  /** Mismo estado que Panel → Usuarios. Sin dato con un backend anterior al 11/11/2026. */
+  accountStatus?: AdminUserStatus
+  pendingCancel?: boolean
+  currentPeriodEndUtc?: string | null
   lastActiveAtUtc: string | null
   activeDays: number
   minutes: number

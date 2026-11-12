@@ -3,12 +3,13 @@ import { Navigate, useNavigate, useSearchParams, useLocation } from "react-route
 import { useAuth, PLAN_NAME, type PlanTier } from "./store"
 import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../api/billing"
 import { checkoutErrorText, authErrorText } from "../checkoutErrors"
-import { Eye, EyeOff } from "lucide-react"
+import { Check, Eye, EyeOff } from "lucide-react"
 import { requestInvite, getInviteInfo } from "../api/invites"
 import { ApiError } from "../api/client"
 import LegalLinks, { LegalLink } from "../ui/LegalLinks"
 import { requestPasswordReset } from "../api/auth"
 import { useI18n, setLanguage } from "../i18n/store"
+import { captureDiscountCodeFromUrl, describeDiscount, readStoredDiscountCode, storeDiscountCode, useDiscountCheck } from "../discountCode"
 
 /**
  * Pantalla de acceso (login / registro / solicitar código / recuperar contraseña). Es la puerta
@@ -21,9 +22,42 @@ import { useI18n, setLanguage } from "../i18n/store"
  * sesión (al crear la cuenta o al iniciar sesión), se abre Stripe Checkout con ese plan, sin
  * pasar por la app: quien no tiene suscripción no entra (ver RequireSubscription y /suscripcion).
  * Si Stripe no se puede abrir, se queda aquí con el error y un botón para reintentar.
+ *
+ * Desde el 10/11/2026, crear cuenta sin plan y sin invitación (el «Regístrate» de esta pantalla o
+ * un enlace a /register) lleva a Precios de la landing a elegir plan: antes caía en el registro de
+ * la beta, que pedía un código, y quien no lo tenía acababa pidiendo uno (le pasó a una persona
+ * que luego se registró por Precios). Con ?invite= sigue el registro con código, como siempre.
+ *
+ * Desde el 10/11/2026 el código de invitación no se ve ni se escribe: solo lo usan las
+ * invitaciones del plan gratis, llega en el enlace (?invite=) y se guarda para esa pestaña
+ * (sessionStorage) por si recarga; al crear la cuenta se manda sin enseñarlo. El hueco de la
+ * casilla queda para el código de descuento.
  */
 
 const PLANS: PlanTier[] = ["Starter", "Club", "Coach"]
+
+// Código del plan gratis (ver la cabecera): solo para esta pestaña. sessionStorage y no
+// localStorage: en un ordenador compartido no debe quedarse para la cuenta de otra persona.
+const INVITE_KEY = "pfr_invite"
+const readStoredInvite = () => {
+  try {
+    return sessionStorage.getItem(INVITE_KEY) ?? ""
+  } catch {
+    return ""
+  }
+}
+const storeInvite = (code: string | null) => {
+  try {
+    if (code) sessionStorage.setItem(INVITE_KEY, code)
+    else sessionStorage.removeItem(INVITE_KEY)
+  } catch {
+    /* modo privado sin almacenamiento: vale con el de la dirección */
+  }
+}
+
+// Elegir plan para crear la cuenta: la página de Precios de la landing (sus botones vuelven aquí
+// con ?plan=).
+const PRICING_URL = "https://padelfilmroom.com/precios"
 
 // Días de prueba en Stripe para una cuenta nueva (BillingController.TrialForAsync): Essential y
 // Club; Coach paga al momento.
@@ -90,7 +124,13 @@ const LoginPage = () => {
   const location = useLocation()
   const [params] = useSearchParams()
 
-  const inviteFromUrl = params.get("invite") ?? ""
+  const urlInvite = params.get("invite") ?? ""
+  // El del enlace o, si ha recargado sin él, el guardado en esta pestaña; pero no si viene de
+  // elegir un plan de pago en Precios (ahí no se manda un código guardado sin que lo sepa).
+  const inviteFromUrl = urlInvite || (params.get("plan") ? "" : readStoredInvite())
+  useEffect(() => {
+    if (urlInvite) storeInvite(urlInvite)
+  }, [urlInvite])
   const emailFromUrl = params.get("email") ?? ""
   const isRegisterPath = location.pathname === "/register"
   const planParam = params.get("plan")
@@ -99,6 +139,11 @@ const LoginPage = () => {
   const planFromUrl = PLANS.find((p) => p.toLowerCase() === planKey) ?? null
 
   const [mode, setMode] = useState<Mode>(inviteFromUrl || isRegisterPath || planFromUrl ? "register" : "login")
+  // Registro sin plan ni invitación: a elegir plan en Precios (ver la cabecera del archivo).
+  const needsPlan = !planFromUrl && !inviteFromUrl
+  useEffect(() => {
+    if (isRegisterPath && needsPlan) window.location.replace(PRICING_URL)
+  }, [isRegisterPath, needsPlan])
   const [email, setEmail] = useState(emailFromUrl)
   // Al crear la cuenta, el email se escribe dos veces (reporte #108): con uno mal escrito, el pago y
   // todos los avisos irían a otra dirección. Si llega de la invitación, ya viene rellenado.
@@ -113,7 +158,15 @@ const LoginPage = () => {
     if (!planFromUrl) return
     getBillingPlans().then(setPlans).catch(() => {})
   }, [planFromUrl])
-  const [inviteCode, setInviteCode] = useState(inviteFromUrl)
+  const [inviteCode] = useState(inviteFromUrl)
+  // Código de descuento (opcional): del enlace (`?codigo=`) o escrito aquí. Se guarda en la pestaña
+  // según se escribe y se manda al abrir el pago, que es cuando se aplica (ver lib/discountCode).
+  const [discountCode, setDiscountCode] = useState(() => captureDiscountCodeFromUrl(params))
+  const discount = useDiscountCheck(planFromUrl ? discountCode : "", planFromUrl)
+  const changeDiscountCode = (value: string) => {
+    setDiscountCode(value)
+    storeDiscountCode(value)
+  }
   const [emailOnly, setEmailOnly] = useState(emailFromUrl) // email para "solicitar código" / "recuperar"
 
   // El enlace de invitación solo lleva el código (el email no viaja en la URL): se le pregunta
@@ -165,7 +218,7 @@ const LoginPage = () => {
     if (!planFromUrl) return
     checkoutStarted.current = true
     setCheckoutError(null)
-    createCheckoutSession("Monthly", planFromUrl)
+    createCheckoutSession("Monthly", planFromUrl, readStoredDiscountCode())
       .then(({ url }) => window.location.assign(url))
       .catch((err) => {
         // Ya tiene suscripción: a la app, que es donde tiene que estar.
@@ -249,6 +302,7 @@ const LoginPage = () => {
           textVersion: NEWSLETTER_TEXT_VERSION,
         })
       }
+      if (mode === "register") storeInvite(null) // ya usado
       // Con plan, el salto a Stripe lo hace el efecto de arriba al haber sesión.
       if (!planFromUrl) navigate("/app/inicio", { replace: true })
     } catch (err) {
@@ -294,10 +348,13 @@ const LoginPage = () => {
     const locale = lang === "en" ? "en-GB" : "es-ES"
     const money = (amount: number, currency: string) => new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount)
     const firstCharge = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
+    // Con un código válido de porcentaje, el primer cobro ya con el descuento.
+    const percent = discount.state === "valid" ? discount.info.percentOff : null
     return {
       tier: planFromUrl,
       trial: planFromUrl !== "Coach",
       price: price ? money(price.displayAmount, price.currency) : null,
+      discounted: price && percent ? money(Math.round(price.displayAmount * (100 - percent)) / 100, price.currency) : null,
       zero: new Intl.NumberFormat(locale, { style: "currency", currency: price?.currency ?? "EUR", maximumFractionDigits: 0 }).format(0), // «0 €», no «0,00 €»
       date: firstCharge.toLocaleDateString(locale, { day: "numeric", month: "long" }),
     }
@@ -312,7 +369,8 @@ const LoginPage = () => {
     mode === "login" ? t("login.subtitle.login", "Accede a tu biblioteca táctica de Padel Film Room.")
     : mode === "register" && planFromUrl
       ? t("login.subtitle.register-plan", "Crea tu cuenta para empezar con {plan}. Después pasarás al pago seguro de Stripe.", { plan: PLAN_NAME[planFromUrl] })
-    : mode === "register" ? t("login.subtitle.register", "Introduce tu código de invitación para unirte a la beta.")
+    : mode === "register"
+      ? t("login.subtitle.register-invite", lang === "en" ? "Create your account with your invitation." : "Crea tu cuenta con tu invitación.")
     : mode === "request" ? t("login.subtitle.request", "¿Tu código ya se ha usado? Pide uno nuevo con tu email.")
     : t("login.subtitle.forgot", "Te enviaremos un enlace para crear una contraseña nueva.")
   // Línea legal al crear la cuenta: deja claro que llegarán emails de la plataforma (se quitan
@@ -383,12 +441,23 @@ const LoginPage = () => {
                     <p className="mt-1 text-white/80">{t("checkout.summary.today", "Hoy: {amount}", { amount: checkout.zero })}</p>
                     {checkout.price && (
                       <p className="text-white/80">
-                        {t("checkout.summary.first-charge", "Primer cobro el {date}: {price}/mes", { date: checkout.date, price: checkout.price })}
+                        {checkout.discounted
+                          ? t("checkout.summary.first-charge-discount", "Primer cobro el {date}: {discounted} (después, {price}/mes)", {
+                              date: checkout.date,
+                              discounted: checkout.discounted,
+                              price: checkout.price,
+                            })
+                          : t("checkout.summary.first-charge", "Primer cobro el {date}: {price}/mes", { date: checkout.date, price: checkout.price })}
                       </p>
                     )}
                   </>
                 ) : (
-                  checkout.price && <p className="mt-1 text-white/80">{t("checkout.summary.today", "Hoy: {amount}", { amount: checkout.price })}</p>
+                  checkout.price && (
+                    <p className="mt-1 text-white/80">
+                      {t("checkout.summary.today", "Hoy: {amount}", { amount: checkout.discounted ?? checkout.price })}
+                      {checkout.discounted && ` ${t("checkout.summary.then", "(después, {price}/mes)", { price: checkout.price })}`}
+                    </p>
+                  )
                 )}
                 <p className="mt-1 text-xs text-white/55">
                   {t("checkout.summary.renewal", "Se renueva cada mes. Cancela cuando quieras desde tu cuenta, sin penalización.")}
@@ -408,19 +477,6 @@ const LoginPage = () => {
                   placeholder={t("login.field.name-required", "Tu nombre o nombre de usuario")}
                   className={inputCls}
                   autoComplete="name"
-                />
-                <input
-                  type="text"
-                  required={!planFromUrl}
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value)}
-                  placeholder={
-                    planFromUrl
-                      ? t("login.field.invite-code-optional", "Código de invitación (opcional)")
-                      : t("login.field.invite-code", "Código de invitación")
-                  }
-                  className={inputCls}
-                  autoCapitalize="characters"
                 />
               </>
             )}
@@ -465,6 +521,33 @@ const LoginPage = () => {
                 onToggle={() => setShowPassword((v) => !v)}
                 toggleLabel={showPassword ? t("login.password.hide", "Ocultar contraseña") : t("login.password.show", "Mostrar contraseña")}
               />
+            )}
+            {/* Código de descuento, solo al crear la cuenta con un plan de pago (va al pago de Stripe). */}
+            {mode === "register" && checkout && (
+              <div>
+                <input
+                  type="text"
+                  value={discountCode}
+                  onChange={(e) => changeDiscountCode(e.target.value)}
+                  placeholder={t("login.field.discount-code", "Código de descuento (opcional)")}
+                  className={`${inputCls} uppercase placeholder:normal-case`}
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  maxLength={32}
+                />
+                {discount.state === "valid" && (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-neon-lime">
+                    <Check className="h-3.5 w-3.5" />
+                    {t("login.discount.valid", "{code}: {discount}", { code: discount.info.code, discount: describeDiscount(discount.info, t) })}
+                  </p>
+                )}
+                {discount.state === "invalid" && (
+                  <p className="mt-1.5 text-xs text-red-300">
+                    {t("login.discount.invalid", "Este código no existe, ya no se puede usar o no vale para {plan}.", { plan: PLAN_NAME[checkout.tier] })}
+                  </p>
+                )}
+              </div>
             )}
 
             {error && (
@@ -534,15 +617,6 @@ const LoginPage = () => {
                 {t("login.forgot-link", "¿Olvidaste tu contraseña?")}
               </button>
             )}
-            {mode === "register" && !planFromUrl && (
-              <button
-                type="button"
-                onClick={() => switchMode("request")}
-                className="w-full text-center text-xs text-white/50 transition hover:text-white"
-              >
-                {t("login.request-link", "¿Tu código no funciona? Solicita otro")}
-              </button>
-            )}
           </form>
         )}
 
@@ -550,7 +624,10 @@ const LoginPage = () => {
           {mode === "login" ? (
             <>
               {t("login.no-account", "¿No tienes cuenta?")}{" "}
-              <button onClick={() => switchMode("register")} className="font-semibold text-neon-cyan hover:underline">
+              <button
+                onClick={() => (needsPlan ? window.location.assign(PRICING_URL) : switchMode("register"))}
+                className="font-semibold text-neon-cyan hover:underline"
+              >
                 {t("login.cta.go-register", "Regístrate")}
               </button>
             </>

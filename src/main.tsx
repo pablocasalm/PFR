@@ -9,9 +9,12 @@ import '@fontsource/space-grotesk/700.css'
 import './index.css'
 import App from './App.tsx'
 import { captureNewsEmailClick } from './lib/newsEmailClick'
+import { captureDiscountCodeFromUrl } from './lib/discountCode'
 
 // Entrada desde el email de una noticia: se apunta antes de que el login limpie la URL.
 captureNewsEmailClick()
+// Enlace con código de descuento (`?codigo=`) a cualquier página: se guarda para el pago.
+captureDiscountCodeFromUrl(new URLSearchParams(window.location.search))
 
 // Tras un deploy, los chunks con lazy() cambian de hash: un usuario con la app abierta
 // puede pedir un chunk viejo que ya no existe ("Failed to fetch dynamically imported module").

@@ -20,7 +20,7 @@ const UnsubscribePage = lazy(() => import("../../lib/auth/UnsubscribePage"))
 const PlayerTestPage = lazy(() => import("../../lib/player/PlayerTestPage"))
 const Publicar = lazy(() => import("../../pages/App/pages/Publicar"))
 const Editar = lazy(() => import("../../pages/App/pages/Editar"))
-const AdminInvites = lazy(() => import("../../pages/App/pages/AdminInvites"))
+const AdminUsuarios = lazy(() => import("../../pages/App/pages/AdminUsuarios"))
 const AdminFeedback = lazy(() => import("../../pages/App/pages/AdminFeedback"))
 const AdminNoticias = lazy(() => import("../../pages/App/pages/AdminNoticias"))
 const Club = lazy(() => import("../../pages/App/pages/Club"))
@@ -78,7 +78,9 @@ const router = createBrowserRouter([
       { path: "search", element: withSuspense(<RequireSubscription><Search /></RequireSubscription>) },
       { path: "publicar", element: withSuspense(<RequirePublisher><Publicar /></RequirePublisher>) },
       { path: "editar/:type/:id", element: withSuspense(<RequirePublisher><Editar /></RequirePublisher>) },
-      { path: "admin/invitaciones", element: withSuspense(<RequireAdmin><AdminInvites /></RequireAdmin>) },
+      // «Invitaciones» pasó a ser una pestaña de Usuarios (10/11/2026): la dirección vieja sigue valiendo.
+      { path: "admin/usuarios", element: withSuspense(<RequireAdmin><AdminUsuarios /></RequireAdmin>) },
+      { path: "admin/invitaciones", element: <Navigate to="/app/admin/usuarios" replace /> },
       { path: "admin/reportes", element: withSuspense(<RequireAdmin><AdminFeedback /></RequireAdmin>) },
       { path: "admin/noticias", element: withSuspense(<RequireAdmin><AdminNoticias /></RequireAdmin>) },
       // El plan del mes y las preguntas viven ahora dentro de admin/sesiones (gestión del Club).

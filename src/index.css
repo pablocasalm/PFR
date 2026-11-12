@@ -15,6 +15,11 @@
     @apply border-white/10;
   }
 
+  /* Sin el tirador de la esquina para agrandar las cajas de texto (11/11/2026), en toda la app. */
+  textarea {
+    resize: none;
+  }
+
   body {
     @apply bg-midnight text-slate-100 antialiased;
     font-family: "Space Grotesk", sans-serif;

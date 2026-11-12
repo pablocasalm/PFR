@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Link, useNavigate, useLocation } from "react-router-dom"
-import { Search, ChevronDown, LogOut, BookOpen, UploadCloud, Ticket, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, Lock, MessageSquarePlus, ClipboardList, BarChart2, BarChart3 } from "lucide-react"
+import { Search, ChevronDown, LogOut, BookOpen, UploadCloud, Users, Inbox, Megaphone, UserCircle, Crown, Sparkles, Clapperboard, Lock, MessageSquarePlus, ClipboardList, BarChart2, BarChart3 } from "lucide-react"
 import { useAuth, canPublish, isAdmin, hasFeature, type AuthUser } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import SearchOverlay from "./SearchOverlay"
@@ -286,12 +286,12 @@ const SessionControl = () => {
             )}
             {isAdmin(user) && (
               <Link
-                to="/app/admin/invitaciones"
+                to="/app/admin/usuarios"
                 onClick={() => setMenuOpen(false)}
                 className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
               >
-                <Ticket className="h-4 w-4" />
-                {t("admin-invites.title", "Invitaciones")}
+                <Users className="h-4 w-4" />
+                {t("admin-users.title", "Usuarios")}
               </Link>
             )}
             {isAdmin(user) && (

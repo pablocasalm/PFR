@@ -45,8 +45,40 @@ export const getBillingPlans = () => apiGet<BillingPlans>("/api/billing/plans")
 /** POST /api/billing/checkout-session → URL de Stripe Checkout a la que redirigir. Tier por
  * defecto "Club" mientras Precios.tsx siga siendo la pantalla de un único plan (Fase 0-3) — pasa
  * a ser obligatorio en la práctica en la Fase 4, cuando la pantalla ya pida elegir plan. */
-export const createCheckoutSession = (interval: BillingInterval, tier: PlanTier = "Club") =>
-  apiPost<{ url: string }>("/api/billing/checkout-session", { interval, tier })
+export const createCheckoutSession = (interval: BillingInterval, tier: PlanTier = "Club", discountCode?: string | null) =>
+  apiPost<{ url: string }>("/api/billing/checkout-session", { interval, tier, discountCode: discountCode || undefined })
+
+/** Un código de descuento tal y como lo describe el backend (vive en Stripe). */
+export type DiscountCodeInfo = {
+  id: string
+  code: string
+  active: boolean
+  /** De qué colaborador es (Id y nombre), o null. */
+  collaboratorId?: number | null
+  collaborator?: string | null
+  percentOff: number | null
+  amountOff: number | null
+  currency: string | null
+  /** "once" (primer pago), "repeating" (durationInMonths meses) o "forever". */
+  duration: "once" | "repeating" | "forever"
+  durationInMonths: number | null
+  tiers: PlanTier[]
+  firstTimeOnly: boolean
+  maxRedemptions: number | null
+  /** Usos en Stripe, también los de las versiones anteriores del código (al editarlo). */
+  timesRedeemed: number
+  /** Usos de este código en sí: el límite de usos cuenta solo estos. */
+  ownTimesRedeemed?: number
+  expiresAtUtc: string | null
+  createdAtUtc: string
+}
+
+/** GET /api/billing/discount-code/{code}?tier → el código si se puede usar (en ese plan); 404 si no.
+ * Pública: la casilla está en la pantalla de crear cuenta. */
+export const checkDiscountCode = (code: string, tier?: PlanTier | null) =>
+  apiGet<{ valid: boolean; code: DiscountCodeInfo }>(
+    `/api/billing/discount-code/${encodeURIComponent(code)}${tier ? `?tier=${tier}` : ""}`,
+  )
 
 /** POST /api/billing/portal → URL del Customer Portal de Stripe (cancelar, cambiar método de
  * pago, ver facturas). */

@@ -45,53 +45,8 @@ export type InviteCode = {
 
 export type InviteStatus = "activated" | "pending" | "expired"
 
-/** POST /api/admin/invites/test-emails (Admin) → la invitación y los dos recordatorios, con un
- * código de prueba, solo a esa dirección. No crea ninguna invitación. */
-export const sendInviteTestEmails = (to: string, language: string) =>
-  apiPost<{ ok: boolean; sent: number }>("/api/admin/invites/test-emails", { to, language })
-
 /** GET /api/admin/invites (Admin) → todos los códigos generados, con su estado. */
 export const listInvites = () => apiGet<InviteCode[]>("/api/admin/invites")
 
 /** DELETE /api/admin/invites/{id} (Admin) → elimina un código. */
 export const deleteInvite = (id: number) => apiDelete<{ ok: boolean }>(`/api/admin/invites/${id}`)
-
-/** Solicitud de acceso pendiente (formulario público de la landing o "pedir otro código"). */
-export type InviteRequestItem = {
-  id: number
-  email: string
-  createdAtUtc: string
-  /** "es"/"en": el de la landing al apuntarse o el del botón del email; null si no se sabe. */
-  language: string | null
-  /** Cuándo se le envió el email de acceso anticipado (null = todavía no). */
-  announcedAtUtc: string | null
-  /** Primer clic en el botón de confirmación de ese email (null = sin confirmar). */
-  confirmedAtUtc: string | null
-}
-
-/** GET /api/admin/invite-requests (Admin) → solicitudes pendientes (sin atender todavía). */
-export const listInviteRequests = () => apiGet<InviteRequestItem[]>("/api/admin/invite-requests")
-
-/** DELETE /api/admin/invite-requests/{id} (Admin) → descarta una solicitud sin invitar (pruebas, email mal escrito). */
-export const deleteInviteRequest = (id: number) => apiDelete<{ ok: boolean }>(`/api/admin/invite-requests/${id}`)
-
-/** Resultado de enviar el email de acceso anticipado: cuántos salieron y cuántos se saltaron (ya avisados). */
-export type AnnounceResult = { ok: boolean; test: boolean; sent: number; skipped: number }
-
-/** POST /api/admin/invite-requests/announce (Admin) → envío de prueba del email de acceso anticipado a una sola dirección. */
-export const sendAnnounceTest = (testTo: string) =>
-  apiPost<AnnounceResult>("/api/admin/invite-requests/announce", { testTo })
-
-/** POST /api/admin/invite-requests/announce (Admin) → envío real del email de acceso anticipado a esas solicitudes. */
-export const sendAnnounce = (ids: number[]) =>
-  apiPost<AnnounceResult>("/api/admin/invite-requests/announce", { ids })
-
-/** POST /api/admin/beta-emails/test (Admin) → los emails de después de activar la cuenta
- * (encuestas de los días 4 y 12, día 13 y aviso de masterclass), solo a esa dirección. */
-export const sendBetaEmailsTest = (to: string, language: string) =>
-  apiPost<{ ok: boolean; sent: number }>("/api/admin/beta-emails/test", { to, language })
-
-/** POST /api/admin/beta-emails/masterclass (Admin) → aviso de masterclass nueva a todos los
- * usuarios con acceso. Con `dryRun` solo devuelve a cuántos llegaría. */
-export const sendMasterclassNotice = (dryRun: boolean) =>
-  apiPost<{ ok: boolean; dryRun: boolean; count: number }>("/api/admin/beta-emails/masterclass", { dryRun })
