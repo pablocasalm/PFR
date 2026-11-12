@@ -1,12 +1,7 @@
 import { apiPost, apiGet, apiDelete } from "./client"
 
-/**
- * Invitaciones de beta. Quien tiene un código gastado puede solicitar otro por email
- * (§ beta). Si ya existe una cuenta con ese email, o una invitación sin usar, el backend
- * responde con error — el mensaje viene ya en `language`.
- */
-export const requestInvite = (email: string, language: string) =>
-  apiPost<{ ok: boolean; message?: string }>("/api/invite-requests", { email, language })
+/** Invitaciones (panel de Usuarios y registro con código). La solicitud pública de códigos
+ * (POST /api/invite-requests) se quitó el 12/11/2026: ya no la usaba nada. */
 
 /** GET /api/invites/{code} (público) → email e idioma de una invitación sin usar. La pantalla
  * de registro lo usa para rellenar el email: el enlace de invitación ya no lo lleva en la URL.

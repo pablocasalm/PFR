@@ -4,7 +4,7 @@ import { useAuth, PLAN_NAME, type PlanTier } from "./store"
 import { createCheckoutSession, getBillingPlans, type BillingPlans } from "../api/billing"
 import { checkoutErrorText, authErrorText } from "../checkoutErrors"
 import { Check, Eye, EyeOff } from "lucide-react"
-import { requestInvite, getInviteInfo } from "../api/invites"
+import { getInviteInfo } from "../api/invites"
 import { ApiError } from "../api/client"
 import LegalLinks, { LegalLink } from "../ui/LegalLinks"
 import { requestPasswordReset } from "../api/auth"
@@ -115,7 +115,7 @@ const PasswordInput = ({
   </div>
 )
 
-type Mode = "login" | "register" | "request" | "forgot"
+type Mode = "login" | "register" | "forgot"
 
 const LoginPage = () => {
   const { t, lang } = useI18n()
@@ -258,7 +258,7 @@ const LoginPage = () => {
     )
   }
 
-  const isEmailOnly = mode === "request" || mode === "forgot"
+  const isEmailOnly = mode === "forgot"
 
   const switchMode = (next: Mode) => {
     setMode(next)
@@ -320,13 +320,8 @@ const LoginPage = () => {
     setInfo(null)
     setLoading(true)
     try {
-      if (mode === "request") {
-        const res = await requestInvite(emailOnly.trim(), lang)
-        setInfo(res.message ?? t("login.request.sent", "Solicitud recibida. Te enviaremos un nuevo código pronto."))
-      } else {
-        await requestPasswordReset(emailOnly.trim())
-        setInfo(t("login.forgot.sent", "Si el email existe, te hemos enviado un enlace para restablecer tu contraseña."))
-      }
+      await requestPasswordReset(emailOnly.trim())
+      setInfo(t("login.forgot.sent", "Si el email existe, te hemos enviado un enlace para restablecer tu contraseña."))
     } catch (err) {
       setError(err instanceof Error ? err.message : t("login.error.request", "No se pudo enviar la solicitud."))
     } finally {
@@ -363,7 +358,6 @@ const LoginPage = () => {
   const title =
     mode === "login" ? t("login.title.login", "Inicia sesión")
     : mode === "register" ? t("login.title.register", "Crea tu cuenta")
-    : mode === "request" ? t("login.title.request", "Solicitar un código")
     : t("login.title.forgot", "Recuperar contraseña")
   const subtitle =
     mode === "login" ? t("login.subtitle.login", "Accede a tu biblioteca táctica de Padel Film Room.")
@@ -371,7 +365,6 @@ const LoginPage = () => {
       ? t("login.subtitle.register-plan", "Crea tu cuenta para empezar con {plan}. Después pasarás al pago seguro de Stripe.", { plan: PLAN_NAME[planFromUrl] })
     : mode === "register"
       ? t("login.subtitle.register-invite", lang === "en" ? "Create your account with your invitation." : "Crea tu cuenta con tu invitación.")
-    : mode === "request" ? t("login.subtitle.request", "¿Tu código ya se ha usado? Pide uno nuevo con tu email.")
     : t("login.subtitle.forgot", "Te enviaremos un enlace para crear una contraseña nueva.")
   // Línea legal al crear la cuenta: deja claro que llegarán emails de la plataforma (se quitan
   // en Mi Cuenta → Preferencias de email). Sustituye a la casilla del resumen mensual.
@@ -415,9 +408,7 @@ const LoginPage = () => {
             >
               {loading
                 ? t("login.wait", "Un momento...")
-                : mode === "request"
-                  ? t("login.cta.request", "Solicitar código")
-                  : t("login.cta.send-link", "Enviar enlace")}
+                : t("login.cta.send-link", "Enviar enlace")}
             </button>
           </form>
         ) : (

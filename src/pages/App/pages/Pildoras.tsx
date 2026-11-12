@@ -162,6 +162,9 @@ const PillSlide = ({ item, active, muted, onToggleMute, audio, subtitlesOn, onTo
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
   const [expanded, setExpanded] = useState(false)
+  // La descripción desplegada solo en la píldora que está en pantalla: al pasar a otra se recoge.
+  const captionOpen = expanded && active
+  const description = pickText(item.description ?? "", item.descriptionEn, lang).trim()
 
   // El detalle se pide solo al llegar a esta píldora.
   useEffect(() => {
@@ -344,17 +347,36 @@ const PillSlide = ({ item, active, muted, onToggleMute, audio, subtitlesOn, onTo
           </div>
         )}
 
-        {/* Abajo: textos encima del vídeo y la barra de progreso. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-4 pb-5 pt-16 pr-20 sm:pr-4">
-          <span className="rounded border border-amber-400/50 bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300">Píldora</span>
-          <p className="mt-2 text-base font-bold leading-snug text-white">{pickText(item.title, item.titleEn, lang)}</p>
+        {/* Abajo: título, un poco de la descripción y los conceptos, encima del vídeo. Al tocar el
+            título o la descripción se despliega hacia arriba para leerla entera, con el vídeo
+            oscurecido detrás (como en Instagram); se recoge tocando otra vez o fuera. */}
+        {captionOpen && (
           <button
             type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className={`pointer-events-auto mt-1 block text-left text-sm text-white/80 ${expanded ? "" : "line-clamp-2"}`}
-          >
-            {concepts.map((c) => `#${c}`).join("  ")}
+            aria-label="Cerrar descripción"
+            onClick={() => setExpanded(false)}
+            className="absolute inset-0 z-[3] cursor-default bg-black/60 motion-safe:animate-[pill-dim_.2s_ease-out]"
+          />
+        )}
+        <div
+          className={`absolute inset-x-0 bottom-0 z-[4] px-4 pb-5 pt-16 pr-20 sm:pr-4 ${
+            captionOpen ? "pointer-events-auto" : "pointer-events-none bg-gradient-to-t from-black/85 via-black/40 to-transparent"
+          }`}
+        >
+          <span className="rounded border border-amber-400/50 bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300">Píldora</span>
+          <button type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={captionOpen} className="pointer-events-auto mt-2 block w-full text-left">
+            <span className="block text-base font-bold leading-snug text-white">{pickText(item.title, item.titleEn, lang)}</span>
+            {description && (
+              <span
+                className={`mt-1 block overflow-hidden whitespace-pre-line text-sm leading-relaxed text-white/85 transition-[max-height] duration-300 ease-out ${
+                  captionOpen ? "max-h-[45dvh] overflow-y-auto" : "line-clamp-2 max-h-[2.75rem]"
+                }`}
+              >
+                {description}
+              </span>
+            )}
           </button>
+          {concepts.length > 0 && <p className="mt-1.5 line-clamp-1 text-sm text-white/70">{concepts.map((c) => `#${c}`).join("  ")}</p>}
         </div>
         <div className="absolute inset-x-0 bottom-0 h-3 cursor-pointer touch-none" onPointerDown={seek} role="slider" aria-label="Progreso" aria-valuenow={Math.round(progress * 100)}>
           <div className="absolute inset-x-0 bottom-0 h-1 bg-white/25">
@@ -487,6 +509,7 @@ const BlockEnd = ({ block, nextBlock, allSeen, background, active, onNext, onDee
       </div>
       <style>{`@keyframes pill-end-in { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
         @keyframes pill-end-bg { from { transform: scale(1.1) } to { transform: scale(1.25) } }
+        @keyframes pill-dim { from { opacity: 0 } to { opacity: 1 } }
         @media (prefers-reduced-motion: reduce) { @keyframes pill-end-in { from { opacity: 1 } to { opacity: 1 } } }`}</style>
     </div>
   )

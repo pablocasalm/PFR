@@ -300,11 +300,11 @@ const ConceptSection = ({
           <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${accent}`}>
             <Icon className="h-4 w-4" />
           </span>
-          {/* Móvil y tablet: el título lleva a todo el bloque (con «›», como en YouTube) y a la
-              derecha va el botón de las píldoras en lugar de «Ver todo». Escritorio: como antes. */}
+          {/* El título lleva a todo el bloque (con «›», como en YouTube) y a la derecha va el botón de
+              las píldoras en lugar de «Ver todo». */}
           <Link
             to={blockId != null ? blockSearchHref(blockId) : "/app/explorar"}
-            className="min-w-0 flex-1 text-white transition hover:text-neon-cyan lg:hidden"
+            className="min-w-0 flex-1 text-white transition hover:text-neon-cyan"
           >
             {/* En dos líneas si hace falta (con el botón de píldoras al lado se cortaba); la «›» va
                 siempre pegada al final del texto. */}
@@ -313,22 +313,9 @@ const ConceptSection = ({
               <ChevronRight className="ml-1 inline h-4 w-4 align-[-3px] text-white/60" />
             </h2>
           </Link>
-          {blockId != null && pillCount(blockId) > 0 && (
-            <span className="lg:hidden">
-              <PillsButton blockId={blockId} count={pillCount(blockId)} />
-            </span>
-          )}
-          <h2 className="hidden min-w-0 flex-1 truncate text-sm font-bold uppercase tracking-[0.12em] text-white lg:block">{pickText(section.block, section.blockEn, lang)}</h2>
-          <span className="hidden lg:block">
-            <VerTodo to={blockId != null ? blockSearchHref(blockId) : "/app/explorar"} />
-          </span>
+          {blockId != null && pillCount(blockId) > 0 && <PillsButton blockId={blockId} count={pillCount(blockId)} />}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {blockId != null && pillCount(blockId) > 0 && (
-            <span className="hidden lg:block">
-              <PillsButton blockId={blockId} count={pillCount(blockId)} />
-            </span>
-          )}
           {section.concepts.map((c, i) => (
             <Chip key={c} active={selected.has(c)} onClick={() => onToggleConcept(c)}>
               {pickText(c, section.conceptsEn[i], lang)}
@@ -627,10 +614,11 @@ const Explorar = () => {
               <VerTodo to="/app/search?type=analysis" />
             </div>
           </div>
-          {/* Plegado: 3 en el móvil y 4 en tableta (el resto, en «Ver todo»); en escritorio, todos. */}
+          {/* Plegado: 3 en el móvil, 4 en tableta (2 filas de 2) y 3 en escritorio (una fila); el
+              resto, en «Ver todo». */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {visibleAnalyses.map((item, i) => (
-              <div key={item.id} className={`[&>a]:h-full ${i >= 4 ? "hidden lg:block" : i >= 3 ? "hidden sm:block" : ""}`}>
+              <div key={item.id} className={`[&>a]:h-full ${i >= 4 ? "hidden" : i === 3 ? "hidden sm:block lg:hidden" : ""}`}>
                 <AnalisisCard item={item} />
               </div>
             ))}
