@@ -24,3 +24,22 @@ export const getAssistantNotice = () =>
 export const recordAssistantNotice = (notice: AssistantNotice, action: AssistantNoticeAction) => {
   apiPost<{ ok: boolean }>("/api/assistant/notice", { key: notice.key, kind: notice.kind, action }).catch(() => {})
 }
+
+/** Mensajes del chat usados este mes y el límite del plan (null = Essential, sin chat). */
+export type AssistantUsage = { used: number; limit: number | null; available: boolean }
+
+export type AssistantChatReply = {
+  conversationId: number
+  message: string
+  /** Clips recomendados, ya comprobados contra la base de datos. */
+  items: ContentItem[]
+  outOfScope: boolean
+  usage: AssistantUsage
+}
+
+/** GET /api/assistant/usage */
+export const getAssistantUsage = () => apiGet<AssistantUsage>("/api/assistant/usage")
+
+/** POST /api/assistant/chat. Errores: 429 code "assistant_limit", 503 code "assistant_unavailable". */
+export const sendAssistantMessage = (message: string, language: string, conversationId: number | null) =>
+  apiPost<AssistantChatReply>("/api/assistant/chat", { message, language, conversationId })

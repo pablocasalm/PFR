@@ -173,7 +173,7 @@ const Muneco = () => {
         {panel}
       </BottomSheet>
       {open && (
-        <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+76px)] right-4 z-40 hidden max-h-[70vh] w-96 flex-col overflow-hidden rounded-2xl border border-white/10 bg-midnight-soft shadow-2xl lg:flex xl:bottom-[calc(5.5rem+76px)] xl:right-6">
+        <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+76px)] right-4 z-40 hidden max-h-[70dvh] w-96 flex-col overflow-hidden rounded-2xl border border-white/10 bg-midnight-soft shadow-2xl lg:flex xl:bottom-[calc(5.5rem+76px)] xl:right-6">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <p className="font-display text-base font-semibold">{t("assistant.title", "Tu asistente de PFR")}</p>
             <button onClick={() => setOpen(false)} aria-label={t("assistant.close", "Cerrar")} className="flex h-8 w-8 items-center justify-center rounded-full text-white/60 hover:text-white">
