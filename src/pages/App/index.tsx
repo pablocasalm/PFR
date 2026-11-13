@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useSearchParams } from "react-router-dom"
 import Header from "./components/Header"
 import MobileNav from "./components/MobileNav"
 import FeedbackButton from "./components/FeedbackButton"
+import RatingPrompt from "./components/RatingPrompt"
 import Muneco from "./components/Muneco"
 import { ASSISTANT_ENABLED } from "../../lib/assistant"
 import ScrollToTop from "../../lib/ui/ScrollToTop"
@@ -88,6 +89,8 @@ const AppLayout = () => {
       {/* «Guardar en…»: la abre el botón de guardar de cualquier tarjeta. */}
       <SaveToSheet />
       <FeedbackButton />
+      {/* Valoración de la plataforma: sale sola cuando el backend dice que toca (tras unos días de uso). */}
+      <RatingPrompt />
       {/* Muñeco (asistente, tarjeta #147): oculto en producción hasta encender VITE_ASSISTANT_ENABLED. */}
       {ASSISTANT_ENABLED && <Muneco />}
     </div>

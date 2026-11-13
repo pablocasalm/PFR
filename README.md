@@ -252,3 +252,24 @@ Subpasos nacidos:
 - ⬜ Llevar la rama `asistente` a `main` (front y back) con el interruptor apagado.
 - ⬜ Más adelante: recomendar también análisis (capítulos) y píldoras, y usar lo que ya ha visto
   cada persona.
+
+### 14. Valoración de la plataforma 🚧
+Estrellas de 1 a 5 y texto opcional, pedidos dentro de la app (`RatingPrompt`): hoja inferior por
+debajo de xl, tarjeta abajo a la derecha en escritorio; solo en Inicio, Explorar y Mi Lista, tras
+20 s y sin otra ventana abierta. Lo decide el backend (`RatingPrompt.cs`): cuentas normales con
+acceso (prueba o pago, cualquier plan) con 3 días de uso (`app_open` o `WatchDay`), sin exigir vídeo visto (Coach puede entrar solo a enviar su análisis);
+no sale si hay una encuesta de la beta recién enviada o respondida. Sin respuesta, se vuelve a
+pedir con espera creciente (3, 6, 12, 24… días, tope 60) hasta que conteste; una vez enviada queda
+fija. Con 4-5 estrellas y texto, permiso para publicarlo en la landing (con o sin nombre).
+Parámetros en Azure: `Ratings__MinActiveDays`, `Ratings__RetryBaseDays`, `Ratings__RetryMaxDays`. Panel: Métricas → «Valoraciones» (media,
+reparto, por plan y estado, textos, CSV) y la ficha de Usuarios. Vista previa en local:
+`/app/inicio?valoracion=1`.
+
+- ✅ Tabla `PlatformRating`, endpoints `/api/rating/*` y `/api/admin/ratings`, hoja/tarjeta y
+  pestaña de Métricas (rama `valoraciones`).
+
+Subpasos nacidos:
+- ⬜ Migración `AddPlatformRatings` y publicar el backend; importar las claves `rating.*` y
+  `admin-ratings.*` (ES/EN).
+- ⬜ Textos definitivos de Andrea (hoy provisionales).
+- ⬜ Llevar testimonios con permiso a la landing.

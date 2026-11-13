@@ -36,6 +36,8 @@ export type AdminUser = {
   giftedMonths?: number
   minutes: number
   surveys: string[]
+  /** Estrellas de su valoración de la plataforma, si la ha enviado. */
+  rating?: number | null
   isTeam: boolean
 }
 

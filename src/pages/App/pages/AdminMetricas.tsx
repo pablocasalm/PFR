@@ -4,6 +4,7 @@ import { AlertTriangle, BarChart3 } from "lucide-react"
 import { useI18n } from "../../../lib/i18n/store"
 import { getAdminMetrics, type AdminMetrics, type MetricsDays, type MetricsFilters, type MetricsPerson } from "../../../lib/api/metrics"
 import MetricsInsights from "../components/admin/MetricsInsights"
+import MetricsRatings from "../components/admin/MetricsRatings"
 
 /**
  * AdminMetricas — panel de métricas internas, v1 (solo Admin): filtros, resumen en cifras y una
@@ -15,7 +16,7 @@ import MetricsInsights from "../components/admin/MetricsInsights"
  * quitó el 11/11/2026: ya no hay lista de espera.
  */
 
-type Tab = "people" | "activity"
+type Tab = "people" | "activity" | "ratings"
 
 type SortKey = "risk" | "lastActive" | "minutes" | "activeDays" | "trialDay"
 
@@ -167,11 +168,13 @@ const AdminMetricas = () => {
 
       {/* Filtros: afectan a todo el panel. */}
       <div className="mb-6 flex flex-wrap items-center gap-2">
+        {tab !== "ratings" && (
         <select value={filters.days} onChange={(e) => set("days", Number(e.target.value) as MetricsDays)} className={select} aria-label={t("admin-metrics.filter.period", "Periodo")}>
           <option value={7}>{t("admin-metrics.filter.7d", "Últimos 7 días")}</option>
           <option value={30}>{t("admin-metrics.filter.30d", "Últimos 30 días")}</option>
           <option value={0}>{t("admin-metrics.filter.all-time", "Desde el inicio")}</option>
         </select>
+        )}
         {tab === "people" && (
           <select value={filters.wave} onChange={(e) => set("wave", e.target.value)} className={select} aria-label={t("admin-metrics.filter.wave", "Oleada")}>
             <option value="all">{t("admin-metrics.filter.all-waves", "Todas las oleadas")}</option>
@@ -202,6 +205,7 @@ const AdminMetricas = () => {
           [
             ["people", t("admin-metrics.tab.summary", "Resumen")],
             ["activity", t("admin-metrics.tab.activity", "Actividad")],
+            ["ratings", t("admin-metrics.tab.ratings", "Valoraciones")],
           ] as [Tab, string][]
         ).map(([id, label]) => (
           <button
@@ -216,7 +220,9 @@ const AdminMetricas = () => {
         ))}
       </div>
 
-      {tab !== "people" ? (
+      {tab === "ratings" ? (
+        <MetricsRatings excludeTeam={filters.excludeTeam} />
+      ) : tab !== "people" ? (
         <MetricsInsights view={tab} days={filters.days} excludeTeam={filters.excludeTeam} />
       ) : (
         <>

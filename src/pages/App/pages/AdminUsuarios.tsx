@@ -410,6 +410,7 @@ const UsersList = () => {
                 [t("admin-users.col.last-active", "Última act."), lastActive(selected.lastActiveAtUtc)],
                 [t("admin-users.minutes", "Minutos vistos"), String(selected.minutes)],
                 [t("admin-users.surveys", "Encuestas"), selected.surveys.length ? selected.surveys.join(", ") : "—"],
+                [t("admin-users.rating", "Valoración"), selected.rating ? `${"★".repeat(selected.rating)}${"☆".repeat(5 - selected.rating)}` : "—"],
                 [t("admin-users.col.arrived", "Llegó por"), arrivedLabel(selected)],
                 selected.discountCode && [t("admin-users.discount-code", "Código de descuento"), <span key="dc" className="font-mono">{selected.discountCode}</span>],
                 !!selected.giftedMonths && [t("admin-users.gifted-months", "Meses regalados"), String(selected.giftedMonths)],
