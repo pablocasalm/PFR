@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { ChevronLeft } from "lucide-react"
+import { trackActivity } from "../../../lib/api/activity"
 import { getHome } from "../../../lib/api/home"
 import { formatDuration, hueFor, watchHref } from "../../../lib/format"
 import { useApi } from "../../../lib/hooks/useApi"
@@ -23,7 +24,7 @@ type Question = "start" | "new" | "improve" | "continue"
 const PanelLink = ({ to, onNavigate, children, primary }: { to: string; onNavigate: () => void; children: React.ReactNode; primary?: boolean }) => (
   <Link
     to={to}
-    onClick={onNavigate}
+    onClick={() => onNavigate()}
     className={
       primary
         ? "inline-flex rounded-full bg-neon-cyan px-4 py-2 text-[13px] font-semibold text-midnight"
@@ -89,7 +90,10 @@ const ClubPanel = ({ onNavigate }: { onNavigate: () => void }) => {
           {questions.map((q) => (
             <button
               key={q.key}
-              onClick={() => setQuestion(q.key)}
+              onClick={() => {
+                trackActivity("assistant_question", q.key)
+                setQuestion(q.key)
+              }}
               className="rounded-full border border-neon-cyan/40 px-4 py-2 text-left text-[13px] font-medium text-neon-cyan hover:bg-neon-cyan/10"
             >
               {q.label}
@@ -176,7 +180,14 @@ const StarterPanel = ({ onNavigate }: { onNavigate: () => void }) => {
           "Mira estos tres clips de bandeja en defensa y, después, el capítulo 4 del análisis de la final: ahí se ve la misma situación en un partido completo.",
         )}
       </Bubble>
-      <PanelLink to="/app/precios" onNavigate={onNavigate} primary>
+      <PanelLink
+        to="/app/precios"
+        onNavigate={() => {
+          trackActivity("assistant_upgrade_click")
+          onNavigate()
+        }}
+        primary
+      >
         {t("assistant.starter.cta", "Pasarme a Club")}
       </PanelLink>
     </div>

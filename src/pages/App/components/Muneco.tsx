@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Sparkles, X } from "lucide-react"
+import { trackActivity } from "../../../lib/api/activity"
 import { getAssistantNotice, recordAssistantNotice, type AssistantNotice } from "../../../lib/api/assistant"
 import { MUNECO_SIZE, isAssistantHiddenOn } from "../../../lib/assistant"
 import { hasActiveSubscription, hasFeature, useAuth } from "../../../lib/auth/store"
@@ -154,7 +155,10 @@ const Muneco = () => {
 
       {/* Botón provisional: ocupa lo mismo que ocupará el muñeco. El punto = «tengo algo para ti». */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (!open) trackActivity("assistant_open")
+          setOpen(!open)
+        }}
         aria-label={t("assistant.open", "Abrir el asistente")}
         aria-expanded={open}
         style={{ width: MUNECO_SIZE, height: MUNECO_SIZE }}
