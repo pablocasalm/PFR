@@ -248,8 +248,9 @@ Subpasos nacidos:
 - ⬜ Textos definitivos de avisos, panel y adelanto (ES/EN) e importarlos (claves `assistant.*`).
 - ⬜ Personaje (tarjeta #148): bocetos → boceto en la app → SVG del ilustrador con posturas.
 - ⬜ Política de privacidad: envío de datos de uso a Anthropic.
-- ⬜ Pantalla de admin para leer avisos y conversaciones (hoy solo endpoints JSON).
-- ⬜ Llevar la rama `asistente` a `main` (front y back) con el interruptor apagado.
+- ✅ Llevar la rama `asistente` a `main` (front y back) con el interruptor apagado (13/11/2026).
+- ✅ Pestaña «Asistente» en Métricas (`MetricsAssistant`): avisos, panel, «Pasarme a Club» y
+  conversaciones del chat con confianza, descartes y fuera de alcance.
 - ⬜ Más adelante: recomendar también análisis (capítulos) y píldoras, y usar lo que ya ha visto
   cada persona.
 
