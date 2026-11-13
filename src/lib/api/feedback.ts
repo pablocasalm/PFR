@@ -4,7 +4,7 @@ import { apiGet, apiDelete, apiPatch, apiPostForm, apiGetBlob } from "./client"
  * Feedback de beta. Envía el mensaje con el contexto (ruta y, si aplica, el contenido) y una
  * captura opcional, para poder triarlo. Requiere sesión.
  */
-export type FeedbackType = "bug" | "idea" | "other"
+export type FeedbackType = "bug" | "idea" | "other" | "support"
 
 export type FeedbackPayload = {
   message: string

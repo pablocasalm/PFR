@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { ChevronLeft, SendHorizontal } from "lucide-react"
+import { Check, ChevronLeft, LifeBuoy, SendHorizontal } from "lucide-react"
 import { trackActivity } from "../../../lib/api/activity"
 import { getAssistantUsage, type AssistantUsage } from "../../../lib/api/assistant"
 import type { ContentItem } from "../../../lib/api/types"
-import { currentAsSaved, openSavedChat, pafriHref, resetChat, sendChatMessage, useAssistantChat, type SavedChat } from "../../../lib/assistantChat"
+import { currentAsSaved, openSavedChat, pafriHref, resetChat, sendChatMessage, sendChatToSupport, useAssistantChat, type SavedChat } from "../../../lib/assistantChat"
 import { getHome } from "../../../lib/api/home"
 import { formatDuration, hueFor, watchHref } from "../../../lib/format"
 import { useApi } from "../../../lib/hooks/useApi"
@@ -171,6 +171,43 @@ const TypicalQuestions = ({ onNavigate }: { onNavigate: () => void }) => {
   )
 }
 
+/**
+ * Debajo de una respuesta de cuenta, pagos o incidencias: manda la conversación a Soporte (Admin →
+ * Feedback) para que le contestemos por email. Además siempre queda hello@ a mano.
+ */
+const SupportButton = ({ index, sent }: { index: number; sent?: boolean }) => {
+  const { t } = useI18n()
+  const [status, setStatus] = useState<"idle" | "sending" | "error">("idle")
+  if (sent)
+    return (
+      <p className="flex items-center gap-1.5 text-xs text-neon-cyan">
+        <Check className="h-4 w-4" />
+        {t("assistant.support.sent", "Enviada a Soporte. Te responderemos por email.")}
+      </p>
+    )
+  const send = async () => {
+    setStatus("sending")
+    setStatus((await sendChatToSupport(index)) ? "idle" : "error")
+  }
+  return (
+    <div className="space-y-1.5">
+      <button
+        onClick={send}
+        disabled={status === "sending"}
+        className="inline-flex items-center gap-1.5 rounded-full border border-neon-cyan/50 px-4 py-2 text-[13px] font-semibold text-neon-cyan transition hover:bg-neon-cyan/10 disabled:opacity-50"
+      >
+        <LifeBuoy className="h-4 w-4" />
+        {status === "sending" ? t("assistant.support.sending", "Enviando…") : t("assistant.support.send", "Enviar esta conversación a Soporte")}
+      </button>
+      {status === "error" && (
+        <p className="text-xs text-amber-300">
+          {t("assistant.support.error", "No se ha podido enviar. Escríbenos a hello@padelfilmroom.com.")}
+        </p>
+      )}
+    </div>
+  )
+}
+
 /** Conversación con el chat (fase 1): mensajes, tarjetas de los clips recomendados y «pensando». */
 const ChatThread = ({ onNavigate }: { onNavigate: () => void }) => {
   const { t } = useI18n()
@@ -189,6 +226,7 @@ const ChatThread = ({ onNavigate }: { onNavigate: () => void }) => {
         <div key={i} className="space-y-2">
           <Bubble from={m.role === "user" ? "user" : "muneco"}>{m.text}</Bubble>
           {m.items && m.items.length > 0 && <ItemList items={m.items} onNavigate={onNavigate} fromChat />}
+          {m.support && <SupportButton index={i} sent={m.supportSent} />}
         </div>
       ))}
       {chat.sending && (

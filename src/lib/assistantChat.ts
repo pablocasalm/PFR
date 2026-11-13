@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react"
 import { ApiError } from "./api/client"
-import { sendAssistantMessage, type AssistantUsage } from "./api/assistant"
+import { sendAssistantMessage, sendAssistantSupport, type AssistantUsage } from "./api/assistant"
 import type { ContentItem } from "./api/types"
 import { watchHref } from "./format"
 
@@ -11,7 +11,15 @@ import { watchHref } from "./format"
  * otra app). Cada una dura KEEP_MS desde su último mensaje, y se borran al cerrar sesión o si entra
  * otra cuenta en el navegador. En el backend se guardan 12 meses para revisarlas nosotros.
  */
-export type ChatMessage = { role: "user" | "assistant"; text: string; items?: ContentItem[] }
+export type ChatMessage = {
+  role: "user" | "assistant"
+  text: string
+  items?: ContentItem[]
+  /** Duda de cuenta, pagos o incidencia: debajo sale el botón para enviar la conversación a Soporte. */
+  support?: boolean
+  /** Ya se envió a Soporte desde este mensaje. */
+  supportSent?: boolean
+}
 export type ChatError = "limit" | "unavailable" | "other"
 export type SavedChat = { conversationId: number; messages: ChatMessage[]; startedAt: string; updatedAt: string }
 
@@ -114,7 +122,7 @@ export async function sendChatMessage(text: string, language: string): Promise<b
     const reply = await sendAssistantMessage(message, language, state.conversationId)
     set({
       conversationId: reply.conversationId,
-      messages: [...state.messages, { role: "assistant", text: reply.message, items: reply.items }],
+      messages: [...state.messages, { role: "assistant", text: reply.message, items: reply.items, support: reply.support || undefined }],
       updatedAt: new Date().toISOString(),
       usage: reply.usage,
       sending: false,
@@ -127,6 +135,20 @@ export async function sendChatMessage(text: string, language: string): Promise<b
     set({ messages, startedAt: messages.length ? state.startedAt : null, sending: false, error })
     return false
   }
+}
+
+/** Manda la conversación de ahora a Soporte y lo apunta en el mensaje que lo ofreció. */
+export async function sendChatToSupport(index: number): Promise<boolean> {
+  const conversationId = state.conversationId
+  if (conversationId == null) return false
+  try {
+    await sendAssistantSupport(conversationId)
+  } catch {
+    return false
+  }
+  if (state.conversationId === conversationId)
+    set({ messages: state.messages.map((m, i) => (i === index ? { ...m, supportSent: true } : m)) })
+  return true
 }
 
 /** La conversación de ahora como entrada del historial (null si está vacía o el backend aún no la conoce). */

@@ -34,6 +34,8 @@ export type AssistantChatReply = {
   /** Clips recomendados, ya comprobados contra la base de datos. */
   items: ContentItem[]
   outOfScope: boolean
+  /** Duda de cuenta, pagos o una incidencia: se ofrece enviar la conversación a Soporte. */
+  support: boolean
   usage: AssistantUsage
 }
 
@@ -43,6 +45,10 @@ export const getAssistantUsage = () => apiGet<AssistantUsage>("/api/assistant/us
 /** POST /api/assistant/chat. Errores: 429 code "assistant_limit", 503 code "assistant_unavailable". */
 export const sendAssistantMessage = (message: string, language: string, conversationId: number | null) =>
   apiPost<AssistantChatReply>("/api/assistant/chat", { message, language, conversationId })
+
+/** POST /api/assistant/support → manda la conversación a Soporte (Admin → Feedback, tipo «support»). */
+export const sendAssistantSupport = (conversationId: number) =>
+  apiPost<{ ok: boolean }>("/api/assistant/support", { conversationId })
 
 // ── Administración (pestaña «Asistente» de Métricas) ──
 
