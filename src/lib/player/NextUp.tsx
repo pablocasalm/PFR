@@ -33,17 +33,20 @@ const COUNTDOWN_SECONDS = 10
 export const NextUpCard = ({
   item,
   label,
+  href,
   onReplay,
 }: {
   item: ContentItem
   label: string
+  /** Adónde lleva (por defecto, el visor del contenido; p. ej. con `&from=pafri` si lo recomendó PAFRI). */
+  href?: string
   /** Vuelve a reproducir el vídeo actual desde el principio (y cierra la tarjeta). */
   onReplay: () => void
 }) => {
   const navigate = useNavigate()
   const { t, lang } = useI18n()
   const [seconds, setSeconds] = useState(COUNTDOWN_SECONDS) // -1 = cuenta atrás cancelada
-  const go = () => navigate(watchHref(item))
+  const go = () => navigate(href ?? watchHref(item))
 
   // Cuenta atrás → navegar.
   useEffect(() => {

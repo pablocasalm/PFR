@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { X } from "lucide-react"
+import { History, X } from "lucide-react"
 import { trackActivity } from "../../../lib/api/activity"
 import { getAssistantNotice, recordAssistantNotice, type AssistantNotice } from "../../../lib/api/assistant"
 import { ASSISTANT_NAME, MUNECO_SIZE, hasGreeted, isAssistantHiddenOn, markGreeted } from "../../../lib/assistant"
-import { useAssistantChat } from "../../../lib/assistantChat"
+import { setChatOwner, useAssistantChat } from "../../../lib/assistantChat"
 import { useRatingOpen } from "../../../lib/ratingOpen"
 import { hasActiveSubscription, hasFeature, useAuth } from "../../../lib/auth/store"
 import { formatDuration, hueFor, watchHref } from "../../../lib/format"
@@ -78,6 +78,7 @@ const Muneco = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [notice, setNotice] = useState<AssistantNotice | null>(null)
   const recordedShown = useRef<string | null>(null)
 
@@ -89,6 +90,11 @@ const Muneco = () => {
   // Mientras se pide la valoración, fuera: le tapa la esquina, y el aviso no contaría como visto.
   const visible = ready && !isAssistantHiddenOn(location.pathname) && !ratingOpen
   const isClub = hasFeature(user, "monthlyPicks")
+
+  // Las conversaciones guardadas son de esta cuenta: si entra otra en el navegador, se borran.
+  useEffect(() => {
+    if (user?.email) setChatOwner(user.email)
+  }, [user?.email])
 
   // Un aviso por visita: se pide una sola vez al abrir la app (el muñeco se monta con el layout).
   const requested = useRef(false)
@@ -135,11 +141,34 @@ const Muneco = () => {
       markGreeted()
       setGreeted(true)
     }
+    if (open) setShowHistory(false)
     setOpen(!open)
   }
 
   const cta = notice ? noticeCta(t, notice) : null
-  const panel = <MunecoPanel isClub={isClub} onNavigate={() => setOpen(false)} />
+  const close = () => {
+    setOpen(false)
+    setShowHistory(false)
+  }
+  const panel = <MunecoPanel isClub={isClub} onNavigate={close} showHistory={showHistory} onCloseHistory={() => setShowHistory(false)} />
+
+  // Historial de conversaciones (Club/Coach): junto a la X, en el móvil y en el escritorio.
+  const historyButton = isClub && (
+    <button
+      onClick={() => setShowHistory(!showHistory)}
+      aria-label={t("assistant.history.open", "Tus conversaciones")}
+      aria-pressed={showHistory}
+      className={`flex h-8 w-8 items-center justify-center rounded-full transition ${showHistory ? "bg-neon-cyan/15 text-neon-cyan" : "text-white/60 hover:text-white"}`}
+    >
+      <History className="h-[18px] w-[18px]" />
+    </button>
+  )
+  const title = (
+    <span className="flex items-center gap-2">
+      <Pafri pose="quieto" size={28} />
+      {ASSISTANT_NAME}
+    </span>
+  )
 
   return (
     <>
@@ -198,7 +227,7 @@ const Muneco = () => {
       </button>
 
       {/* Panel: hoja inferior en móvil y tableta; tarjeta flotante encima del botón en escritorio. */}
-      <BottomSheet open={open} onClose={() => setOpen(false)} title={ASSISTANT_NAME}>
+      <BottomSheet open={open} onClose={close} title={title} actions={historyButton}>
         {panel}
       </BottomSheet>
       {open && (
@@ -208,13 +237,13 @@ const Muneco = () => {
           className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+92px)] right-4 z-40 hidden max-h-[70dvh] w-96 flex-col overflow-hidden rounded-2xl border border-white/10 bg-midnight-soft shadow-2xl lg:flex xl:bottom-[calc(5.5rem+92px)] xl:right-6"
         >
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <p className="flex items-center gap-2 font-display text-base font-semibold">
-              <Pafri pose="minimal" size={28} />
-              {ASSISTANT_NAME}
-            </p>
-            <button onClick={() => setOpen(false)} aria-label={t("assistant.close", "Cerrar")} className="flex h-8 w-8 items-center justify-center rounded-full text-white/60 hover:text-white">
-              <X className="h-4 w-4" />
-            </button>
+            <p className="font-display text-base font-semibold">{title}</p>
+            <div className="flex items-center gap-1">
+              {historyButton}
+              <button onClick={close} aria-label={t("assistant.close", "Cerrar")} className="flex h-8 w-8 items-center justify-center rounded-full text-white/60 hover:text-white">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
           <div className="overflow-y-auto p-4">{panel}</div>
         </div>

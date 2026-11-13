@@ -3,6 +3,7 @@ import { apiLogin, apiRegister, apiLogout, markOnboardingSeen, markVideoTourSeen
 import { refreshAccessToken } from "../api/client"
 import { clearSaved } from "../saved/store"
 import { clearFolders } from "../saved/folders"
+import { clearChat } from "../assistantChat"
 import { invalidateApiCache } from "../hooks/useApi"
 import { setLanguage } from "../i18n/store"
 
@@ -192,6 +193,7 @@ export function logout() {
   setState({ token: null, user: null })
   clearSaved() // Mi Lista es por-cuenta: se vacía al salir.
   clearFolders()
+  clearChat() // la conversación con PAFRI, también.
   invalidateApiCache() // no dejar datos cacheados de la cuenta anterior.
 }
 

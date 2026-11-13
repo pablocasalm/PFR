@@ -4,7 +4,7 @@ import { ChevronLeft, SendHorizontal } from "lucide-react"
 import { trackActivity } from "../../../lib/api/activity"
 import { getAssistantUsage, type AssistantUsage } from "../../../lib/api/assistant"
 import type { ContentItem } from "../../../lib/api/types"
-import { resetChat, sendChatMessage, useAssistantChat } from "../../../lib/assistantChat"
+import { currentAsSaved, openSavedChat, pafriHref, resetChat, sendChatMessage, useAssistantChat, type SavedChat } from "../../../lib/assistantChat"
 import { getHome } from "../../../lib/api/home"
 import { formatDuration, hueFor, watchHref } from "../../../lib/format"
 import { useApi } from "../../../lib/hooks/useApi"
@@ -54,12 +54,12 @@ const Bubble = ({ from, children }: { from: "muneco" | "user"; children: React.R
 )
 
 /** Tarjetas compactas (miniatura + título) para el panel: novedades y clips que recomienda el chat. */
-const ItemList = ({ items, onNavigate }: { items: ContentItem[]; onNavigate: () => void }) => {
+const ItemList = ({ items, onNavigate, fromChat }: { items: ContentItem[]; onNavigate: () => void; fromChat?: boolean }) => {
   const { lang } = useI18n()
   return (
     <div className="space-y-2">
       {items.map((item) => (
-        <Link key={`${item.type}-${item.id}`} to={watchHref(item)} onClick={onNavigate} className="flex items-center gap-3 rounded-xl border border-white/10 p-2 hover:bg-white/5">
+        <Link key={`${item.type}-${item.id}`} to={fromChat ? pafriHref(item) : watchHref(item)} onClick={onNavigate} className="flex items-center gap-3 rounded-xl border border-white/10 p-2 hover:bg-white/5">
           <div className="relative w-24 shrink-0 overflow-hidden rounded-lg">
             <Thumb src={item.thumbnailUrl} hue={hueFor(item.id)} className="aspect-video w-full" />
             <ProgressLine progress={item.progress} completed={item.completed} />
@@ -188,7 +188,7 @@ const ChatThread = ({ onNavigate }: { onNavigate: () => void }) => {
       {chat.messages.map((m, i) => (
         <div key={i} className="space-y-2">
           <Bubble from={m.role === "user" ? "user" : "muneco"}>{m.text}</Bubble>
-          {m.items && m.items.length > 0 && <ItemList items={m.items} onNavigate={onNavigate} />}
+          {m.items && m.items.length > 0 && <ItemList items={m.items} onNavigate={onNavigate} fromChat />}
         </div>
       ))}
       {chat.sending && (
@@ -257,12 +257,65 @@ const ChatInput = ({ usage }: { usage: AssistantUsage }) => {
   )
 }
 
+/** Una conversación del historial: la primera pregunta, la hora y cuántos clips recomendó. */
+const SavedChatRow = ({ chat, current, onOpen }: { chat: SavedChat; current?: boolean; onOpen: () => void }) => {
+  const { t, lang } = useI18n()
+  const first = chat.messages.find((m) => m.role === "user")?.text ?? ""
+  const clips = chat.messages.reduce((n, m) => n + (m.items?.length ?? 0), 0)
+  const time = new Date(chat.startedAt).toLocaleTimeString(lang === "en" ? "en-US" : "es-ES", { hour: "2-digit", minute: "2-digit" })
+  return (
+    <button onClick={onOpen} className="w-full rounded-xl border border-white/10 p-3 text-left hover:bg-white/5">
+      <span className="line-clamp-2 text-sm leading-snug text-white">{first}</span>
+      <span className="mt-1 block text-[11px] text-white/50">
+        {time}
+        {clips > 0 && ` · ${clips === 1 ? t("assistant.history.clips.one", "1 clip") : t("assistant.history.clips", "{count} clips", { count: clips })}`}
+        {current && ` · ${t("assistant.history.current", "la de ahora")}`}
+      </span>
+    </button>
+  )
+}
+
+/** Historial: las conversaciones de las últimas 24 h (la de ahora primero), para volver a cualquiera. */
+const HistoryList = ({ onClose }: { onClose: () => void }) => {
+  const { t } = useI18n()
+  const chat = useAssistantChat()
+  const current = currentAsSaved(chat)
+  return (
+    <div className="space-y-3">
+      <button onClick={onClose} className="flex items-center gap-1 text-xs font-medium text-white/60 hover:text-white">
+        <ChevronLeft className="h-4 w-4" />
+        {t("assistant.history.back", "Volver")}
+      </button>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-white/40">{t("assistant.history.title", "Tus conversaciones")}</p>
+      {!current && chat.history.length === 0 ? (
+        <p className="text-sm text-white/60">{t("assistant.history.empty", "Aquí verás tus conversaciones para volver a ellas.")}</p>
+      ) : (
+        <div className="space-y-2">
+          {current && <SavedChatRow chat={current} current onOpen={onClose} />}
+          {chat.history.map((h) => (
+            <SavedChatRow
+              key={h.conversationId}
+              chat={h}
+              onOpen={() => {
+                openSavedChat(h.conversationId)
+                onClose()
+              }}
+            />
+          ))}
+        </div>
+      )}
+      <p className="text-[11px] leading-snug text-white/40">{t("assistant.history.note", "Se guardan en este dispositivo 24 horas desde el último mensaje.")}</p>
+    </div>
+  )
+}
+
 /** Club y Coach: preguntas típicas o la conversación y, debajo, la caja del chat (si está disponible). */
-const ClubPanel = ({ onNavigate }: { onNavigate: () => void }) => {
+const ClubPanel = ({ onNavigate, showHistory, onCloseHistory }: { onNavigate: () => void; showHistory: boolean; onCloseHistory: () => void }) => {
   const { t } = useI18n()
   const chat = useAssistantChat()
   const { data } = useApi(getAssistantUsage, [], "assistant-usage")
   const usage = chat.usage ?? (data && "used" in data ? data : null)
+  if (showHistory) return <HistoryList onClose={onCloseHistory} />
   return (
     <div className="space-y-4">
       {chat.messages.length > 0 ? <ChatThread onNavigate={onNavigate} /> : <TypicalQuestions onNavigate={onNavigate} />}
@@ -308,7 +361,16 @@ const StarterPanel = ({ onNavigate }: { onNavigate: () => void }) => {
   )
 }
 
-const MunecoPanel = ({ isClub, onNavigate }: { isClub: boolean; onNavigate: () => void }) =>
-  isClub ? <ClubPanel onNavigate={onNavigate} /> : <StarterPanel onNavigate={onNavigate} />
+const MunecoPanel = ({
+  isClub,
+  onNavigate,
+  showHistory,
+  onCloseHistory,
+}: {
+  isClub: boolean
+  onNavigate: () => void
+  showHistory: boolean
+  onCloseHistory: () => void
+}) => (isClub ? <ClubPanel onNavigate={onNavigate} showHistory={showHistory} onCloseHistory={onCloseHistory} /> : <StarterPanel onNavigate={onNavigate} />)
 
 export default MunecoPanel

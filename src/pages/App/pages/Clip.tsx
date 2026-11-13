@@ -25,6 +25,9 @@ import { audioDefaultOf, handleVideoTourDone } from "../../../lib/player/videoTo
 import { NextUpCard, pickNextRelated } from "../../../lib/player/NextUp"
 import { saveProgress } from "../../../lib/api/history"
 import EditContentLink from "../components/EditContentLink"
+import { PafriStrip, usePafriList } from "../components/PafriNext"
+import { ASSISTANT_NAME } from "../../../lib/assistant"
+import { pafriHref } from "../../../lib/assistantChat"
 import ProgressLine from "../components/ProgressLine"
 import ErrorScreen from "../components/ErrorScreen"
 import { useAuth } from "../../../lib/auth/store"
@@ -492,18 +495,31 @@ const VerticalPlayer = ({ clip, social, endSlot }: { clip: ClipDetail; social: C
 // Layouts
 // ---------------------------------------------------------------------------
 
+/**
+ * Lo que se ofrece al terminar: si se llegó desde PAFRI, el siguiente de su lista; si no (o era el
+ * último), el relacionado de siempre.
+ */
+const useNextUp = (clip: ClipDetail) => {
+  const { t } = useI18n()
+  const pafri = usePafriList({ id: clip.id, type: "clip" })
+  const nextClip = pafri?.next ?? pickNextRelated(clip.related, clip.concepts)
+  const label = pafri?.next ? t("watch.next-pafri", "Siguiente que te recomendó {name}", { name: ASSISTANT_NAME }) : t("watch.next-clip", "Siguiente clip")
+  const endSlot = nextClip
+    ? (_dismiss: () => void, replay: () => void) => (
+        <NextUpCard item={nextClip} label={label} href={pafri?.next ? pafriHref(nextClip) : undefined} onReplay={replay} />
+      )
+    : undefined
+  return { nextClip, endSlot, pafri }
+}
+
 const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => {
   const { t, lang } = useI18n()
   const social = useClipSocial(clip)
-  const nextClip = pickNextRelated(clip.related, clip.concepts)
-  const endSlot = nextClip
-    ? (_dismiss: () => void, replay: () => void) => (
-        <NextUpCard item={nextClip} label={t("watch.next-clip", "Siguiente clip")} onReplay={replay} />
-      )
-    : undefined
+  const { nextClip, endSlot, pafri } = useNextUp(clip)
   return (
     <main className="w-full space-y-6 py-6 pb-28 xl:pb-8">
       <VideoPlayer clip={clip} endSlot={endSlot} />
+      {pafri && <PafriStrip list={pafri} />}
 
       {/* Móvil: pista visual de que hay más contenido relacionado hacia abajo (§9.7) */}
       {nextClip && (
@@ -547,17 +563,13 @@ const ClipHorizontal = ({ clip }: { clip: ClipDetail }) => {
 const ClipVertical = ({ clip }: { clip: ClipDetail }) => {
   const { t, lang } = useI18n()
   const social = useClipSocial(clip)
-  const nextClip = pickNextRelated(clip.related, clip.concepts)
-  const endSlot = nextClip
-    ? (_dismiss: () => void, replay: () => void) => (
-        <NextUpCard item={nextClip} label={t("watch.next-clip", "Siguiente clip")} onReplay={replay} />
-      )
-    : undefined
+  const { endSlot, pafri } = useNextUp(clip)
   return (
     <main className="w-full py-6 pb-28 xl:pb-8">
       <div className="grid gap-8 lg:grid-cols-[420px_1fr] lg:items-start">
         <VerticalPlayer clip={clip} social={social} endSlot={endSlot} />
         <div className="space-y-6">
+          {pafri && <PafriStrip list={pafri} />}
           <div className="space-y-4">
             <span className="inline-block rounded border border-neon-cyan/40 bg-neon-cyan/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neon-cyan">
               {t("clip.vertical-badge", "Clip · Vertical")}
