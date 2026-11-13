@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { Sparkles, X } from "lucide-react"
+import { X } from "lucide-react"
 import { trackActivity } from "../../../lib/api/activity"
 import { getAssistantNotice, recordAssistantNotice, type AssistantNotice } from "../../../lib/api/assistant"
-import { MUNECO_SIZE, isAssistantHiddenOn } from "../../../lib/assistant"
+import { ASSISTANT_NAME, MUNECO_SIZE, hasGreeted, isAssistantHiddenOn, markGreeted } from "../../../lib/assistant"
+import { useAssistantChat } from "../../../lib/assistantChat"
 import { useRatingOpen } from "../../../lib/ratingOpen"
 import { hasActiveSubscription, hasFeature, useAuth } from "../../../lib/auth/store"
 import { formatDuration, hueFor, watchHref } from "../../../lib/format"
@@ -13,14 +14,15 @@ import { BottomSheet } from "../../../lib/ui/BottomSheet"
 import { Thumb } from "./ContentCard"
 import ProgressLine from "./ProgressLine"
 import MunecoPanel from "./MunecoPanel"
+import Pafri, { type PafriPose } from "./Pafri"
 
 /**
- * Muñeco (asistente, fase 0, tarjeta #147): botón abajo a la derecha, globo con un aviso (como mucho
+ * Muñeco (PAFRI, asistente, tarjeta #147): botón abajo a la derecha, globo con un aviso (como mucho
  * uno por visita, ver AssistantNotices en el backend) y panel con preguntas típicas. Sin IA todavía.
  * Solo se monta con VITE_ASSISTANT_ENABLED (ver AppLayout).
  *
  * Posición: en móvil y tableta, encima de la barra inferior (MobileNav); en escritorio (xl), encima
- * del botón de Feedback. Los `bottom-[…]` de abajo suman MUNECO_SIZE + 12px de separación (76px)
+ * del botón de Feedback. Los `bottom-[…]` de abajo suman MUNECO_SIZE + 12px de separación (92px)
  * para colocar el globo y el panel encima del botón: si cambia el tamaño, cambiarlos también.
  */
 
@@ -80,6 +82,8 @@ const Muneco = () => {
   const recordedShown = useRef<string | null>(null)
 
   const ratingOpen = useRatingOpen()
+  const chat = useAssistantChat()
+  const [greeted, setGreeted] = useState(hasGreeted)
 
   const ready = !!user && hasActiveSubscription(user) && !!user.hasSeenOnboarding
   // Mientras se pide la valoración, fuera: le tapa la esquina, y el aviso no contaría como visto.
@@ -119,6 +123,21 @@ const Muneco = () => {
     if (href) navigate(href)
   }
 
+  // Postura: piensa mientras la IA responde; con el panel abierto, habla (o saluda en el adelanto de
+  // Essential); cerrado, avisa si tiene algo, saluda hasta la primera vez que se abre, y si no, quieto.
+  const pose: PafriPose = open
+    ? chat.sending ? "pensando" : isClub ? "hablando" : "saludando"
+    : chat.sending ? "pensando" : notice ? "aviso" : !greeted ? "saludando" : "quieto"
+
+  const toggle = () => {
+    if (!open) trackActivity("assistant_open")
+    if (!greeted) {
+      markGreeted()
+      setGreeted(true)
+    }
+    setOpen(!open)
+  }
+
   const cta = notice ? noticeCta(t, notice) : null
   const panel = <MunecoPanel isClub={isClub} onNavigate={() => setOpen(false)} />
 
@@ -127,7 +146,7 @@ const Muneco = () => {
       {showBubble && notice && (
         <div
           role="status"
-          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+76px)] right-4 z-40 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-neon-cyan/30 bg-midnight-soft/95 p-3 text-sm text-white shadow-xl backdrop-blur xl:bottom-[calc(5.5rem+76px)] xl:right-6"
+          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+92px)] right-4 z-40 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-neon-cyan/30 bg-midnight-soft/95 p-3 text-sm text-white shadow-xl backdrop-blur xl:bottom-[calc(5.5rem+92px)] xl:right-6"
         >
           <button
             onClick={dismiss}
@@ -157,33 +176,42 @@ const Muneco = () => {
         </div>
       )}
 
-      {/* Botón provisional: ocupa lo mismo que ocupará el muñeco. El punto = «tengo algo para ti». */}
+      {/* La primera vez, PAFRI se presenta al lado del botón (como en la landing), hasta que se abre. */}
+      {!greeted && !open && !showBubble && (
+        <button
+          onClick={toggle}
+          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+24px)] right-[104px] z-40 whitespace-nowrap rounded-full border border-white/10 bg-midnight-soft/95 px-3 py-1.5 text-[13px] text-white shadow-lg backdrop-blur xl:bottom-[calc(5.5rem+24px)] xl:right-[112px]"
+        >
+          {t("assistant.greeting", "¡Hola! Soy {name}", { name: ASSISTANT_NAME })}
+        </button>
+      )}
+
+      {/* Círculo con halo detrás para que se lea como botón (en el móvil no hay hover que lo delate). */}
       <button
-        onClick={() => {
-          if (!open) trackActivity("assistant_open")
-          setOpen(!open)
-        }}
-        aria-label={t("assistant.open", "Abrir el asistente")}
+        onClick={toggle}
+        aria-label={t("assistant.open", "Hablar con {name}", { name: ASSISTANT_NAME })}
         aria-expanded={open}
         style={{ width: MUNECO_SIZE, height: MUNECO_SIZE }}
-        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 flex items-center justify-center rounded-2xl border-2 border-dashed border-neon-cyan/50 bg-midnight/90 text-neon-cyan shadow-lg backdrop-blur transition hover:bg-neon-cyan/10 xl:bottom-[5.5rem] xl:right-6"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 flex items-center justify-center rounded-full border border-neon-cyan/40 bg-midnight-soft shadow-[0_0_18px_rgba(40,240,224,0.25),0_6px_16px_rgba(0,0,0,0.5)] transition-transform active:scale-95 xl:bottom-[5.5rem] xl:right-6"
       >
-        <Sparkles className="h-7 w-7" />
-        {notice && !open && <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-midnight bg-neon-lime" />}
+        <Pafri pose={pose} size={MUNECO_SIZE - 12} />
       </button>
 
       {/* Panel: hoja inferior en móvil y tableta; tarjeta flotante encima del botón en escritorio. */}
-      <BottomSheet open={open} onClose={() => setOpen(false)} title={t("assistant.title", "Tu asistente de PFR")}>
+      <BottomSheet open={open} onClose={() => setOpen(false)} title={ASSISTANT_NAME}>
         {panel}
       </BottomSheet>
       {open && (
         <div
           role="dialog"
-          aria-label={t("assistant.title", "Tu asistente de PFR")}
-          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+76px)] right-4 z-40 hidden max-h-[70dvh] w-96 flex-col overflow-hidden rounded-2xl border border-white/10 bg-midnight-soft shadow-2xl lg:flex xl:bottom-[calc(5.5rem+76px)] xl:right-6"
+          aria-label={ASSISTANT_NAME}
+          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+92px)] right-4 z-40 hidden max-h-[70dvh] w-96 flex-col overflow-hidden rounded-2xl border border-white/10 bg-midnight-soft shadow-2xl lg:flex xl:bottom-[calc(5.5rem+92px)] xl:right-6"
         >
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <p className="font-display text-base font-semibold">{t("assistant.title", "Tu asistente de PFR")}</p>
+            <p className="flex items-center gap-2 font-display text-base font-semibold">
+              <Pafri pose="minimal" size={28} />
+              {ASSISTANT_NAME}
+            </p>
             <button onClick={() => setOpen(false)} aria-label={t("assistant.close", "Cerrar")} className="flex h-8 w-8 items-center justify-center rounded-full text-white/60 hover:text-white">
               <X className="h-4 w-4" />
             </button>

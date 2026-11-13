@@ -14,6 +14,8 @@ import { testHref } from "../../../lib/starterTest"
 import { blockSearchHref, useTaxonomy } from "../../../lib/taxonomy"
 import { Thumb } from "./ContentCard"
 import ProgressLine from "./ProgressLine"
+import Pafri from "./Pafri"
+import { ASSISTANT_NAME } from "../../../lib/assistant"
 
 /**
  * Contenido del panel del muñeco. Club y Coach: botones de preguntas típicas con respuestas fijas que
@@ -93,7 +95,7 @@ const TypicalQuestions = ({ onNavigate }: { onNavigate: () => void }) => {
   if (!question)
     return (
       <div className="space-y-3">
-        <Bubble from="muneco">{t("assistant.hello", "¡Hola! ¿En qué te ayudo?")}</Bubble>
+        <Bubble from="muneco">{t("assistant.hello", "¡Hola! Soy {name}. ¿En qué te ayudo?", { name: ASSISTANT_NAME })}</Bubble>
         <div className="flex flex-col items-end gap-2">
           {questions.map((q) => (
             <button
@@ -190,9 +192,10 @@ const ChatThread = ({ onNavigate }: { onNavigate: () => void }) => {
         </div>
       ))}
       {chat.sending && (
-        <Bubble from="muneco">
-          <span className="animate-pulse text-white/60">{t("assistant.chat.thinking", "Pensando…")}</span>
-        </Bubble>
+        <p className="flex items-center gap-2 text-sm text-white/60">
+          <Pafri pose="pensando" size={32} />
+          <span className="animate-pulse">{t("assistant.chat.thinking", "{name} está pensando…", { name: ASSISTANT_NAME })}</span>
+        </p>
       )}
       <div ref={end} />
     </div>

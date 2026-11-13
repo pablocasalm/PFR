@@ -249,7 +249,11 @@ Subpasos nacidos:
 - ✅ Convive con la valoración: el muñeco se esconde mientras se pide (comparten esquina) y su
   panel de escritorio cuenta como ventana abierta para que la valoración no salga encima.
 - ⬜ Textos definitivos de avisos, panel y adelanto (ES/EN) de Andrea; se cambian en Traducciones (claves `assistant.*`).
-- ⬜ Personaje (tarjeta #148): bocetos → boceto en la app → SVG del ilustrador con posturas.
+- ✅ Personaje (tarjeta #148): **PAFRI** (Padel Film Room Intelligence), diseño v14 en
+  `src/assets/pafri/`. Posturas: quieto, aviso, hablando, pensando, saludando (primera vez y
+  adelanto de Essential) y minimal (cabecera del panel). Botón de 80 px dentro de un círculo con
+  halo; «¡Hola! Soy PAFRI» al lado hasta que se abre la primera vez. Nombre en `ASSISTANT_NAME`.
+- ⬜ Postura con visera: copiada pero sin uso; decidir para qué.
 - ⬜ Política de privacidad: envío de datos de uso a Anthropic.
 - ✅ Llevar la rama `asistente` a `main` (front y back) con el interruptor apagado (13/11/2026).
 - ✅ Pestaña «Asistente» en Métricas (`MetricsAssistant`): avisos, panel, «Pasarme a Club» y
