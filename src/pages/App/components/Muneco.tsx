@@ -4,6 +4,7 @@ import { Sparkles, X } from "lucide-react"
 import { trackActivity } from "../../../lib/api/activity"
 import { getAssistantNotice, recordAssistantNotice, type AssistantNotice } from "../../../lib/api/assistant"
 import { MUNECO_SIZE, isAssistantHiddenOn } from "../../../lib/assistant"
+import { useRatingOpen } from "../../../lib/ratingOpen"
 import { hasActiveSubscription, hasFeature, useAuth } from "../../../lib/auth/store"
 import { formatDuration, hueFor, watchHref } from "../../../lib/format"
 import { pickText } from "../../../lib/i18n/content"
@@ -78,8 +79,11 @@ const Muneco = () => {
   const [notice, setNotice] = useState<AssistantNotice | null>(null)
   const recordedShown = useRef<string | null>(null)
 
+  const ratingOpen = useRatingOpen()
+
   const ready = !!user && hasActiveSubscription(user) && !!user.hasSeenOnboarding
-  const visible = ready && !isAssistantHiddenOn(location.pathname)
+  // Mientras se pide la valoración, fuera: le tapa la esquina, y el aviso no contaría como visto.
+  const visible = ready && !isAssistantHiddenOn(location.pathname) && !ratingOpen
   const isClub = hasFeature(user, "monthlyPicks")
 
   // Un aviso por visita: se pide una sola vez al abrir la app (el muñeco se monta con el layout).
@@ -173,7 +177,11 @@ const Muneco = () => {
         {panel}
       </BottomSheet>
       {open && (
-        <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+76px)] right-4 z-40 hidden max-h-[70dvh] w-96 flex-col overflow-hidden rounded-2xl border border-white/10 bg-midnight-soft shadow-2xl lg:flex xl:bottom-[calc(5.5rem+76px)] xl:right-6">
+        <div
+          role="dialog"
+          aria-label={t("assistant.title", "Tu asistente de PFR")}
+          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+76px)] right-4 z-40 hidden max-h-[70dvh] w-96 flex-col overflow-hidden rounded-2xl border border-white/10 bg-midnight-soft shadow-2xl lg:flex xl:bottom-[calc(5.5rem+76px)] xl:right-6"
+        >
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <p className="font-display text-base font-semibold">{t("assistant.title", "Tu asistente de PFR")}</p>
             <button onClick={() => setOpen(false)} aria-label={t("assistant.close", "Cerrar")} className="flex h-8 w-8 items-center justify-center rounded-full text-white/60 hover:text-white">

@@ -4,6 +4,7 @@ import { Check, Star, X } from "lucide-react"
 import { useAuth } from "../../../lib/auth/store"
 import { useI18n } from "../../../lib/i18n/store"
 import { getRatingPrompt, sendRatingEvent, submitRating } from "../../../lib/api/ratings"
+import { setRatingOpen } from "../../../lib/ratingOpen"
 
 /** Solo se pide en pantallas de «estar por ahí»: nunca en el reproductor, formularios ni el panel. */
 const ALLOWED_PATHS = /^\/app\/(inicio|explorar|mi-lista)(\/|$)/
@@ -77,6 +78,12 @@ const RatingPrompt = () => {
     }, preview ? 500 : SETTLE_MS)
     return () => window.clearTimeout(timer)
   }, [eligible, open, allowedHere, location.pathname, preview])
+
+  // El muñeco se esconde mientras tanto (comparten esquina).
+  useEffect(() => {
+    setRatingOpen(open)
+    return () => setRatingOpen(false)
+  }, [open])
 
   // Modal (por debajo de xl): bloquea el scroll del fondo, como BottomSheet.
   useEffect(() => {
