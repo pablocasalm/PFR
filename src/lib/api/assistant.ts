@@ -46,7 +46,7 @@ export const getAssistantUsage = () => apiGet<AssistantUsage>("/api/assistant/us
 export const sendAssistantMessage = (message: string, language: string, conversationId: number | null) =>
   apiPost<AssistantChatReply>("/api/assistant/chat", { message, language, conversationId })
 
-/** POST /api/assistant/support → manda la conversación a Soporte (Admin → Feedback, tipo «support»). */
+/** POST /api/assistant/support → manda la conversación por email a hello@ para contestar a la persona. */
 export const sendAssistantSupport = (conversationId: number) =>
   apiPost<{ ok: boolean }>("/api/assistant/support", { conversationId })
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { Inbox, Bug, Lightbulb, LifeBuoy, MessageCircle, Trash2, Save, History, ChevronDown, ImageIcon, X } from "lucide-react"
+import { Inbox, Bug, Lightbulb, MessageCircle, Trash2, Save, History, ChevronDown, ImageIcon, X } from "lucide-react"
 import {
   listFeedback,
   updateFeedback,
@@ -30,8 +30,6 @@ const typeMetaOf = (t: TFunc): Record<FeedbackType, { label: string; icon: typeo
   bug: { label: t("feedback-button.type.bug", "Fallo"), icon: Bug, cls: "border-red-400/40 bg-red-400/10 text-red-300" },
   idea: { label: t("feedback-button.type.idea", "Idea"), icon: Lightbulb, cls: "border-lime-400/40 bg-lime-400/10 text-lime-300" },
   other: { label: t("feedback-button.type.other", "Otro"), icon: MessageCircle, cls: "border-white/20 bg-white/5 text-white/70" },
-  // Enviado desde el chat de PAFRI (cuenta, pagos o incidencias), con la conversación en el mensaje.
-  support: { label: t("admin-feedback.type.support", "Soporte"), icon: LifeBuoy, cls: "border-sky-400/40 bg-sky-400/10 text-sky-300" },
 })
 
 const statusMetaOf = (t: TFunc): Record<FeedbackStatus, { label: string; cls: string }> => ({
@@ -167,7 +165,6 @@ const AdminFeedback = () => {
         <button onClick={() => setTypeFilter("bug")} className={tabCls(typeFilter === "bug")}>{t("admin-feedback.filter.bugs", "Fallos")}</button>
         <button onClick={() => setTypeFilter("idea")} className={tabCls(typeFilter === "idea")}>{t("admin-feedback.filter.ideas", "Ideas")}</button>
         <button onClick={() => setTypeFilter("other")} className={tabCls(typeFilter === "other")}>{t("admin-feedback.filter.others", "Otros")}</button>
-        <button onClick={() => setTypeFilter("support")} className={tabCls(typeFilter === "support")}>{t("admin-feedback.filter.support", "Soporte")}</button>
       </div>
 
       {loading ? (

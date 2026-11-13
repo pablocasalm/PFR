@@ -172,8 +172,8 @@ const TypicalQuestions = ({ onNavigate }: { onNavigate: () => void }) => {
 }
 
 /**
- * Debajo de una respuesta de cuenta, pagos o incidencias: manda la conversación a Soporte (Admin →
- * Feedback) para que le contestemos por email. Además siempre queda hello@ a mano.
+ * Debajo de una respuesta de cuenta, pagos o incidencias: manda la conversación por email a hello@
+ * para que le contestemos cuanto antes. Además siempre queda hello@ a mano.
  */
 const SupportButton = ({ index, sent }: { index: number; sent?: boolean }) => {
   const { t } = useI18n()
