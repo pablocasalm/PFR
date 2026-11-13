@@ -218,3 +218,37 @@ español).
 
 **Pendiente**: probar con vídeos/subtítulos reales de HeyGen (por ahora solo verificado el
 conversor `.srt`→`.vtt` contra un archivo de ejemplo, sin subir de verdad a Cloudflare).
+
+### 13. Asistente: el muñeco (tarjetas #147 y #148) 🚧
+Un muñeco abajo a la derecha que guía a cada persona hacia el contenido que le sirve. En la
+rama `asistente` (front y back), oculto en producción tras `VITE_ASSISTANT_ENABLED` (como las
+píldoras). Se llama **muñeco**, no «mascota».
+
+- ✅ **Fase 0, sin IA**: botón provisional del tamaño del muñeco (64 px, encima de `MobileNav` y
+  del botón de Feedback), globo con un aviso por visita (reglas en `AssistantNotices`: análisis
+  a medias, masterclass nueva, plan del mes, vuelta tras 7 días, Mi Lista sin ver; Essential,
+  uno genérico a la semana), panel con preguntas típicas y adelanto de Essential con «Pasarme a
+  Club». Métricas: tabla `AssistantNotice` (mostrado/clic/cerrado) y eventos `assistant_*` en
+  `ActivityEvent`; resumen en `GET /api/admin/assistant/notices`.
+- ✅ **Fase 1, chat (backend y front)**: Claude Haiku 5.5 con las instrucciones y la base de
+  conocimiento de Andrea (`PFR_API/AssistantPrompts`) y el catálogo generado desde la BD con
+  los ids reales; salida estructurada y validaciones (conceptos oficiales, clips que existen y
+  encajan, fuera de alcance sin clips, «pala»). Límite 30 mensajes/mes en Club y 90 en Coach;
+  conversaciones 12 meses (`AssistantConversation`/`AssistantMessage`). Admin:
+  `/api/admin/assistant/conversations` y `/context`.
+- ✅ **Repositorio de pruebas** `pablocasalm/pfr-asistente` (privado, con Andrea): prompt, base
+  de conocimiento, batería de 295 preguntas (68 dudas + variantes ES/EN) y skill de pruebas. Lo
+  aprobado allí se copia a `AssistantPrompts` y se publica.
+
+Subpasos nacidos:
+- ⬜ Clave de la API en Azure (`Anthropic__ApiKey`, creada pero vacía) y pasar la batería por la
+  API real.
+- ⬜ Andrea valora las pruebas y decide las propuestas de cambio del prompt (glosario de
+  términos, técnica, preguntas vagas, cuenta/pago → hello@).
+- ⬜ Textos definitivos de avisos, panel y adelanto (ES/EN) e importarlos (claves `assistant.*`).
+- ⬜ Personaje (tarjeta #148): bocetos → boceto en la app → SVG del ilustrador con posturas.
+- ⬜ Política de privacidad: envío de datos de uso a Anthropic.
+- ⬜ Pantalla de admin para leer avisos y conversaciones (hoy solo endpoints JSON).
+- ⬜ Llevar la rama `asistente` a `main` (front y back) con el interruptor apagado.
+- ⬜ Más adelante: recomendar también análisis (capítulos) y píldoras, y usar lo que ya ha visto
+  cada persona.
