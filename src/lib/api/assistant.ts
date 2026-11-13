@@ -43,3 +43,78 @@ export const getAssistantUsage = () => apiGet<AssistantUsage>("/api/assistant/us
 /** POST /api/assistant/chat. Errores: 429 code "assistant_limit", 503 code "assistant_unavailable". */
 export const sendAssistantMessage = (message: string, language: string, conversationId: number | null) =>
   apiPost<AssistantChatReply>("/api/assistant/chat", { message, language, conversationId })
+
+// ── Administración (pestaña «Asistente» de Métricas) ──
+
+export type AdminAssistantNotices = {
+  since: string
+  /** Por tipo de aviso, sin las cuentas del equipo. */
+  summary: { kind: AssistantNoticeKind; shown: number; clicked: number; dismissed: number }[]
+  panel: {
+    opens: number
+    openUsers: number
+    questions: { question: string; count: number; users: number }[]
+    upgradeClicks: number
+    upgradeClickUsers: number
+    upgradedAfterClick: number
+  }
+  latest: {
+    id: number
+    userId: number
+    email: string
+    planTier: string
+    isTeam: boolean
+    key: string
+    kind: AssistantNoticeKind
+    shownAtUtc: string
+    clickedAtUtc: string | null
+    dismissedAtUtc: string | null
+  }[]
+}
+
+export type AdminAssistantMessage = {
+  role: "user" | "assistant"
+  text: string
+  concepts: string | null
+  clipIds: string | null
+  droppedIds: string | null
+  confidence: "alta" | "media" | "baja" | null
+  outOfScope: boolean
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens: number
+  cacheWriteTokens: number
+  createdAtUtc: string
+}
+
+export type AdminAssistantConversations = {
+  since: string
+  summary: {
+    conversations: number
+    replies: number
+    lowConfidence: number
+    outOfScope: number
+    withDropped: number
+    inputTokens: number
+    outputTokens: number
+    cacheReadTokens: number
+  }
+  conversations: {
+    id: number
+    userId: number
+    email: string
+    isTeam: boolean
+    language: string
+    planTier: string
+    startedAtUtc: string
+    lastMessageAtUtc: string
+    messages: AdminAssistantMessage[]
+  }[]
+}
+
+/** GET /api/admin/assistant/notices?days=N (solo Admin). */
+export const getAdminAssistantNotices = (days: number) => apiGet<AdminAssistantNotices>(`/api/admin/assistant/notices?days=${days}`)
+
+/** GET /api/admin/assistant/conversations?days=N (solo Admin). */
+export const getAdminAssistantConversations = (days: number) =>
+  apiGet<AdminAssistantConversations>(`/api/admin/assistant/conversations?days=${days}`)

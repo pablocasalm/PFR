@@ -4,6 +4,8 @@ import { AlertTriangle, BarChart3 } from "lucide-react"
 import { useI18n } from "../../../lib/i18n/store"
 import { getAdminMetrics, type AdminMetrics, type MetricsDays, type MetricsFilters, type MetricsPerson } from "../../../lib/api/metrics"
 import MetricsInsights from "../components/admin/MetricsInsights"
+import MetricsAssistant from "../components/admin/MetricsAssistant"
+import { ASSISTANT_ENABLED } from "../../../lib/assistant"
 
 /**
  * AdminMetricas — panel de métricas internas, v1 (solo Admin): filtros, resumen en cifras y una
@@ -11,11 +13,12 @@ import MetricsInsights from "../components/admin/MetricsInsights"
  * deja ver a quién escribir antes de que termine su prueba («en riesgo» = lleva 3 días o más sin
  * entrar). Las cuentas del equipo (noreply@, prueba@) se excluyen por defecto en el servidor.
  *
- * v2 (21/10/2026): pestaña «Actividad» (y contenido), MetricsInsights. La de «Lista de espera» se
+ * v2 (21/10/2026): pestaña «Actividad» (y contenido), MetricsInsights. 13/11/2026: pestaña «Asistente»
+ * (el muñeco, MetricsAssistant), solo con VITE_ASSISTANT_ENABLED. La de «Lista de espera» se
  * quitó el 11/11/2026: ya no hay lista de espera.
  */
 
-type Tab = "people" | "activity"
+type Tab = "people" | "activity" | "assistant"
 
 type SortKey = "risk" | "lastActive" | "minutes" | "activeDays" | "trialDay"
 
@@ -202,6 +205,8 @@ const AdminMetricas = () => {
           [
             ["people", t("admin-metrics.tab.summary", "Resumen")],
             ["activity", t("admin-metrics.tab.activity", "Actividad")],
+            // El muñeco (tarjeta #147): solo con su interruptor, como el resto del asistente.
+            ...(ASSISTANT_ENABLED ? [["assistant", t("admin-metrics.tab.assistant", "Asistente")]] : []),
           ] as [Tab, string][]
         ).map(([id, label]) => (
           <button
@@ -216,7 +221,9 @@ const AdminMetricas = () => {
         ))}
       </div>
 
-      {tab !== "people" ? (
+      {tab === "assistant" ? (
+        <MetricsAssistant days={filters.days} excludeTeam={filters.excludeTeam} />
+      ) : tab !== "people" ? (
         <MetricsInsights view={tab} days={filters.days} excludeTeam={filters.excludeTeam} />
       ) : (
         <>
