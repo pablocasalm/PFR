@@ -245,7 +245,10 @@ Subpasos nacidos:
   API real.
 - ⬜ Andrea valora las pruebas y decide las propuestas de cambio del prompt (glosario de
   términos, técnica, preguntas vagas, cuenta/pago → hello@).
-- ⬜ Textos definitivos de avisos, panel y adelanto (ES/EN) e importarlos (claves `assistant.*`).
+- ✅ Textos provisionales importados en ES/EN (85 claves `assistant.*`, `admin-assistant.*`), 13/11.
+- ✅ Convive con la valoración: el muñeco se esconde mientras se pide (comparten esquina) y su
+  panel de escritorio cuenta como ventana abierta para que la valoración no salga encima.
+- ⬜ Textos definitivos de avisos, panel y adelanto (ES/EN) de Andrea; se cambian en Traducciones (claves `assistant.*`).
 - ⬜ Personaje (tarjeta #148): bocetos → boceto en la app → SVG del ilustrador con posturas.
 - ⬜ Política de privacidad: envío de datos de uso a Anthropic.
 - ✅ Llevar la rama `asistente` a `main` (front y back) con el interruptor apagado (13/11/2026).
