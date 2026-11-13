@@ -98,4 +98,8 @@ export const ORIGINS: { value: TestOrigin; label: (t: TFunc) => string }[] = [
     value: "account",
     label: (t) => t("admin-starter.origin.account", "Mi Cuenta"),
   },
+  {
+    value: "assistant",
+    label: (t) => t("admin-starter.origin.assistant", "Muñeco"),
+  },
 ]

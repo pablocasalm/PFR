@@ -51,7 +51,7 @@ const StarterPills = ({ concepts, center = false }: { concepts: ConceptCard[]; c
   )
 }
 
-const ORIGINS: TestOrigin[] = ["how_it_works", "home_banner", "my_list", "account"]
+const ORIGINS: TestOrigin[] = ["how_it_works", "home_banner", "my_list", "account", "assistant"]
 
 const Option = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) => (
   <button

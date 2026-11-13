@@ -27,7 +27,7 @@ export type PlaytomicLevel = "none" | "lt1" | "1.0" | "1.5" | "2.5" | "3.5" | "4
 export type Frequency = "1" | "2-3" | "4+"
 export type Phrase = "lose_net" | "defend_back" | "when_net" | "lobs" | "rush" | "volleys" | "partner" | "read" | "unsure"
 /** Desde dónde se empezó el test. */
-export type TestOrigin = "how_it_works" | "home_banner" | "my_list" | "account"
+export type TestOrigin = "how_it_works" | "home_banner" | "my_list" | "account" | "assistant"
 
 export type StarterTestAnswers = {
   gameLevel: GameLevel

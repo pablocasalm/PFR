@@ -29,4 +29,4 @@ export const invalidateStarterTest = () => {
 }
 
 /** Enlace al test con su origen (para las métricas). */
-export const testHref = (from: "how_it_works" | "home_banner" | "my_list" | "account") => `/app/encuesta/test?from=${from}`
+export const testHref = (from: "how_it_works" | "home_banner" | "my_list" | "account" | "assistant") => `/app/encuesta/test?from=${from}`
