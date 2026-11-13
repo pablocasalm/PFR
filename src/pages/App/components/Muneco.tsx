@@ -194,7 +194,7 @@ const Muneco = () => {
         style={{ width: MUNECO_SIZE, height: MUNECO_SIZE }}
         className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 flex items-center justify-center rounded-full border border-neon-cyan/40 bg-midnight-soft shadow-[0_0_18px_rgba(40,240,224,0.25),0_6px_16px_rgba(0,0,0,0.5)] transition-transform active:scale-95 xl:bottom-[5.5rem] xl:right-6"
       >
-        <Pafri pose={pose} size={MUNECO_SIZE - 12} />
+        <Pafri pose={pose} size={MUNECO_SIZE - 6} />
       </button>
 
       {/* Panel: hoja inferior en móvil y tableta; tarjeta flotante encima del botón en escritorio. */}
